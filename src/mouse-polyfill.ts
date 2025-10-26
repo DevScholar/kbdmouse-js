@@ -1022,6 +1022,4 @@ class MousePolyfill {
 
 }
 
-// Export singleton instance
-export const MousePolyfillInstance = new MousePolyfill();
 export { MousePolyfill };

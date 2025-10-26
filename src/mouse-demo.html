@@ -301,10 +301,13 @@
 
     <script type="module">
         // Import mouse polyfill
-        import { MousePolyfillInstance } from './mouse-polyfill.js';
+        import { MousePolyfill } from './mouse-polyfill.js';
         
         class MouseDemo {
             constructor() {
+                // Create mouse polyfill instance
+                this.mousePolyfill = new MousePolyfill();
+                
                 this.logEntries = [];
                 this.maxLogEntries = 100;
                 this.polyfillEnabled = false;
@@ -612,12 +615,12 @@
                 this.polyfillEnabled = !this.polyfillEnabled;
                 
                 if (this.polyfillEnabled) {
-                    MousePolyfillInstance.addPolyfillFor(this.demoArea);
+                    this.mousePolyfill.addPolyfillFor(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Disable Polyfill';
                     this.polyfillStatus.textContent = 'ENABLED';
                     this.polyfillStatus.className = 'status enabled';
                 } else {
-                    MousePolyfillInstance.removePolyfillFor(this.demoArea);
+                    this.mousePolyfill.removePolyfillFor(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Enable Polyfill';
                     this.polyfillStatus.textContent = 'DISABLED';
                     this.polyfillStatus.className = 'status disabled';
@@ -644,7 +647,7 @@
                 this.debugEnabled = !this.debugEnabled;
                 
                 // Set mouse polyfill debug state
-                MousePolyfillInstance.debug = this.debugEnabled;
+                this.mousePolyfill.debug = this.debugEnabled;
                 
                 if (this.debugEnabled) {
                     this.toggleDebugBtn.textContent = 'Disable Debug';
@@ -677,7 +680,7 @@
                 this.vibrateEnabled = !this.vibrateEnabled;
                 
                 // Set mouse polyfill vibration state
-                MousePolyfillInstance.vibrate = this.vibrateEnabled;
+                this.mousePolyfill.vibrate = this.vibrateEnabled;
                 
                 if (this.vibrateEnabled) {
                     this.toggleVibrateBtn.textContent = 'Disable Vibration';
