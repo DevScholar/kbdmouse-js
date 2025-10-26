@@ -13,7 +13,7 @@ This project provides **hardware-accurate keyboard emulation** for:
 
 ## Core Features
 
-### 🔧 Hardware Keyboard Simulator
+### ⌨️ Hardware Keyboard Simulator
 - **Full 104-key QWERTY layout** with accurate hardware behavior
 - **Full NumLock support** - numpad navigation when disabled, numbers when enabled
 - **Accurate cursor control** - Home/End, Page Up/Down, arrow key behavior
@@ -75,12 +75,8 @@ dist/
 All components are provided as ES modules. Import them directly in your JavaScript/TypeScript code:
 
 ```javascript
-// Import individual components
-import { VirtualKey } from './dist/virtual-key.js';
-import { VirtualKeyboard } from './dist/virtual-keyboard.js';
+// Import the prefab virtual keyboard (recommended for most use cases)
 import { PrefabVirtualKeyboard } from './dist/prefab-virtual-keyboard.js';
-
-
 ```
 
 ### HTML Usage
