@@ -1,0 +1,24 @@
+{
+  "name": "kbdmouse-js",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Virtual keyboard library for web applications",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node dev.js",
+    "start": "npm run dev"
+  },
+  "keywords": [
+    "virtual-keyboard",
+    "typescript",
+    "web-components",
+    "input-methods"
+  ],
+  "author": "kbdmouse-js",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "http-server": "^14.1.1"
+  }
+}

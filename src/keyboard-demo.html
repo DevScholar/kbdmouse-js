@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Keyboard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .description {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        /* Input area styles */
+        .input-section {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        #text-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        #text-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        /* Active input field styles */
+        .input-active {
+            border-color: #27ae60 !important;
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+        }
+
+        /* Log area styles */
+        .log-section {
+            max-width: 800px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .log-header {
+            background: #34495e;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-header h3 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        #clear-log {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        #clear-log:hover {
+            background: #c0392b;
+        }
+
+        .event-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 15px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Plain text log styles - simplified */
+
+        /* Scrollbar styles */
+        .event-log::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .event-log::-webkit-scrollbar-track {
+            background: #34495e;
+        }
+
+        .event-log::-webkit-scrollbar-thumb {
+            background: #7f8c8d;
+            border-radius: 4px;
+        }
+
+        .event-log::-webkit-scrollbar-thumb:hover {
+            background: #95a5a6;
+        }
+     
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>Virtual Keyboard</h1>
+        <div class="description">
+            This is a pure layout demonstration of the virtual keyboard using prefab-virtual-keyboard element.<br>
+        </div>
+        
+        <!-- Text input area -->
+        <div class="input-section">
+            <label for="text-input">Text Input Area:</label>
+            <textarea id="text-input" placeholder="Enter text here, or click virtual keyboard buttons..." rows="4"></textarea>
+            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                💡 Tip: Click the input field or use mouse to select text area to activate keyboard input
+            </div>
+        </div>
+        
+        <!-- Use prefab-virtual-keyboard element to display virtual keyboard -->
+        <prefab-virtual-keyboard 
+        id="demo-keyboard"
+        keyboard-css-src="./qwerty-104-key-keyboard.css" 
+        keyboard-html-src="./qwerty-104-key-keyboard.html"
+        virtual-key-script-src="./virtual-key.js"
+        virtual-keyboard-script-src="./virtual-keyboard.js"
+        >
+    </prefab-virtual-keyboard>
+        
+        <!-- Event log area -->
+        <div class="log-section">
+            <div class="log-header">
+                <h3>Keyboard Event Log (Max 100 entries)</h3>
+                <button id="clear-log">Clear Log</button>
+            </div>
+            <div id="event-log" class="event-log"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import prefab-virtual-keyboard custom element
+        import './prefab-virtual-keyboard.js';
+        
+        console.log('Prefab virtual keyboard element loaded');
+
+        // Keyboard event logging system
+        class KeyboardEventLogger {
+            constructor() {
+                this.logContainer = document.getElementById('event-log');
+                this.clearButton = document.getElementById('clear-log');
+                this.maxLogEntries = 100;
+                this.logEntries = [];
+                
+                this.initializeEventListeners();
+                this.bindClearButton();
+            }
+
+            initializeEventListeners() {
+                // Listen to all keyboard events uniformly
+                window.addEventListener('keydown', (event) => {
+                    const source = this.isVirtualKeyboardEvent(event) ? 'virtual' : 'physical';
+                    this.logEvent('keydown', source, event);
+                });
+
+                window.addEventListener('keyup', (event) => {
+                    const source = this.isVirtualKeyboardEvent(event) ? 'virtual' : 'physical';
+                    this.logEvent('keyup', source, event);
+                });
+
+                // Listen to text input area changes
+                const textInput = document.getElementById('text-input');
+                if (textInput) {
+                    textInput.addEventListener('input', (event) => {
+                        this.logInputEvent(event);
+                    });
+                }
+            }
+
+            isVirtualKeyboardEvent(event) {
+                // Check virtual keyboard marker on event object first
+                if (event.isVirtualKeyboard) {
+                    return true;
+                }
+                
+                // Fallback to path checking (compatibility)
+                const path = event.composedPath();
+                for (let el of path) {
+                    if (el && el.tagName) {
+                        const tag = el.tagName.toLowerCase();
+                        if (tag === 'virtual-key' || tag === 'virtual-keyboard' || tag === 'prefab-virtual-keyboard') {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            logEvent(type, source, event) {
+                const timestamp = new Date().toLocaleTimeString();
+                
+                let keyInfo = '';
+                let codeInfo = '';
+
+                if (source === 'virtual' || source === 'physical') {
+                    // Handle all keyboard events uniformly, whether virtual or physical
+                    keyInfo = event.key || 'Unknown';
+                    codeInfo = event.code || 'unknown';
+                }
+
+                // Check virtual keyboard marker
+                const isVirtualKeyboard = event.isVirtualKeyboard || false;
+                const actualSource = isVirtualKeyboard ? 'virtual' : source;
+
+                // Get standard KeyboardEvent modifier key states
+                const modifiers = {
+                    ctrl: event.ctrlKey || false,
+                    alt: event.altKey || false,
+                    shift: event.shiftKey || false,
+                    meta: event.metaKey || false,
+                    repeat: event.repeat || false,
+                    isComposing: event.isComposing || false,
+                    location: event.location || 0
+                };
+
+                const logEntry = {
+                    timestamp,
+                    type,
+                    source: actualSource,
+                    key: keyInfo,
+                    code: codeInfo,
+                    isVirtualKeyboard: isVirtualKeyboard, // Add marker information
+                    modifiers: modifiers, // Add modifier key states
+                    fullEvent: event // Complete native event object
+                };
+
+                this.addLogEntry(logEntry);
+            }
+
+            logInputEvent(event) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = {
+                    timestamp,
+                    type: 'input',
+                    source: 'text',
+                    key: event.data || 'Backspace/Del',
+                    code: 'input',
+                    fullEvent: event
+                };
+
+                this.addLogEntry(logEntry);
+            }
+
+            addLogEntry(logEntry) {
+                this.logEntries.push(logEntry); // Add to end
+                
+                // Limit log entries
+                if (this.logEntries.length > this.maxLogEntries) {
+                    this.logEntries = this.logEntries.slice(-this.maxLogEntries);
+                }
+
+                this.renderLog();
+            }
+
+            renderLog() {
+                // Plain text log format
+                const logText = this.logEntries.map(entry => {
+                    const typeMarker = entry.type === 'keydown' ? '▼' : '▲';
+                    const sourceMarker = entry.source === 'physical' ? '🔧' : 
+                                        entry.source === 'virtual' ? '⌨️' : '📝';
+                    const virtualMarker = entry.isVirtualKeyboard ? ' (virtual)' : '';
+                    
+                    // Format modifier keys display
+                    let modifierStr = '';
+                    if (entry.modifiers) {
+                        const activeModifiers = [];
+                        if (entry.modifiers.ctrl) activeModifiers.push('Ctrl');
+                        if (entry.modifiers.alt) activeModifiers.push('Alt');
+                        if (entry.modifiers.shift) activeModifiers.push('Shift');
+                        if (entry.modifiers.meta) activeModifiers.push('Meta');
+                        
+                        if (activeModifiers.length > 0) {
+                            modifierStr = ` [${activeModifiers.join('+')}]`;
+                        }
+                        
+                        // Add additional property information
+                        if (entry.modifiers.repeat) {
+                            modifierStr += ' (repeat)';
+                        }
+                        if (entry.modifiers.isComposing) {
+                            modifierStr += ' (composing)';
+                        }
+                        if (entry.modifiers.location && entry.modifiers.location !== 0) {
+                            const locationNames = ['', 'Left', 'Right', 'Numpad'];
+                            modifierStr += ` (${locationNames[entry.modifiers.location] || 'Unknown'})`;
+                        }
+                    }
+                    
+                    return `${entry.timestamp} ${typeMarker}${sourceMarker} ${entry.type} ${entry.source} ${entry.key} [${entry.code}]${virtualMarker}${modifierStr}`;
+                }).join('\n');
+                
+                this.logContainer.textContent = logText;
+                
+                // Auto-scroll to bottom (latest logs)
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+            }
+
+            bindClearButton() {
+                this.clearButton.addEventListener('click', () => {
+                    this.clearLog();
+                });
+            }
+
+            clearLog() {
+                this.logEntries = [];
+                this.renderLog();
+                
+                // Add clear notification (system log entry)
+                const logEntry = {
+                    timestamp: new Date().toLocaleTimeString(),
+                    type: 'system',
+                    source: 'log',
+                    key: 'Log cleared',
+                    code: 'clear'
+                };
+                
+                this.logEntries.push(logEntry);
+                this.renderLog();
+            }
+        }
+
+        // Input activation manager
+        class InputActivationManager {
+            constructor() {
+                this.textInput = document.getElementById('text-input');
+                this.activeClass = 'input-active';
+                this.initializeActivation();
+            }
+
+            initializeActivation() {
+                // Set up focus event listeners for the input field
+                this.textInput.addEventListener('focus', () => {
+                    this.activateInput(this.textInput);
+                });
+
+                this.textInput.addEventListener('blur', () => {
+                    this.deactivateInput(this.textInput);
+                });
+
+                // Initial state check (focus check on load)
+                if (document.activeElement === this.textInput) {
+                    this.activateInput(this.textInput);
+                }
+            }
+
+            activateInput(inputElement) {
+                inputElement.classList.add(this.activeClass);
+                console.log('Input field activated:', inputElement.id);
+            }
+
+            deactivateInput(inputElement) {
+                inputElement.classList.remove(this.activeClass);
+                console.log('Input field deactivated:', inputElement.id);
+            }
+        }
+
+        // Test virtual keyboard modifier key auto-release functionality
+        class ModifierKeyTest {
+            constructor() {
+                this.testResults = [];
+                this.initializeTestListeners();
+            }
+
+            initializeTestListeners() {
+                // Listen to all keyboard events to test modifier key states (auto-release detection)
+                window.addEventListener('keydown', (event) => {
+                    this.logModifierState('keydown', event);
+                });
+
+                window.addEventListener('keyup', (event) => {
+                    this.logModifierState('keyup', event);
+                    // Test if modifier keys auto-release when non-modifier key released
+                    if (!this.isModifierKey(event.code)) {
+                        setTimeout(() => {
+                            this.checkModifierKeysReleased();
+                        }, 50);
+                    }
+                });
+            }
+
+            isModifierKey(code) {
+                return code.startsWith('Shift') || 
+                       code.startsWith('Control') || 
+                       code.startsWith('Alt') || 
+                       code.startsWith('Meta') || 
+                       code === 'CapsLock' ||
+                       code === 'NumLock';
+            }
+
+            logModifierState(eventType, event) {
+                const modifiers = {
+                    shift: event.shiftKey,
+                    ctrl: event.ctrlKey,
+                    alt: event.altKey,
+                    meta: event.metaKey
+                };
+                
+                const activeModifiers = Object.entries(modifiers)
+                    .filter(([_, value]) => value)
+                    .map(([key, _]) => key.toUpperCase())
+                    .join('+');
+                
+                if (activeModifiers) {
+                    console.log(`[${eventType}] ${event.code} - Active modifiers: ${activeModifiers}`);
+                } else {
+                    console.log(`[${eventType}] ${event.code} - No active modifiers`);
+                }
+            }
+
+            checkModifierKeysReleased() {
+                // Check if any modifier keys still pressed
+                const keyboard = document.getElementById('qwertz-keyboard');
+                if (keyboard && keyboard.tagName.toLowerCase() === 'prefab-virtual-keyboard') {
+                    const virtualKeyboard = keyboard.shadowRoot?.querySelector('virtual-keyboard');
+                    if (virtualKeyboard) {
+                        const activeKeys = virtualKeyboard.keyDownList || [];
+                        const stillPressedModifiers = activeKeys.filter(key => {
+                            const code = key.getAttribute('code');
+                            return this.isModifierKey(code) && code !== 'CapsLock' && code !== 'NumLock';
+                        });
+                        
+                        if (stillPressedModifiers.length === 0) {
+                            console.log('✅ Modifier key auto-release function normal: all modifier keys released');
+                        } else {
+                            const modifierCodes = stillPressedModifiers.map(key => key.getAttribute('code'));
+                            console.log('⚠️  Modifier keys still not released:', modifierCodes.join(', '));
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        // Initialize keyboard event log system
+        document.addEventListener('DOMContentLoaded', () => {
+            const logger = new KeyboardEventLogger();
+            const inputManager = new InputActivationManager();
+            const modifierTest = new ModifierKeyTest();
+            console.log('Keyboard event log system started');
+            console.log('Input activation manager started');
+            console.log('Modifier key auto-release detection system started');
+            
+            // Add welcome log
+            setTimeout(() => {
+                logger.addLogEntry({
+                    timestamp: new Date().toLocaleTimeString(),
+                    type: 'system',
+                    source: 'log',
+                    key: 'Keyboard event listener started',
+                    code: 'ready'
+                });
+            }, 100);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+/**
+ * HTML Transporter - PrefabVirtualKeyboard with auto-scaling functionality
+ * Can calculate natural size and CSS-specified size, using scaleX and scaleY for automatic scaling
+ */
+export class PrefabVirtualKeyboard extends HTMLElement {
+  private isContentLoaded = false;
+  private isLoading = false;
+  private naturalWidth = 0;
+  private naturalHeight = 0;
+  private resizeObserver?: ResizeObserver;
+  private shadowRootInstance: ShadowRoot | null = null;
+  private shadowDomEnabled = true;
+
+  constructor() {
+    super();
+    // Don't initialize shadow DOM here - wait for connectedCallback
+    // This prevents issues with attribute changes during element creation
+  }
+
+  private initializeShadowDom() {
+    const enableShadowDom = this.getAttribute('shadowdom') !== 'false'; // Default to true
+    this.shadowDomEnabled = enableShadowDom; // Track the state
+    
+    if (enableShadowDom) {
+      // Only create shadow root if it doesn't already exist
+      if (!this.shadowRoot) {
+        this.shadowRootInstance = this.attachShadow({ mode: 'open' });
+      } else {
+        this.shadowRootInstance = this.shadowRoot;
+      }
+    } else {
+      // When shadow DOM is disabled, don't create it
+      this.shadowRootInstance = null;
+    }
+  }
+
+  connectedCallback() {
+    console.log('PrefabVirtualKeyboard: Element connected to DOM');
+    
+    // Initialize shadow DOM when element is connected
+    this.initializeShadowDom();
+    
+    this.loadContent();
+    this.setupResizeObserver();
+  }
+
+  disconnectedCallback() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+  }
+
+  static get observedAttributes() {
+    return ['keyboard-css-src', 'keyboard-html-src', 'virtual-keyboard-script-src', 'virtual-key-script-src', 'width', 'height', 'shadowdom'];
+  }
+
+  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    if (oldValue !== newValue) {
+      if (name === 'width' || name === 'height') {
+        this.applyScaling();
+      } else {
+        this.loadContent();
+      }
+    }
+  }
+
+  private async loadContent() {
+    // Prevent duplicate loading
+    if (this.isContentLoaded || this.isLoading) {
+      return;
+    }
+
+    this.isLoading = true;
+    const cssSrc = this.getAttribute('keyboard-css-src') || '';
+    const htmlSrc = this.getAttribute('keyboard-html-src') || '';
+    const virtualKeyboardScriptSrc = this.getAttribute('virtual-keyboard-script-src') || '';
+    const virtualKeyScriptSrc = this.getAttribute('virtual-key-script-src') || '';
+
+    if (!htmlSrc) {
+      const container = this.getContainer();
+      if (container) {
+        (container as HTMLElement).innerHTML = '<div style="color: red;">Error: keyboard-html-src attribute must be provided</div>';
+      } else {
+        this.innerHTML = '<div style="color: red;">Error: keyboard-html-src attribute must be provided</div>';
+      }
+      this.isLoading = false;
+      return;
+    }
+
+    try {
+      // Get the target container (shadow root or light DOM)
+      const container = this.getContainer();
+      
+      // Clear existing content first
+      if (this.shadowRootInstance) {
+        this.shadowRootInstance.innerHTML = '';
+      } else {
+        // Clear light DOM content but preserve the element itself
+        while (this.firstChild) {
+          this.removeChild(this.firstChild);
+        }
+      }
+      
+      // Load and register custom element scripts first
+      if (virtualKeyScriptSrc && !container.querySelector(`script[src="${virtualKeyScriptSrc}"]`)) {
+        const scriptElement = document.createElement('script');
+        scriptElement.type = 'module';
+        scriptElement.src = virtualKeyScriptSrc;
+        container.appendChild(scriptElement);
+      }
+
+      if (virtualKeyboardScriptSrc && !container.querySelector(`script[src="${virtualKeyboardScriptSrc}"]`)) {
+        const scriptElement = document.createElement('script');
+        scriptElement.type = 'module';
+        scriptElement.src = virtualKeyboardScriptSrc;
+        container.appendChild(scriptElement);
+      }
+
+      // Load CSS and HTML in parallel
+      const [cssContent, htmlContent] = await Promise.all([
+        cssSrc ? this.fetchContent(cssSrc) : Promise.resolve(''),
+        this.fetchContent(htmlSrc)
+      ]);
+
+      // Insert content based on DOM type
+      if (this.shadowRootInstance) {
+        // Shadow DOM - use style tag
+        this.shadowRootInstance.innerHTML = `
+          <style>${cssContent}</style>
+          ${htmlContent}
+        `;
+      } else {
+        // Light DOM - create style element and insert HTML
+        if (container && container !== this) {
+          // If we have a container that's not 'this', use it
+          container.innerHTML = htmlContent;
+          
+          // Add CSS as a style element
+          if (cssContent) {
+            const styleElement = document.createElement('style');
+            styleElement.textContent = cssContent;
+            container.insertBefore(styleElement, container.firstChild);
+          }
+        } else {
+          // If container is 'this' (the element itself), append children instead
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          
+          // Append all children from the temp div
+          while (tempDiv.firstChild) {
+            this.appendChild(tempDiv.firstChild);
+          }
+          
+          // Add CSS as a style element
+          if (cssContent) {
+            const styleElement = document.createElement('style');
+            styleElement.textContent = cssContent;
+            this.insertBefore(styleElement, this.firstChild);
+          }
+        }
+      }
+
+
+
+      this.isContentLoaded = true;
+      this.isLoading = false;
+
+      // Calculate natural size and apply scaling after content is loaded
+      this.calculateNaturalSize();
+      this.applyScaling();
+
+    } catch (error) {
+      const container = this.getContainer();
+      if (container) {
+        container.innerHTML = `<div style="color: red;">Load failed: ${error}</div>`;
+      } else {
+        this.innerHTML = `<div style="color: red;">Load failed: ${error}</div>`;
+      }
+      this.isLoading = false;
+    }
+  }
+
+  private async fetchContent(src: string): Promise<string> {
+    // Handle data URLs
+    if (src.startsWith('data:')) {
+      return this.handleDataUrl(src);
+    }
+    
+    // Handle blob URLs
+    if (src.startsWith('blob:')) {
+      return this.handleBlobUrl(src);
+    }
+    
+    // Regular HTTP/HTTPS URLs
+    const response = await fetch(src);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.text();
+  }
+
+  private handleDataUrl(dataUrl: string): string {
+    try {
+      // Parse data URL format: data:[<mediatype>][;base64],<data>
+      const parts = dataUrl.split(',');
+      if (parts.length < 2) {
+        throw new Error('Invalid data URL format');
+      }
+      
+      const header = parts[0];
+      const data = parts.slice(1).join(','); // Handle commas in data
+      
+      // Check if it's base64 encoded
+      if (header.includes(';base64')) {
+        // Decode base64
+        return atob(data);
+      } else {
+        // Plain text - decode URI component
+        return decodeURIComponent(data);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to handle data URL: ${errorMessage}`);
+    }
+  }
+
+  private async handleBlobUrl(blobUrl: string): Promise<string> {
+    try {
+      const response = await fetch(blobUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.text();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to handle blob URL: ${errorMessage}`);
+    }
+  }
+
+  private getContainer(): HTMLElement | ShadowRoot {
+    return this.shadowRootInstance || this;
+  }
+
+  // Getter/setter for content access - encapsulates shadow DOM vs light DOM
+  get contentContainer(): HTMLElement | ShadowRoot {
+    return this.getContainer();
+  }
+
+  get contentRoot(): HTMLElement {
+    return this as HTMLElement;
+  }
+
+  // Getter for shadow DOM status - this is what the test should check
+  get isShadowDomEnabled(): boolean {
+    return this.shadowDomEnabled;
+  }
+
+  // Method to check if shadow DOM is actually active (has shadow root and is enabled)
+  get hasActiveShadowRoot(): boolean {
+    return this.shadowDomEnabled && !!this.shadowRoot;
+  }
+
+  // Setter for shadow DOM - properly handles enable/disable
+  setShadowDomEnabled(enabled: boolean): void {
+    this.setAttribute('shadowdom', enabled.toString());
+  }
+
+  private calculateNaturalSize() {
+    const container = this.getContainer();
+    if (!container || !this.isContentLoaded) return;
+
+    const keyboardElement = container.querySelector('virtual-keyboard') as HTMLElement;
+    if (!keyboardElement) return;
+
+    // Get dimensions in natural state
+    const rect = keyboardElement.getBoundingClientRect();
+    this.naturalWidth = rect.width;
+    this.naturalHeight = rect.height;
+
+    console.log('PrefabVirtualKeyboard: Natural size calculation completed', {
+      naturalWidth: this.naturalWidth,
+      naturalHeight: this.naturalHeight
+    });
+  }
+
+  private setupResizeObserver() {
+    if (!this.resizeObserver) {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.applyScaling();
+      });
+      this.resizeObserver.observe(this);
+    }
+  }
+
+  private parseCssValue(value: string): number {
+    if (!value) return 0;
+    
+    // Remove spaces and convert to lowercase
+    const cleanValue = value.toString().trim().toLowerCase();
+    
+    // Handle pure numbers (default to pixels)
+    if (/^\d+(\.\d+)?$/.test(cleanValue)) {
+      return parseFloat(cleanValue);
+    }
+    
+    // Handle values with units
+    const match = cleanValue.match(/^(\d+(?:\.\d+)?)(px|em|rem|%|vh|vw|vmin|vmax|cm|mm|in|pt|pc|ex|ch)$/);
+    if (!match) return 0;
+    
+    const numValue = parseFloat(match[1]);
+    const unit = match[2];
+    
+    switch (unit) {
+      case 'px':
+        return numValue;
+      case 'em':
+        return numValue * parseFloat(getComputedStyle(this).fontSize);
+      case 'rem':
+        return numValue * parseFloat(getComputedStyle(document.documentElement).fontSize);
+      case '%':
+        const parentRect = this.parentElement?.getBoundingClientRect();
+        return numValue * (parentRect ? parentRect.width / 100 : 0);
+      case 'vh':
+        return numValue * window.innerHeight / 100;
+      case 'vw':
+        return numValue * window.innerWidth / 100;
+      case 'vmin':
+        return numValue * Math.min(window.innerWidth, window.innerHeight) / 100;
+      case 'vmax':
+        return numValue * Math.max(window.innerWidth, window.innerHeight) / 100;
+      case 'cm':
+        return numValue * 96 / 2.54; // 1cm = 96px/2.54
+      case 'mm':
+        return numValue * 96 / 25.4; // 1mm = 96px/25.4
+      case 'in':
+        return numValue * 96; // 1in = 96px
+      case 'pt':
+        return numValue * 96 / 72; // 1pt = 96px/72
+      case 'pc':
+        return numValue * 96 / 6; // 1pc = 96px/6
+      case 'ex':
+        return numValue * parseFloat(getComputedStyle(this).fontSize) * 0.5; // Approximate value
+      case 'ch':
+        return numValue * parseFloat(getComputedStyle(this).fontSize) * 0.6; // Approximate value
+      default:
+        return 0;
+    }
+  }
+
+  private applyScaling() {
+    const container = this.getContainer();
+    if (!container || !this.isContentLoaded || this.naturalWidth === 0 || this.naturalHeight === 0) return;
+
+    const keyboardElement = container.querySelector('virtual-keyboard') as HTMLElement;
+    if (!keyboardElement) return;
+
+    // Get CSS-specified dimensions
+    const computedStyle = getComputedStyle(this);
+    let targetWidth = this.parseCssValue(computedStyle.width);
+    let targetHeight = this.parseCssValue(computedStyle.height);
+
+    // Get attribute-specified dimensions (higher priority than CSS)
+    const attrWidth = this.parseCssValue(this.getAttribute('width') || '');
+    const attrHeight = this.parseCssValue(this.getAttribute('height') || '');
+    
+    if (attrWidth > 0) targetWidth = attrWidth;
+    if (attrHeight > 0) targetHeight = attrHeight;
+
+    // If no target dimensions are specified, use natural dimensions
+    if (targetWidth === 0 && targetHeight === 0) {
+      keyboardElement.style.transform = '';
+      return;
+    }
+
+    // Calculate scaling ratios
+    let scaleX = 1;
+    let scaleY = 1;
+
+    if (targetWidth > 0 && targetHeight > 0) {
+      // Both width and height specified - don't preserve aspect ratio
+      scaleX = targetWidth / this.naturalWidth;
+      scaleY = targetHeight / this.naturalHeight;
+    } else if (targetWidth > 0) {
+      // Only width specified - preserve aspect ratio
+      scaleX = targetWidth / this.naturalWidth;
+      scaleY = scaleX;
+    } else if (targetHeight > 0) {
+      // Only height specified - preserve aspect ratio
+      scaleY = targetHeight / this.naturalHeight;
+      scaleX = scaleY;
+    }
+
+    // Apply scaling transformation
+    keyboardElement.style.transformOrigin = 'top left';
+    keyboardElement.style.transform = `scale(${scaleX}, ${scaleY})`;
+
+    console.log('PrefabVirtualKeyboard: Scaling application completed', {
+      naturalWidth: this.naturalWidth,
+      naturalHeight: this.naturalHeight,
+      targetWidth,
+      targetHeight,
+      scaleX,
+      scaleY,
+      aspectRatioPreserved: !(targetWidth > 0 && targetHeight > 0)
+    });
+  }
+}
+
+// Register custom element
+customElements.define('prefab-virtual-keyboard', PrefabVirtualKeyboard);
