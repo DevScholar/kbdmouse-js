@@ -41,11 +41,11 @@ class MousePolyfill {
   private readonly SINGLE_CLICK_DELAY = 250; // ms
   private readonly VIBRATE_THRESHOLD_TIME = 500; // ms - time threshold to trigger vibration
   private readonly VIBRATE_DURATION = 30; // ms - vibration duration
-  private debugEnabled: boolean = false;
-  private vibrateEnabled: boolean = true;
+  private _debugEnabled: boolean = false;
+  private _vibrateEnabled: boolean = true;
 
   private log(message: string, ...args: any[]): void {
-    if (!this.debugEnabled) return;
+    if (!this._debugEnabled) return;
     const now = new Date();
     const timeString = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
     console.log(`[${timeString}] ${message}`, ...args);
@@ -54,38 +54,46 @@ class MousePolyfill {
   private lastGlobalClickPosition: { x: number; y: number } = { x: 0, y: 0 };
   private lastClickInfo: { time: number; x: number; y: number } | null = null;
 
+  // Debug setter property
+  set debug(value: boolean) {
+    this._debugEnabled = value;
+    this.log('Debug mode', value ? 'enabled' : 'disabled');
+  }
+
+  get debug(): boolean {
+    return this._debugEnabled;
+  }
+
   constructor() {
     this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   }
 
-  /**
-   * Enable or disable debug logging
-   * @param enabled Whether to enable debug logging
-   */
-  setDebug(enabled: boolean): void {
-    this.debugEnabled = enabled;
-  }
+
 
   /**
    * Get current debug state
    */
   isDebugEnabled(): boolean {
-    return this.debugEnabled;
+    return this._debugEnabled;
   }
 
   /**
-   * Enable or disable vibration functionality
+   * Enable or disable vibration feedback
    * @param enabled Whether to enable vibration
    */
-  setVibrate(enabled: boolean): void {
-    this.vibrateEnabled = enabled;
+  set vibrate(enabled: boolean) {
+    this._vibrateEnabled = enabled;
+  }
+
+  get vibrate(): boolean {
+    return this._vibrateEnabled;
   }
 
   /**
    * Get current vibration state
    */
   isVibrateEnabled(): boolean {
-    return this.vibrateEnabled;
+    return this._vibrateEnabled;
   }
 
   /**
@@ -190,7 +198,7 @@ class MousePolyfill {
    * Schedule vibration for a touch state
    */
   private scheduleVibration(touchState: TouchState, touchId: number): void {
-    if (!this.vibrateEnabled || touchState.hasVibrated) {
+    if (!this._vibrateEnabled || touchState.hasVibrated) {
       return;
     }
 
@@ -212,7 +220,7 @@ class MousePolyfill {
     // Check if finger is still touching and not in movement mode
     const isStationary = touchState.currentMode === 'pending' || touchState.currentMode === 'rightclick';
     
-    if (isStationary && this.vibrateEnabled && 'vibrate' in navigator) {
+    if (isStationary && this._vibrateEnabled && 'vibrate' in navigator) {
       try {
         navigator.vibrate(this.VIBRATE_DURATION);
         touchState.hasVibrated = true;

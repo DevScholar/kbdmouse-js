@@ -9,11 +9,12 @@
 This project provides **hardware-accurate keyboard emulation** for:
 
 - **Emulator Applications**: Accurate PC hardware keyboard behavior emulation
+
 - **Hardware Simulation**: Recreate traditional PC input experiences with exact hardware behavior
 
 ## Core Features
 
-### ⌨️ Hardware Keyboard Simulator
+### ⌨️ Hardware Keyboard Emulation
 - **Full 104-key QWERTY layout** with accurate hardware behavior
 - **Full NumLock support** - numpad navigation when disabled, numbers when enabled
 - **Accurate cursor control** - Home/End, Page Up/Down, arrow key behavior
@@ -70,15 +71,6 @@ dist/
 
 ## Usage
 
-### ES Modules (Recommended)
-
-All components are provided as ES modules. Import them directly in your JavaScript/TypeScript code:
-
-```javascript
-// Import the prefab virtual keyboard (recommended for most use cases)
-import { PrefabVirtualKeyboard } from './dist/prefab-virtual-keyboard.js';
-```
-
 ### HTML Usage
 
 #### Keyboard Emulator
@@ -106,25 +98,26 @@ import { PrefabVirtualKeyboard } from './dist/prefab-virtual-keyboard.js';
 
 #### Mouse Demo
 ```javascript
-// Import mouse polyfill for legacy compatibility
-import { MousePolyfill } from './dist/mouse-polyfill.js';
+// Import mouse polyfill for touch devices
+import { mousePolyfill } from './mouse-polyfill.js';
+
+// Enable polyfill for specific element
+mousePolyfill.addPolyfillFor(document.getElementById('demo-area'));
+
+mousePolyfill.debug = true; // Enable debug mode
 ```
 
 ```html
 <!-- Mouse event demonstration -->
-<div id="mouse-demo-area" style="width: 400px; height: 300px; border: 1px solid #ccc;">
-  Move mouse here to test events
+<div id="demo-area" class="demo-area">
+  <div class="draggable">Drag me!</div>
+  <p>Move mouse or touch here to test events</p>
 </div>
-
-<!-- Mouse demo page -->
-<iframe src="./mouse-demo.html" width="100%" height="600px"></iframe>
 ```
 
 **Mouse Event Features:**
-- **Legacy Browser Support**: Mouse event polyfill for older browsers
 - **Event Debugging**: Comprehensive mouse event logging for development
 - **Hardware Emulation**: Accurate mouse behavior for emulator applications
-- **Cross-browser Compatibility**: Consistent mouse events across different browsers
 
 
 
@@ -163,7 +156,7 @@ src/
 ```
 
 ## Browser Support
-improve
+
 - **Requirements**: ES modules (`type="module"`), Custom Elements
 
 ```html

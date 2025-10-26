@@ -644,7 +644,7 @@
                 this.debugEnabled = !this.debugEnabled;
                 
                 // Set mouse polyfill debug state
-                mousePolyfill.setDebug(this.debugEnabled);
+                mousePolyfill.debug = this.debugEnabled;
                 
                 if (this.debugEnabled) {
                     this.toggleDebugBtn.textContent = 'Disable Debug';
@@ -677,7 +677,7 @@
                 this.vibrateEnabled = !this.vibrateEnabled;
                 
                 // Set mouse polyfill vibration state
-                mousePolyfill.setVibrate(this.vibrateEnabled);
+                mousePolyfill.vibrate = this.vibrateEnabled;
                 
                 if (this.vibrateEnabled) {
                     this.toggleVibrateBtn.textContent = 'Disable Vibration';
