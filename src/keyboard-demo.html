@@ -182,8 +182,6 @@
     <script type="module">
         // Import prefab-virtual-keyboard custom element
         import './prefab-virtual-keyboard.js';
-        
-        console.log('Prefab virtual keyboard element loaded');
 
         // Keyboard event logging system
         class KeyboardEventLogger {
@@ -405,81 +403,7 @@
             }
         }
 
-        // Test virtual keyboard modifier key auto-release functionality
-        class ModifierKeyTest {
-            constructor() {
-                this.testResults = [];
-                this.initializeTestListeners();
-            }
 
-            initializeTestListeners() {
-                // Listen to all keyboard events to test modifier key states (auto-release detection)
-                window.addEventListener('keydown', (event) => {
-                    this.logModifierState('keydown', event);
-                });
-
-                window.addEventListener('keyup', (event) => {
-                    this.logModifierState('keyup', event);
-                    // Test if modifier keys auto-release when non-modifier key released
-                    if (!this.isModifierKey(event.code)) {
-                        setTimeout(() => {
-                            this.checkModifierKeysReleased();
-                        }, 50);
-                    }
-                });
-            }
-
-            isModifierKey(code) {
-                return code.startsWith('Shift') || 
-                       code.startsWith('Control') || 
-                       code.startsWith('Alt') || 
-                       code.startsWith('Meta') || 
-                       code === 'CapsLock' ||
-                       code === 'NumLock';
-            }
-
-            logModifierState(eventType, event) {
-                const modifiers = {
-                    shift: event.shiftKey,
-                    ctrl: event.ctrlKey,
-                    alt: event.altKey,
-                    meta: event.metaKey
-                };
-                
-                const activeModifiers = Object.entries(modifiers)
-                    .filter(([_, value]) => value)
-                    .map(([key, _]) => key.toUpperCase())
-                    .join('+');
-                
-                if (activeModifiers) {
-                    console.log(`[${eventType}] ${event.code} - Active modifiers: ${activeModifiers}`);
-                } else {
-                    console.log(`[${eventType}] ${event.code} - No active modifiers`);
-                }
-            }
-
-            checkModifierKeysReleased() {
-                // Check if any modifier keys still pressed
-                const keyboard = document.getElementById('qwertz-keyboard');
-                if (keyboard && keyboard.tagName.toLowerCase() === 'prefab-virtual-keyboard') {
-                    const virtualKeyboard = keyboard.shadowRoot?.querySelector('virtual-keyboard');
-                    if (virtualKeyboard) {
-                        const activeKeys = virtualKeyboard.keyDownList || [];
-                        const stillPressedModifiers = activeKeys.filter(key => {
-                            const code = key.getAttribute('code');
-                            return this.isModifierKey(code) && code !== 'CapsLock' && code !== 'NumLock';
-                        });
-                        
-                        if (stillPressedModifiers.length === 0) {
-                            console.log('✅ Modifier key auto-release function normal: all modifier keys released');
-                        } else {
-                            const modifierCodes = stillPressedModifiers.map(key => key.getAttribute('code'));
-                            console.log('⚠️  Modifier keys still not released:', modifierCodes.join(', '));
-                        }
-                    }
-                }
-            }
-        }
 
 
 
@@ -487,10 +411,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             const logger = new KeyboardEventLogger();
             const inputManager = new InputActivationManager();
-            const modifierTest = new ModifierKeyTest();
             console.log('Keyboard event log system started');
             console.log('Input activation manager started');
-            console.log('Modifier key auto-release detection system started');
             
             // Add welcome log
             setTimeout(() => {
@@ -503,6 +425,13 @@
                 });
             }, 100);
         });
+    </script>
+    <script defer>
+
+      if (navigator.userAgent.toLowerCase().includes('mobile')) {
+        const kb = document.querySelector('prefab-virtual-keyboard');
+        if (kb) kb.style.width = '100vw';
+      }
     </script>
 </body>
 </html>

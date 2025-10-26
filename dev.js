@@ -2,6 +2,8 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import http from 'http';
+import url from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,84 +61,50 @@ function hasTypeScriptFilesChanged() {
   }
 }
 
-// Get all files from src directory
-function getAllSrcFiles() {
-  const files = [];
-  
-  function traverseDir(dir, basePath = '') {
-    const items = fs.readdirSync(dir);
-    
-    items.forEach(item => {
-      const fullPath = path.join(dir, item);
-      const relativePath = path.join(basePath, item);
-      const stat = fs.statSync(fullPath);
-      
-      if (stat.isDirectory()) {
-        traverseDir(fullPath, relativePath);
-      } else {
-        files.push(relativePath);
-      }
-    });
-  }
-  
-  traverseDir(SRC_DIR);
-  return files;
-}
-
-// Copy a single static file with path fixing
-function copyStaticFile(srcFile) {
-  const srcPath = path.join(SRC_DIR, srcFile);
-  const destPath = path.join(DIST_DIR, srcFile);
-  
-  // Create destination directory if it doesn't exist
-  const destDir = path.dirname(destPath);
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
-  
-  // Special handling for HTML files, fix relative paths
-  if (srcFile.endsWith('.html')) {
-    let content = fs.readFileSync(srcPath, 'utf8');
-    // Since root directory changed to project root, need to adjust path references
-    // Change paths relative to src directory to paths relative to project root
-    content = content.replace(/from\s+['"]\.\/virtual-key\.js['"]/g, 'from \'./virtual-key.js\'');
-    content = content.replace(/from\s+['"]\.\/virtual-keyboard\.js['"]/g, 'from \'./virtual-keyboard.js\'');
-    content = content.replace(/from\s+['"]\.\/prefab-virtual-keyboard\.js['"]/g, 'from \'./prefab-virtual-keyboard.js\'');
-    content = content.replace(/import\s+['"]\.\/prefab-virtual-keyboard\.js['"]/g, 'import \'./prefab-virtual-keyboard.js\'');
-    // Fix paths in attributes
-    content = content.replace(/keyboardcsssrc="\.\.\//g, 'keyboardcsssrc="./');
-    content = content.replace(/keyboardhtmlsrc="\.\.\//g, 'keyboardhtmlsrc="./');
-    content = content.replace(/virtualkeyscriptsrc="\.\.\//g, 'virtualkeyscriptsrc="./');
-    content = content.replace(/virtualkeyboardscriptsrc="\.\.\//g, 'virtualkeyboardscriptsrc="./');
-    fs.writeFileSync(destPath, content);
-    log(`  ✅ Copied and fixed paths ${srcFile} -> ${destPath}`, 'green');
-  } else {
-    fs.copyFileSync(srcPath, destPath);
-    log(`  ✅ Copied ${srcFile} -> ${destPath}`, 'green');
-  }
-}
-
-// Copy all static files (for initial build)
+// Copy all static files (HTML, CSS) without modification
 function copyStaticFiles() {
   log('Copying static files...', 'yellow');
   
-  const allFiles = getAllSrcFiles();
-  const staticFiles = allFiles.filter(file => 
-    !file.endsWith('.ts') && 
-    !file.endsWith('.js') && 
-    file !== 'typescript.svg' // Skip TypeScript logo
-  );
+  // Create dist directory if it doesn't exist
+  if (!fs.existsSync(DIST_DIR)) {
+    fs.mkdirSync(DIST_DIR, { recursive: true });
+  }
   
-  staticFiles.forEach(file => {
-    if (fs.existsSync(path.join(SRC_DIR, file))) {
-      copyStaticFile(file);
-    } else {
-      log(`  ⚠️  File not found: ${file}`, 'yellow');
+  // Copy HTML files
+  const htmlFiles = ['keyboard-demo.html', 'mouse-demo.html', 'error-test.html'];
+  htmlFiles.forEach(file => {
+    const srcPath = path.join(SRC_DIR, file);
+    const destPath = path.join(DIST_DIR, file);
+    
+    if (fs.existsSync(srcPath)) {
+      // Copy without modification - keep original paths
+      fs.copyFileSync(srcPath, destPath);
+      log(`  ✅ Copied ${file} -> dist/${file}`, 'green');
     }
   });
+  
+  // Copy CSS files
+  const cssFiles = ['qwerty-104-key-keyboard.css'];
+  cssFiles.forEach(file => {
+    const srcPath = path.join(SRC_DIR, file);
+    const destPath = path.join(DIST_DIR, file);
+    
+    if (fs.existsSync(srcPath)) {
+      fs.copyFileSync(srcPath, destPath);
+      log(`  ✅ Copied ${file} -> dist/${file}`, 'green');
+    }
+  });
+  
+  // Copy keyboard HTML template
+  const keyboardHtmlPath = path.join(SRC_DIR, 'qwerty-104-key-keyboard.html');
+  const destKeyboardHtmlPath = path.join(DIST_DIR, 'qwerty-104-key-keyboard.html');
+  if (fs.existsSync(keyboardHtmlPath)) {
+    fs.copyFileSync(keyboardHtmlPath, destKeyboardHtmlPath);
+    log(`  ✅ Copied qwerty-104-key-keyboard.html -> dist/qwerty-104-key-keyboard.html`, 'green');
+  }
 }
 
-// Build project
+// Build project (TypeScript compilation)
 function buildProject() {
   return new Promise((resolve, reject) => {
     log('Starting build project...', 'yellow');
@@ -175,31 +143,147 @@ function buildProject() {
   });
 }
 
-// Start HTTP server (using Node.js http-server)
+// Start HTTP server with proper routing
 function startServer() {
   log(`Starting HTTP server on port: ${PORT}`, 'yellow');
   
-  const server = spawn('npx', ['http-server', '.', '-p', PORT.toString(), '-c-1'], { 
-    stdio: 'pipe',
-    shell: true,
-    cwd: process.cwd() // Set to project root directory
-  });
-  
-  server.stdout.on('data', (data) => {
-    const output = data.toString().trim();
-    if (output.includes('Starting up http-server')) {
-      log(`HTTP server started: http://localhost:${PORT}`, 'green');
-    } else if (output.includes('GET')) {
-      log(`HTTP request: ${output}`, 'blue');
+  // Create a simple HTTP server that serves from both root and dist
+  const server = http.createServer((req, res) => {
+    const parsedUrl = url.parse(req.url);
+    let pathname = parsedUrl.pathname;
+    
+    // Remove leading slash
+    pathname = pathname.substring(1);
+    
+    // Default to directory listing if root is requested
+    if (pathname === '') {
+      pathname = '.';
+    } else if (pathname === 'dist') {
+      pathname = 'dist/keyboard-demo.html';
+    }
+    
+    // Handle requests for dist files
+    if (pathname.startsWith('dist/')) {
+      const filePath = path.join(__dirname, pathname);
+      
+      if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        let contentType = 'text/plain';
+        
+        switch (ext) {
+          case '.html':
+            contentType = 'text/html';
+            break;
+          case '.css':
+            contentType = 'text/css';
+            break;
+          case '.js':
+            contentType = 'application/javascript';
+            break;
+          case '.json':
+            contentType = 'application/json';
+            break;
+        }
+        
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(fs.readFileSync(filePath));
+      } else {
+        // Try to serve .js files without extension
+        const jsFilePath = filePath + '.js';
+        if (fs.existsSync(jsFilePath)) {
+          res.writeHead(200, { 'Content-Type': 'application/javascript' });
+          res.end(fs.readFileSync(jsFilePath));
+        } else {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          res.end('File not found');
+        }
+      }
+    } else {
+      // Handle requests for root directory files - enable full root access
+      const filePath = path.join(__dirname, pathname);
+      
+      if (fs.existsSync(filePath)) {
+        // Serve the requested file from root directory
+        const stat = fs.statSync(filePath);
+        
+        if (stat.isDirectory()) {
+          // For directories, list contents or serve index.html if exists
+          const indexPath = path.join(filePath, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(fs.readFileSync(indexPath));
+          } else {
+            // List directory contents
+            const files = fs.readdirSync(filePath);
+            const fileList = files.map(file => {
+              const fileStat = fs.statSync(path.join(filePath, file));
+              const isDir = fileStat.isDirectory() ? '/' : '';
+              return `<li><a href="${pathname}/${file}${isDir}">${file}${isDir}</a></li>`;
+            }).join('');
+            
+            const html = `
+              <!DOCTYPE html>
+              <html>
+              <head><title>Directory: ${pathname}</title></head>
+              <body>
+                <h1>Directory: ${pathname}</h1>
+                <ul>${fileList}</ul>
+                <p><a href="/">← Back to root</a></p>
+              </body>
+              </html>
+            `;
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(html);
+          }
+        } else {
+          // Serve file with proper content type
+          const ext = path.extname(filePath).toLowerCase();
+          let contentType = 'text/plain';
+          
+          switch (ext) {
+            case '.js':
+              contentType = 'application/javascript';
+              break;
+            case '.css':
+              contentType = 'text/css';
+              break;
+            case '.html':
+              contentType = 'text/html';
+              break;
+            case '.json':
+              contentType = 'application/json';
+              break;
+            case '.svg':
+              contentType = 'image/svg+xml';
+              break;
+            case '.png':
+              contentType = 'image/png';
+              break;
+            case '.jpg':
+            case '.jpeg':
+              contentType = 'image/jpeg';
+              break;
+            case '.gif':
+              contentType = 'image/gif';
+              break;
+            case '.ico':
+              contentType = 'image/x-icon';
+              break;
+          }
+          
+          res.writeHead(200, { 'Content-Type': contentType });
+          res.end(fs.readFileSync(filePath));
+        }
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('File not found');
+      }
     }
   });
   
-  server.stderr.on('data', (data) => {
-    log(`Server error: ${data.toString().trim()}`, 'red');
-  });
-  
-  server.on('close', (code) => {
-    log(`HTTP server stopped, exit code: ${code}`, 'yellow');
+  server.listen(PORT, () => {
+    log(`HTTP server started: http://localhost:${PORT}`, 'green');
+    log(`Visit http://localhost:${PORT}/dist/keyboard-demo.html to view the keyboard demo`, 'blue');
   });
   
   return server;
@@ -241,11 +325,17 @@ async function main() {
           log('TypeScript file changed, rebuilding project...', 'yellow');
           await buildProject();
           log('Rebuild completed', 'green');
-        } else if (!filename.endsWith('.js') && filename !== 'typescript.svg') {
-          // Static file changed (HTML, CSS, etc.), copy only this file
+        } else if (filename.endsWith('.html') || filename.endsWith('.css')) {
+          // Static file changed (HTML, CSS), copy only this file
           log(`Static file changed, copying: ${filename}`, 'yellow');
-          copyStaticFile(filename);
-          log('Static file copy completed', 'green');
+          
+          const srcPath = path.join(SRC_DIR, filename);
+          const destPath = path.join(DIST_DIR, filename);
+          
+          if (fs.existsSync(srcPath)) {
+            fs.copyFileSync(srcPath, destPath);
+            log(`  ✅ Copied ${filename} -> dist/${filename}`, 'green');
+          }
         }
       } catch (error) {
         log(`File processing failed: ${error.message}`, 'red');
@@ -253,19 +343,18 @@ async function main() {
     });
     
     log('Development server started successfully!', 'green');
-    log(`Visit http://localhost:${PORT} to view demo`, 'blue');
     log('Press Ctrl+C to stop server', 'yellow');
     
     // Graceful shutdown
     process.on('SIGINT', () => {
       log('Shutting down development environment...', 'yellow');
-      server.kill('SIGINT');
+      server.close();
       process.exit(0);
     });
     
     process.on('SIGTERM', () => {
       log('Shutting down development environment...', 'yellow');
-      server.kill('SIGTERM');
+      server.close();
       process.exit(0);
     });
     
@@ -276,4 +365,7 @@ async function main() {
 }
 
 // Run main function
-main();
+main().catch(error => {
+  log(`Fatal error: ${error.message}`, 'red');
+  process.exit(1);
+});

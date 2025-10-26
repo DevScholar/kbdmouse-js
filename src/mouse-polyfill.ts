@@ -3,6 +3,17 @@
  * Converts touch events to mouse events for specific elements
  */
 
+// Debug configuration for console logging
+interface DebugConfig {
+  enabled: boolean;
+  showConsole: boolean;
+}
+
+const debug: DebugConfig = {
+  enabled: false,
+  showConsole: true
+};
+
 interface TouchState {
   startTime: number;
   startX: number;
@@ -45,27 +56,23 @@ class MousePolyfill {
   private _vibrateEnabled: boolean = true;
 
   private log(message: string, ...args: any[]): void {
-    if (!this._debugEnabled) return;
-    const now = new Date();
-    const timeString = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
-    console.log(`[${timeString}] ${message}`, ...args);
+    if (!this._debugEnabled || !debug.showConsole) return;
+    console.log(`[MousePolyfill] ${message}`, ...args);
   }
+
+  // Static method to control console output
+  static setConsoleOutput(enabled: boolean): void {
+    debug.showConsole = enabled;
+  }
+
   private lastGlobalClickTime: number = 0;
   private lastGlobalClickPosition: { x: number; y: number } = { x: 0, y: 0 };
   private lastClickInfo: { time: number; x: number; y: number } | null = null;
 
-  // Debug setter property
-  set debug(value: boolean) {
-    this._debugEnabled = value;
-    this.log('Debug mode', value ? 'enabled' : 'disabled');
-  }
-
-  get debug(): boolean {
-    return this._debugEnabled;
-  }
-
   constructor() {
     this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    // Expose static method to global scope for demo page
+    (window as any).MousePolyfill = MousePolyfill;
   }
 
 
@@ -166,7 +173,12 @@ class MousePolyfill {
     // Remove from polyfill elements map
     this.polyfillElements.delete(element);
     
-    this.log(`Removed polyfill from element`, element);
+    if (this._debugEnabled && debug.showConsole) {
+      console.log(`[MousePolyfill] Removed polyfill from element`, { 
+        tagName: element.tagName, 
+        id: element.id || element.className 
+      });
+    }
   }
 
   /**
@@ -202,7 +214,7 @@ class MousePolyfill {
       return;
     }
 
-    // Set vibration timer
+    // Set vibration timer - Remove detailed vibration timer logs
     touchState.timers.vibrateTimer = window.setTimeout(() => {
       this.checkAndTriggerVibration(touchId);
     }, this.VIBRATE_THRESHOLD_TIME);
@@ -224,9 +236,15 @@ class MousePolyfill {
       try {
         navigator.vibrate(this.VIBRATE_DURATION);
         touchState.hasVibrated = true;
-        this.log(`[${touchId}] Vibration triggered (${this.VIBRATE_DURATION}ms)`);
+        // Simplify vibration logs - Only output once in debug mode
+        if (this._debugEnabled) {
+          console.log(`[Vibration] Touch ${touchId}: triggered ${this.VIBRATE_DURATION}ms`);
+        }
       } catch (error) {
-        this.log(`[${touchId}] Vibration failed:`, error);
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        if (this._debugEnabled && debug.showConsole) {
+          console.error(`[MousePolyfill] Vibration error for touch ${touchId}:`, errorObj.message);
+        }
       }
     }
 
@@ -721,28 +739,29 @@ class MousePolyfill {
         if (touchState.timers.vibrateTimer) {
           clearTimeout(touchState.timers.vibrateTimer);
           touchState.timers.vibrateTimer = undefined;
-          this.log(`[${touchId}] Vibration cancelled due to movement`);
+          if (debug.enabled) {
+      console.log(`[${touchId}] Vibration cancelled due to movement`);
+    }
         }
         
         // Determine mode based on time and current state
           if (touchState.currentMode === 'pending') {
             const elapsedTime = Date.now() - touchState.startTime;
             
-            console.log(`[${touchId}] Movement detected at ${elapsedTime}ms, distance: ${distance}px`);
+            if (debug.enabled) {
+      console.log(`[${touchId}] Movement detected`, { elapsedTime, distance });
+    }
             
             if (elapsedTime <= this.DRAG_THRESHOLD_TIME) {
               // ≤400ms: normal move mode
-              console.log(`[${touchId}] Normal move mode (≤400ms)`);
               touchState.currentMode = 'move';
               this.clearTouchTimers(touchState);
             } else if (elapsedTime <= this.RIGHT_CLICK_THRESHOLD_TIME) {
               // 400-800ms: drag mode
-              console.log(`[${touchId}] Drag mode (400-800ms)`);
               this.startDragMode(touchState, touch);
               this.clearTouchTimers(touchState); // Clear remaining timers
             } else {
               // >800ms: should not happen because right-click timer should have triggered
-              console.log(`[${touchId}] Late move mode (>800ms)`);
               touchState.currentMode = 'move';
               this.clearTouchTimers(touchState);
             }
@@ -835,7 +854,9 @@ class MousePolyfill {
       if (touchState.timers.vibrateTimer) {
         clearTimeout(touchState.timers.vibrateTimer);
         touchState.timers.vibrateTimer = undefined;
-        this.log(`[${touchId}] Vibration timer cancelled due to touch end`);
+        if (debug.enabled) {
+      console.log(`[${touchId}] Vibration timer cancelled due to touch end`);
+    }
       }
 
       // Handle end events based on mode
@@ -996,7 +1017,9 @@ class MousePolyfill {
         // Clear timers and state (if composing, don't clear state)
         this.clearTouchTimers(touchState);
         this.touchStates.delete(touchId);
-        this.log(`[${touchId}] Touch cancelled, vibration timer cleaned up`);
+        if (debug.enabled) {
+      console.log(`[${touchId}] Touch cancelled, vibration timer cleaned up`);
+    }
       }
       
       // Trigger mouseup event as cleanup

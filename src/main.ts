@@ -2,8 +2,7 @@ import './virtual-keyboard.js';
 import './virtual-key.js';
 import './prefab-virtual-keyboard.js';
 
-// Initialize logging system
-console.log('🎹 Virtual Keyboard Demo loaded');
+
 
 // Add some convenient global functions
 declare global {
@@ -14,8 +13,6 @@ declare global {
 
 // Listen for page load completion
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ Virtual keyboard components initialized');
-  
   // Test keyboard event listeners
   document.addEventListener('keydown', (e) => {
     const source = (e as any)._polyFilldataset?.source || 'physical';
@@ -34,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const modifierStr = modifiers.length > 0 ? ` [${modifiers.join('+')}]` : '';
-    console.log(`🔽 KeyDown: ${e.code} (${e.key}) from ${source}${modifierStr}${extraInfo}`);
   });
   
   document.addEventListener('keyup', (e) => {
@@ -53,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const modifierStr = modifiers.length > 0 ? ` [${modifiers.join('+')}]` : '';
-    console.log(`🔼 KeyUp: ${e.code} (${e.key}) from ${source}${modifierStr}${extraInfo}`);
   });
 });
 

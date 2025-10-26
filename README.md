@@ -2,6 +2,8 @@
 
 **PC Input Event Emulator for Legacy Web Compatibility**
 
+⚠️ **Pre-Alpha Warning**: This project is in Pre-Alpha stage and may undergo significant API changes. Not recommended for production use.
+
 ⚠️ **Specialized Tool**: This is NOT a general-purpose virtual keyboard library. It's specifically designed for emulator applications and legacy web compatibility scenarios.
 
 ## Purpose

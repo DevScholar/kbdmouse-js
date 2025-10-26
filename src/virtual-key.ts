@@ -1,5 +1,16 @@
 import { VirtualKeyboard } from "./virtual-keyboard";
 
+// Debug configuration for console logging
+interface DebugConfig {
+  enabled: boolean;
+  showConsole: boolean;
+}
+
+const debug: DebugConfig = {
+  enabled: false,
+  showConsole: true
+};
+
 export class VirtualKey extends HTMLElement {
   private mousedownHandler: (e: Event) => void;
   private mouseupHandler: (e: Event) => void;
@@ -122,7 +133,11 @@ export class VirtualKey extends HTMLElement {
         return el as VirtualKeyboard;
       }
     }
-    throw new Error('<virtual-keyboard> ancestor element not found');
+    const error = new Error('<virtual-keyboard> ancestor element not found');
+    if (debug.showConsole) {
+      console.error(`[VirtualKey] Virtual key must be placed inside a virtual-keyboard element:`, error.message);
+    }
+    throw error;
   }
 
   private render() {

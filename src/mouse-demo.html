@@ -308,19 +308,15 @@
                 // Create mouse polyfill instance
                 this.mousePolyfill = new MousePolyfill();
                 
-                this.logEntries = [];
-                this.maxLogEntries = 100;
                 this.polyfillEnabled = false;
                 this.debugEnabled = false;
                 this.vibrateEnabled = true;
-                this.eventFilter = new Set();
                 this.draggedElement = null;
                 this.dragOffset = { x: 0, y: 0 };
                 this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
                 
                 this.initializeElements();
                 this.setupEventListeners();
-                this.updateEventFilter();
                 this.updatePolyfillButtonState();
                 this.updateDebugButtonState();
                 this.updateVibrateButtonState();
@@ -328,12 +324,7 @@
             
             initializeElements() {
                 this.demoArea = document.getElementById('demoArea');
-                this.logContent = document.getElementById('logContent');
-                this.logCount = document.getElementById('logCount');
-                this.eventFilterInput = document.getElementById('eventFilter');
-                this.resetFilterBtn = document.getElementById('resetFilter');
                 this.togglePolyfillBtn = document.getElementById('togglePolyfill');
-                this.clearLogBtn = document.getElementById('clearLog');
                 this.addDraggableBtn = document.getElementById('addDraggable');
                 this.clearDraggablesBtn = document.getElementById('clearDraggables');
                 this.testVibrationBtn = document.getElementById('testVibration');
@@ -343,7 +334,6 @@
                 this.menuAddDraggable = document.getElementById('menuAddDraggable');
                 this.menuClearDraggables = document.getElementById('menuClearDraggables');
                 this.menuTogglePolyfill = document.getElementById('menuTogglePolyfill');
-                this.menuClearLog = document.getElementById('menuClearLog');
                 this.menuResetDemo = document.getElementById('menuResetDemo');
                 this.debugStatus = document.getElementById('debugStatus');
                 this.toggleDebugBtn = document.getElementById('toggleDebug');
@@ -371,9 +361,7 @@
                 this.demoArea.addEventListener('touchcancel', this.handleTouchCancel.bind(this));
                 
                 // Control buttons
-                this.resetFilterBtn.addEventListener('click', this.resetEventFilter.bind(this));
                 this.togglePolyfillBtn.addEventListener('click', this.togglePolyfill.bind(this));
-                this.clearLogBtn.addEventListener('click', this.clearLog.bind(this));
                 this.addDraggableBtn.addEventListener('click', this.addDraggable.bind(this));
                 this.clearDraggablesBtn.addEventListener('click', this.clearDraggables.bind(this));
                 this.toggleDebugBtn.addEventListener('click', this.toggleDebug.bind(this));
@@ -381,10 +369,6 @@
                 
                 // Test controls
                 this.testVibrationBtn.addEventListener('click', this.testVibration.bind(this));
-        
-                
-                // Event filter input
-                this.eventFilterInput.addEventListener('input', this.updateEventFilter.bind(this));
                 
                 // Context menu events
                 document.addEventListener('click', this.hideContextMenu.bind(this));
@@ -397,75 +381,64 @@
             
             // Mouse event handlers
             handleMouseDown(event) {
-                this.logEvent('mousedown', event);
-                
                 if (event.target.classList.contains('draggable')) {
                     this.startDrag(event.target, event.clientX, event.clientY);
                 }
             }
             
             handleMouseMove(event) {
-                this.logEvent('mousemove', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleMouseUp(event) {
-                this.logEvent('mouseup', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleMouseEnter(event) {
-                this.logEvent('mouseenter', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleMouseLeave(event) {
-                this.logEvent('mouseleave', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleMouseOver(event) {
-                this.logEvent('mouseover', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleMouseOut(event) {
-                this.logEvent('mouseout', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleClick(event) {
-                this.logEvent('click', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleDoubleClick(event) {
-                this.logEvent('dblclick', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleContextMenu(event) {
                 event.preventDefault();
-                this.logEvent('contextmenu', event);
-                
-                console.log('ContextMenu event received:', {
-                    clientX: event.clientX,
-                    clientY: event.clientY,
-                    isTrusted: event.isTrusted,
-                    isPolyfill: event.isPolyfill
-                });
-                
                 // Show custom context menu
                 this.showContextMenu(event.clientX, event.clientY);
             }
             
             // Touch event handlers
             handleTouchStart(event) {
-                this.logEvent('touchstart', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleTouchMove(event) {
-                this.logEvent('touchmove', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleTouchEnd(event) {
-                this.logEvent('touchend', event);
+                // Removed logging - demo page is the debugger
             }
             
             handleTouchCancel(event) {
-                this.logEvent('touchcancel', event);
+                // Removed logging - demo page is the debugger
             }
             
             // Global mouse handlers for dragging
@@ -489,8 +462,6 @@
                 const rect = this.draggedElement.getBoundingClientRect();
                 this.dragOffset.x = clientX - rect.left;
                 this.dragOffset.y = clientY - rect.top;
-                
-                this.logEvent('drag-start', { element: element.textContent });
             }
             
             updateDrag(clientX, clientY) {
@@ -511,7 +482,6 @@
             endDrag() {
                 if (this.draggedElement) {
                     this.draggedElement.classList.remove('dragging');
-                    this.logEvent('drag-end', { element: this.draggedElement.textContent });
                     this.draggedElement = null;
                 }
             }
@@ -625,8 +595,6 @@
                     this.polyfillStatus.textContent = 'DISABLED';
                     this.polyfillStatus.className = 'status disabled';
                 }
-                
-                this.logEvent('polyfill-toggle', { enabled: this.polyfillEnabled });
             }
             
             // Update polyfill button state
@@ -658,8 +626,6 @@
                     this.debugStatus.textContent = 'DISABLED';
                     this.debugStatus.className = 'status disabled';
                 }
-                
-                this.logEvent('debug-toggle', { enabled: this.debugEnabled });
             }
             
             // Update debug button state
@@ -785,14 +751,11 @@
                     try {
                         navigator.vibrate(200);
                         this.logEvent('vibration-test', { duration: 200, success: true });
-                        console.log('Vibration test: 200ms');
                     } catch (error) {
                         this.logEvent('vibration-test', { error: error.message, success: false });
-                        console.log('Vibration test failed:', error);
                     }
                 } else {
                     this.logEvent('vibration-test', { error: 'Vibration not supported', success: false });
-                    console.log('Vibration not supported');
                 }
             }
         }

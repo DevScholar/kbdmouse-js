@@ -2,6 +2,17 @@
  * HTML Transporter - PrefabVirtualKeyboard with auto-scaling functionality
  * Can calculate natural size and CSS-specified size, using scaleX and scaleY for automatic scaling
  */
+// Debug configuration for console logging
+interface DebugConfig {
+  enabled: boolean;
+  showConsole: boolean;
+}
+
+const debug: DebugConfig = {
+  enabled: false,
+  showConsole: true
+};
+
 export class PrefabVirtualKeyboard extends HTMLElement {
   private isContentLoaded = false;
   private isLoading = false;
@@ -35,8 +46,6 @@ export class PrefabVirtualKeyboard extends HTMLElement {
   }
 
   connectedCallback() {
-    console.log('PrefabVirtualKeyboard: Element connected to DOM');
-    
     // Initialize shadow DOM when element is connected
     this.initializeShadowDom();
     
@@ -170,11 +179,16 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       this.applyScaling();
 
     } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      if (debug.showConsole) {
+        console.error(`[PrefabVirtualKeyboard] Failed to load virtual keyboard content:`, errorObj.message);
+      }
+      
       const container = this.getContainer();
       if (container) {
-        container.innerHTML = `<div style="color: red;">Load failed: ${error}</div>`;
+        container.innerHTML = `<div style="color: red;">Load failed: ${errorObj.message}</div>`;
       } else {
-        this.innerHTML = `<div style="color: red;">Load failed: ${error}</div>`;
+        this.innerHTML = `<div style="color: red;">Load failed: ${errorObj.message}</div>`;
       }
       this.isLoading = false;
     }
@@ -272,15 +286,24 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     const keyboardElement = container.querySelector('virtual-keyboard') as HTMLElement;
     if (!keyboardElement) return;
 
-    // Get dimensions in natural state
-    const rect = keyboardElement.getBoundingClientRect();
-    this.naturalWidth = rect.width;
-    this.naturalHeight = rect.height;
+    try {
+      // Get dimensions in natural state
+      const rect = keyboardElement.getBoundingClientRect();
+      this.naturalWidth = rect.width;
+      this.naturalHeight = rect.height;
 
-    console.log('PrefabVirtualKeyboard: Natural size calculation completed', {
-      naturalWidth: this.naturalWidth,
-      naturalHeight: this.naturalHeight
-    });
+      if (debug.enabled) {
+        console.log('keyboard-size-calculated', {
+          naturalWidth: this.naturalWidth,
+          naturalHeight: this.naturalHeight
+        });
+      }
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      if (debug.showConsole) {
+        console.error('Failed to calculate keyboard size.', errorObj);
+      }
+    }
   }
 
   private setupResizeObserver() {

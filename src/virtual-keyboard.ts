@@ -1,10 +1,34 @@
 import { VirtualKey } from './virtual-key.js';
 
+// Debug configuration for console logging
+interface DebugConfig {
+  enabled: boolean;
+  showConsole: boolean;
+}
+
+const debug: DebugConfig = {
+  enabled: false,
+  showConsole: true
+};
+
 export class VirtualKeyboard extends HTMLElement {
   // Configuration options
   private config = {
     debug: false
   };
+
+  constructor() {
+    super();
+    // Initialize debug mode from attribute if present
+    if (this.hasAttribute('debug')) {
+      const debugValue = this.getAttribute('debug');
+      this.config.debug = debugValue !== 'false';
+      debug.enabled = this.config.debug;
+    }
+    this.initializeFocusManagement();
+    // Initialize NumLock to be OFF by default (like real keyboards)
+    this.initializeNumLockState();
+  }
 
   // Static property to observe attributes
   static get observedAttributes(): string[] {
@@ -13,11 +37,26 @@ export class VirtualKeyboard extends HTMLElement {
 
   // Sub-object categories for better organization
   
-  // Debug logging method
+  // Debug logging method - simple console output
   private log(message: string, ...args: any[]): void {
-    if (this.config.debug) {
+    if (this.config.debug && debug.showConsole) {
       console.log(`[VirtualKeyboard] ${message}`, ...args);
     }
+  }
+
+  // Static method to control console output
+  static setConsoleOutput(enabled: boolean): void {
+    debug.showConsole = enabled;
+  }
+
+  // Make setConsoleOutput available globally
+  connectedCallback() {
+    // Expose static method to global scope for demo page
+    (window as any).VirtualKeyboard = VirtualKeyboard;
+    
+    // Call original connectedCallback
+    this.render();
+    this.setupFocusListeners();
   }
 
   visual = {
@@ -305,7 +344,10 @@ export class VirtualKeyboard extends HTMLElement {
         return;
       }
 
-      this.log('Key repeat started for:', virtualKey.getAttribute('code'));
+      // Log key repeat start at debug level
+      if (this.config.debug && debug.showConsole) {
+        console.log(`[VirtualKeyboard] Key repeat started for: ${virtualKey.getAttribute('code')}`);
+      }
 
       // Stop any existing repeat
       this.state.stopRepeat();
@@ -336,7 +378,10 @@ export class VirtualKeyboard extends HTMLElement {
         this.state.repeatTimer = null;
       }
       if (this.state.repeatKey) {
-        this.log('Key repeat stopped for:', this.state.repeatKey.getAttribute('code'));
+        // Log key repeat stop at debug level
+        if (this.config.debug && debug.showConsole) {
+          console.log(`[VirtualKeyboard] Key repeat stopped for: ${this.state.repeatKey.getAttribute('code')}`);
+        }
       }
       this.state.isRepeating = false;
       this.state.repeatKey = null;
@@ -647,22 +692,12 @@ export class VirtualKeyboard extends HTMLElement {
     }
   };
 
-  constructor() {
-    super();
-    // Initialize debug mode from attribute if present
-    if (this.hasAttribute('debug')) {
-      const debugValue = this.getAttribute('debug');
-      this.config.debug = debugValue !== 'false';
-    }
-    this.initializeFocusManagement();
-    // Initialize NumLock to be OFF by default (like real keyboards)
-    this.initializeNumLockState();
-  }
-
   // Public API: Enable or disable debug logging
   public setDebug(enabled: boolean): void {
     this.config.debug = enabled;
-    this.log(`Debug logging ${enabled ? 'enabled' : 'disabled'}`);
+    if (debug.enabled) {
+      console.log(`Debug logging ${enabled ? 'enabled' : 'disabled'}`);
+    }
   }
 
   // Public API: Get current debug state
@@ -675,13 +710,21 @@ export class VirtualKeyboard extends HTMLElement {
     if (name === 'debug') {
       const enabled = newValue !== null && newValue !== 'false';
       this.setDebug(enabled);
+    } else if (name === 'log-level') {
+      const levelMap: { [key: string]: string } = {
+        'error': 'error',
+        'warn': 'warn',
+        'info': 'info',
+        'debug': 'debug'
+      };
+      const level = levelMap[newValue || 'info'] || 'info';
+      if (debug.enabled) {
+        console.log(`Log level set to: ${level}`);
+      }
     }
   }
 
-  connectedCallback() {
-    this.render();
-    this.setupFocusListeners();
-  }
+
 
   disconnectedCallback() {
     // Clean up key repeat timers when keyboard is removed from DOM
@@ -711,17 +754,24 @@ export class VirtualKeyboard extends HTMLElement {
     document.addEventListener('focus', (event) => {
       const target = event.target as HTMLElement;
       if (this.isEditableElement(target)) {
-        this.editing.activeEditingElement = target;
-        this.log('Focus set to', target.tagName, target.id || target.className);
+        this.editing.activeElement = target;
+        if (debug.enabled) {
+          console.log('Focus set to', { 
+            tagName: target.tagName, 
+            id: target.id || target.className 
+          });
+        }
       }
     }, true);
 
     // Listen for blur events to clear active editing element
     document.addEventListener('blur', (event) => {
       const target = event.target as HTMLElement;
-      if (target === this.editing.activeEditingElement) {
-        this.editing.activeEditingElement = null;
-        this.log('Focus cleared');
+      if (target === this.editing.activeElement) {
+        this.editing.activeElement = null;
+        if (debug.enabled) {
+          console.log('Focus cleared');
+        }
       }
     }, true);
   }
@@ -734,7 +784,9 @@ export class VirtualKeyboard extends HTMLElement {
     if (numLockKey) {
       // Don't add NumLock to active keys initially, so it starts as OFF
       // The visual state will be handled by the CSS and visual effects
-      this.log('NumLock initialized to OFF (default)');
+      if (debug.enabled) {
+        console.log('NumLock initialized to OFF (default)');
+      }
     }
   }
 
@@ -745,10 +797,20 @@ export class VirtualKeyboard extends HTMLElement {
            element.isContentEditable;
   }
 
+  // Public property to// Check if current element is editable
+  public get isElementEditable(): boolean {
+    return this.editing.activeElement !== null;
+  }
+
+  // Get the current active editing element
+  public get activeElement(): HTMLElement | null {
+    return this.editing.activeElement;
+  }
+
   // Manually set the active editing element
-  public setActiveEditingElement(element: HTMLElement | null) {
+  public setActiveElement(element: HTMLElement | null) { 
     if (element === null || this.isEditableElement(element)) {
-      this.editing.activeEditingElement = element;
+      this.editing.activeElement = element;
       if (element) {
         element.focus();
       }
@@ -787,15 +849,26 @@ export class VirtualKeyboard extends HTMLElement {
 
   editing = {
     // Currently focused input element for text editing
-    activeEditingElement: null as HTMLElement | null,
+    activeElement: null as HTMLElement | null,
 
     // Insert text at current cursor position
     insertText(text: string) {
-      if (!this.activeEditingElement) return;
+      if (!this.activeElement) return;
 
-      const element = this.activeEditingElement;
+      const element = this.activeElement;
       
       if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+        // Check if the input element supports text selection
+        const supportsSelection = element instanceof HTMLTextAreaElement || 
+          (element instanceof HTMLInputElement && 
+           ['text', 'password', 'search', 'url', 'tel', 'email', 'number'].includes(element.type));
+        
+        if (!supportsSelection) {
+          // For non-text inputs (like checkboxes, radio buttons, etc.), just focus and return
+          element.focus();
+          return;
+        }
+        
         const start = element.selectionStart ?? 0;
         const end = element.selectionEnd ?? 0;
         const value = element.value;
@@ -846,11 +919,22 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Remove character before cursor (backspace functionality)
     backspace() {
-      if (!this.activeEditingElement) return;
+      if (!this.activeElement) return;
 
-      const element = this.activeEditingElement;
+      const element = this.activeElement;
       
       if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+        // Check if the input element supports text selection
+        const supportsSelection = element instanceof HTMLTextAreaElement || 
+          (element instanceof HTMLInputElement && 
+           ['text', 'password', 'search', 'url', 'tel', 'email', 'number'].includes(element.type));
+        
+        if (!supportsSelection) {
+          // For non-text inputs, just focus and return
+          element.focus();
+          return;
+        }
+        
         const start = element.selectionStart ?? 0;
         const end = element.selectionEnd ?? 0;
         
@@ -902,9 +986,9 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Remove character after cursor (delete functionality)
     delete() {
-      if (!this.activeEditingElement) return;
+      if (!this.activeElement) return;
 
-      const element = this.activeEditingElement;
+      const element = this.activeElement;
       
       if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
         const start = element.selectionStart ?? 0;
@@ -958,9 +1042,9 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Insert newline character at cursor position
     enter() {
-      if (!this.activeEditingElement) return;
+      if (!this.activeElement) return;
 
-      const element = this.activeEditingElement;
+      const element = this.activeElement;
       
       if (element instanceof HTMLInputElement) {
         // For input elements, insert newline might not be appropriate
@@ -975,7 +1059,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Move cursor position by specified steps
     moveCursor(step: number) {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return;
 
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
@@ -1001,7 +1085,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // New: Move cursor vertically (in text areas)
     moveCursorVertical(lines: number) {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return;
 
       if (el instanceof HTMLTextAreaElement) {
@@ -1040,7 +1124,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // New: move to line start
     moveCursorToLineStart() {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return;
 
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
@@ -1079,7 +1163,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // New: move to line end
     moveCursorToLineEnd() {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return;
 
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
@@ -1119,7 +1203,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // New: copy selected text to clipboard
     async copy() {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return false;
 
       try {
@@ -1143,14 +1227,17 @@ export class VirtualKeyboard extends HTMLElement {
           }
         }
       } catch (err) {
-        console.warn('Copy failed:', err);
+        const error = err instanceof Error ? err : new Error(String(err));
+        if (debug.showConsole) {
+        console.error('Copy operation failed. Please check clipboard permissions.', error);
+      }
       }
       return false;
     },
 
     // New: paste text from clipboard
     async paste() {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return false;
 
       try {
@@ -1160,14 +1247,17 @@ export class VirtualKeyboard extends HTMLElement {
           return true;
         }
       } catch (err) {
-        console.warn('Paste failed:', err);
+        const error = err instanceof Error ? err : new Error(String(err));
+        if (debug.showConsole) {
+        console.error('Paste operation failed. Please check clipboard permissions.', error);
+      }
       }
       return false;
     },
 
     // New: cut selected text to clipboard
     async cut() {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return false;
 
       const copied = await this.copy();
@@ -1203,7 +1293,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // New: select all text
     selectAll() {
-      const el = this.activeEditingElement;
+      const el = this.activeElement;
       if (!el) return false;
 
       try {
@@ -1221,7 +1311,10 @@ export class VirtualKeyboard extends HTMLElement {
         el.focus();
         return true;
       } catch (err) {
-        console.warn('Select all failed:', err);
+        const error = err instanceof Error ? err : new Error(String(err));
+        if (debug.showConsole) {
+        console.error('Select all operation failed.', error);
+      }
         return false;
       }
     }
@@ -1415,15 +1508,16 @@ export class VirtualKeyboard extends HTMLElement {
   private releaseModifierKeys() {
     const modifierCodes = ['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'];
     
-    this.log('releaseModifierKeys called');
-    this.log('Active modifiers before:', this.state.getActiveModifiers());
+    const beforeModifiers = this.state.getActiveModifiers();
+    if (debug.enabled) {
+        console.log('releaseModifierKeys called', { before: beforeModifiers });
+      }
     
     // Only release modifier keys that are currently in keydown state
+    let releasedCount = 0;
     for (const code of modifierCodes) {
       const modifierKey = this.keys.findByCode(code);
       if (modifierKey && this.state.isKeyDown(modifierKey)) {
-        this.log(`Releasing ${code} (currently in keydown state)`);
-        
         // Reset toggle state for this modifier
         this.state.setToggleState(code, false);
         
@@ -1434,26 +1528,32 @@ export class VirtualKeyboard extends HTMLElement {
         const modifierType = code.replace(/Left|Right$/, '');
         this.state.removeModifier(modifierType);
         
-        this.log(`After removing ${modifierType}, active modifiers:`, this.state.getActiveModifiers());
+        releasedCount++;
         
         // Apply visual effects
         this.visual.applyKeyUpEffect(modifierKey);
         
         // Dispatch event
         this.event.dispatchKeyUp(modifierKey);
-      } else if (modifierKey) {
-        this.log(`Skipping ${code} (not in keydown state)`);
       }
     }
     
-    this.log('Active modifiers after:', this.state.getActiveModifiers());
+    const afterModifiers = this.state.getActiveModifiers();
+    if (debug.enabled) {
+      console.log(`Released ${releasedCount} modifier keys`, { 
+        before: beforeModifiers, 
+        after: afterModifiers 
+      });
+    }
   }
 
   // Release a single modifier key
   private releaseModifierKey(virtualKey: VirtualKey) {
     const code = virtualKey.getAttribute('code') || '';
     
-    this.log('releaseModifierKey called for:', code);
+    if (debug.enabled) {
+      console.log('releaseModifierKey called for:', code);
+    }
     
     // Reset toggle state for this modifier
     this.state.setToggleState(code, false);
@@ -1478,7 +1578,9 @@ export class VirtualKeyboard extends HTMLElement {
     // Dispatch event
     this.event.dispatchKeyUp(virtualKey);
     
-    this.log('Active modifiers after single release:', this.state.getActiveModifiers());
+    if (debug.enabled) {
+      console.log('Active modifiers after single release:', this.state.getActiveModifiers());
+    }
   }
 
   // Handle text input based on key type
@@ -1487,7 +1589,7 @@ export class VirtualKeyboard extends HTMLElement {
     const key = virtualKey.getAttribute('key') || virtualKey.getAttribute('label') || '';
     
     // Skip if no active editing element
-    if (!this.editing.activeEditingElement) {
+    if (!this.activeElement) {
       return;
     }
 
@@ -1571,7 +1673,7 @@ export class VirtualKeyboard extends HTMLElement {
         // If moving to first line, move to beginning of line instead
         this.editing.moveCursorVertical(-4);
         // Check if on first line, move to line start if so, otherwise move to line end
-        const el = this.editing.activeEditingElement;
+        const el = this.editing.activeElement;
         if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
           const value = el.value;
           const start = el.selectionStart ?? 0;
@@ -1653,7 +1755,7 @@ export class VirtualKeyboard extends HTMLElement {
           // Numpad PageUp key: move up 4 lines, line start if first line (reuse main keyboard logic)
           this.editing.moveCursorVertical(-4);
           // Check if on first line, move to line start if so, otherwise move to line end
-          const el = this.editing.activeEditingElement;
+          const el = this.activeElement;
           if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
             const value = el.value;
             const start = el.selectionStart ?? 0;
