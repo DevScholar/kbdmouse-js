@@ -167,9 +167,7 @@ src/
 ```
 
 ## Browser Support
-
-- **Desktop**: Chrome 61+, Firefox 60+, Safari 10.1+, Edge 16+
-- **Mobile**: iOS Safari 10.3+, Chrome 61+, Samsung Internet 8.2+
+improve
 - **Requirements**: ES modules (`type="module"`), Custom Elements
 
 ```html
