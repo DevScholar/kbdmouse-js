@@ -301,7 +301,7 @@
 
     <script type="module">
         // Import mouse polyfill
-        import { mousePolyfill } from './mouse-polyfill.js';
+        import { MousePolyfillInstance } from './mouse-polyfill.js';
         
         class MouseDemo {
             constructor() {
@@ -612,12 +612,12 @@
                 this.polyfillEnabled = !this.polyfillEnabled;
                 
                 if (this.polyfillEnabled) {
-                    mousePolyfill.addPolyfillFor(this.demoArea);
+                    MousePolyfillInstance.addPolyfillFor(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Disable Polyfill';
                     this.polyfillStatus.textContent = 'ENABLED';
                     this.polyfillStatus.className = 'status enabled';
                 } else {
-                    mousePolyfill.removePolyfillFor(this.demoArea);
+                    MousePolyfillInstance.removePolyfillFor(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Enable Polyfill';
                     this.polyfillStatus.textContent = 'DISABLED';
                     this.polyfillStatus.className = 'status disabled';
@@ -644,7 +644,7 @@
                 this.debugEnabled = !this.debugEnabled;
                 
                 // Set mouse polyfill debug state
-                mousePolyfill.debug = this.debugEnabled;
+                MousePolyfillInstance.debug = this.debugEnabled;
                 
                 if (this.debugEnabled) {
                     this.toggleDebugBtn.textContent = 'Disable Debug';
@@ -677,7 +677,7 @@
                 this.vibrateEnabled = !this.vibrateEnabled;
                 
                 // Set mouse polyfill vibration state
-                mousePolyfill.vibrate = this.vibrateEnabled;
+                MousePolyfillInstance.vibrate = this.vibrateEnabled;
                 
                 if (this.vibrateEnabled) {
                     this.toggleVibrateBtn.textContent = 'Disable Vibration';

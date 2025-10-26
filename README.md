@@ -99,12 +99,11 @@ import { PrefabVirtualKeyboard } from './dist/prefab-virtual-keyboard.js';
 #### Mouse Demo
 ```javascript
 // Import mouse polyfill for touch devices
-import { mousePolyfill } from './mouse-polyfill.js';
+import { MousePolyfillInstance } from './mouse-polyfill.js';
 
 // Enable polyfill for specific element
-mousePolyfill.addPolyfillFor(document.getElementById('demo-area'));
-
-mousePolyfill.debug = true; // Enable debug mode
+MousePolyfillInstance.addPolyfillFor(document.getElementById('demo-area'));
+MousePolyfillInstance.debug = true; // Enable debug mode
 ```
 
 ```html
