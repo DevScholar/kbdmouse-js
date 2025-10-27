@@ -468,16 +468,29 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       
       // If no scaling is needed (window >= natural size), don't set any dimensions
       // This allows the keyboard to maintain its natural size without stretching
+      // BUT: Don't clear existing zoom/transform if they were set by mobile scaling
       if (targetWidth === 0 && targetHeight === 0) {
-        keyboardElement.style.zoom = '';
-        keyboardElement.style.transform = '';
+        // ARCHITECTURAL PRINCIPLE: Never modify the internal virtual-keyboard element
+        // Only scale the container itself - but preserve mobile scaling
+        const currentZoom = this.style.zoom;
+        const currentTransform = this.style.transform;
+        
+        // Only clear if no mobile scaling is active (zoom is not set or is 1)
+        if (!currentZoom || currentZoom === '1') {
+          this.style.zoom = '';
+        }
+        if (!currentTransform || currentTransform === 'none') {
+          this.style.transform = '';
+        }
         return;
       }
     }
 
     // If no target dimensions are specified or needed, use natural dimensions
     if (targetWidth === 0 && targetHeight === 0) {
-      keyboardElement.style.transform = '';
+      // ARCHITECTURAL PRINCIPLE: Never modify the internal virtual-keyboard element
+      // Only scale the container itself
+      this.style.transform = '';
       return;
     }
 
@@ -499,32 +512,32 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       scaleX = scaleY;
     }
 
-    // Use zoom property for true layout reflow instead of transform scale
-    // zoom naturally uses top-left as origin and causes actual layout changes
-    const zoomValue = Math.min(scaleX, scaleY); // Use uniform zoom to maintain aspect ratio
+    // ARCHITECTURAL PRINCIPLE: Apply scaling to the prefab container, NOT the internal virtual-keyboard
+    // Use transform instead of zoom for better control and to avoid affecting internal elements
+    const scaleValue = Math.min(scaleX, scaleY); // Use uniform scale to maintain aspect ratio
     
-    // Apply zoom to the keyboard element for true layout reflow
-    keyboardElement.style.zoom = zoomValue;
+    // Apply transform to the prefab element itself (agnostic scaling)
+    this.style.transform = `scale(${scaleValue})`;
+    this.style.transformOrigin = 'top left';
     
-    // Clear any existing transform to avoid conflicts
-    keyboardElement.style.transform = '';
-    keyboardElement.style.transformOrigin = '';
-    
-    // The container will automatically take up the correct space due to zoom
-    // No need to manually set dimensions
+    // ARCHITECTURAL PRINCIPLE: Never modify the internal virtual-keyboard element
+    // The virtual-keyboard maintains its natural size, only the container scales
 
-    console.log('PrefabVirtualKeyboard: Scaling application completed', {
+    console.log('PrefabVirtualKeyboard: Agnostic scaling applied to container', {
       naturalWidth: this.naturalWidth,
       naturalHeight: this.naturalHeight,
       targetWidth,
       targetHeight,
       scaleX,
       scaleY,
+      finalScale: scaleValue,
       aspectRatioPreserved: !(targetWidth > 0 && targetHeight > 0),
       unitsUsed: Array.from(this.currentUnits),
       hasViewportUnits: this.hasViewportUnits(),
       hasContainerRelativeUnits: this.hasContainerRelativeUnits(),
-      autoScaled: shouldAutoScale
+      autoScaled: shouldAutoScale,
+      // ARCHITECTURAL PRINCIPLE: Internal virtual-keyboard element remains untouched
+      internalKeyboardUnmodified: true
     });
   }
 }

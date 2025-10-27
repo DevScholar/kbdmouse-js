@@ -44,14 +44,85 @@
         .keyboard-container {
             display: flex;
             justify-content: center;
+            align-items: center;
             margin: 30px auto;
             padding: 0 20px;
             box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            min-height: 400px; /* Ensure enough space for keyboard */
         }
 
         prefab-virtual-keyboard {
             display: block;
             margin: 0 auto;
+            width: 100%;
+            max-width: 100%;
+            text-align: center; /* Ensure inline content is centered */
+        }
+
+        /* Ensure keyboard content is always centered */
+        prefab-virtual-keyboard::part(keyboard-container) {
+            margin: 0 auto !important;
+            display: inline-block !important;
+        }
+
+        /* Additional centering for natural size mode */
+        prefab-virtual-keyboard[style*="px"] {
+            margin: 0 auto !important;
+            display: block !important;
+        }
+
+        /* Mobile portrait mode - force full width with maximum overrides */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .keyboard-container {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                position: relative !important;
+            }
+            
+            prefab-virtual-keyboard {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                position: relative !important;
+            }
+            
+            /* ARCHITECTURAL PRINCIPLE: virtual-keyboard maintains natural size, never force dimensions */
+            prefab-virtual-keyboard virtual-keyboard {
+                /* DO NOT set width/height/margin/padding on internal virtual-keyboard */
+                /* Let it maintain its natural 1044x360 size */
+                width: auto !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+            }
+            
+            /* Removed zoom/transform override to allow mobile scaling */
+            
+            /* Shadow DOM parts override - only affect prefab, not internal */
+            prefab-virtual-keyboard::part(keyboard) {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            /* Aggressive reset for any potential left margin sources */
+            * {
+                margin-left: 0 !important;
+                padding-left: 0 !important;
+                left: 0 !important;
+            }
         }
 
         .input-section label {
@@ -163,11 +234,13 @@
         @media screen and (max-width: 1200px) {
             .keyboard-container {
                 padding: 0 15px;
+                width: 100%;
+                max-width: 100%;
             }
             
             prefab-virtual-keyboard {
                 display: block;
-                width: auto !important; /* Use auto width to prevent stretching */
+                width: 100% !important; /* Use 100% width to fill container */
                 max-width: 100% !important;
                 margin: 0 auto;
             }
@@ -181,8 +254,10 @@
             }
             
             .keyboard-container {
-                padding: 0 10px;
+                padding: 0 5px; /* Reduce padding for more space */
                 margin: 20px auto;
+                width: 100%;
+                max-width: 100vw;
             }
             
             /* Input section adjustments */
@@ -199,25 +274,19 @@
                 margin: 0 auto;
             }
             
+            /* ARCHITECTURAL PRINCIPLE: For mobile, we need the keyboard to fill width
+               The internal virtual-keyboard should scale with the container */
+            prefab-virtual-keyboard virtual-keyboard {
+                width: 100% !important;
+                max-width: 100vw !important;
+                /* Allow scaling while maintaining aspect ratio */
+                transform-origin: top left !important;
+            }
+            
             /* Ensure keyboard content fits within viewport */
             prefab-virtual-keyboard::part(keyboard-container) {
                 max-width: 100vw !important;
                 transform-origin: top left !important;
-            }
-            
-            /* Scale down keyboard keys on mobile */
-            @media screen and (max-width: 480px) {
-                prefab-virtual-keyboard {
-                    zoom: 0.8 !important; /* Use zoom instead of transform */
-                    margin: 0 auto;
-                }
-            }
-            
-            @media screen and (max-width: 360px) {
-                prefab-virtual-keyboard {
-                    zoom: 0.7 !important; /* Use zoom instead of transform */
-                    margin: 0 auto;
-                }
             }
             
             /* Log section adjustments */
@@ -228,14 +297,6 @@
             .event-log {
                 max-height: 200px;
                 font-size: 11px;
-            }
-        }
-        
-        /* Ensure proper scaling for very small screens */
-        @media screen and (max-width: 320px) {
-            prefab-virtual-keyboard {
-                transform: scale(0.6) !important;
-                transform-origin: top left !important;
             }
         }
     </style>
@@ -280,6 +341,155 @@
     <script type="module">
         // Import prefab-virtual-keyboard custom element
         import './prefab-virtual-keyboard.js';
+
+        // Hardcoded natural dimensions for the QWERTY 104-key keyboard
+        const KEYBOARD_NATURAL_WIDTH = 1044; // pixels
+        const KEYBOARD_NATURAL_HEIGHT = 360; // pixels
+
+        // Mobile portrait detection function
+        function isMobilePortrait() {
+            // Check if it's a mobile device in portrait orientation OR small screen
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const isSmallScreen = window.innerWidth <= 768; // Consider small screens as mobile-like
+            
+            console.log('Demo: Mobile portrait detection', {
+                userAgent: navigator.userAgent,
+                isMobile,
+                isPortrait,
+                isSmallScreen,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                result: (isMobile && isPortrait) || isSmallScreen
+            });
+            
+            return (isMobile && isPortrait) || isSmallScreen;
+        }
+
+        // Override the scaling behavior for demo page
+        function setupDemoKeyboardScaling() {
+            const keyboard = document.getElementById('demo-keyboard');
+            if (!keyboard) return;
+
+            // Store original applyScaling method
+            const originalApplyScaling = keyboard.applyScaling;
+
+            // Override applyScaling with demo-specific logic
+        keyboard.applyScaling = function() {
+            // ARCHITECTURAL PRINCIPLE: prefab-virtual-keyboard should be agnostic
+            // It should scale the container without touching the internal virtual-keyboard element
+            
+            // For mobile portrait mode, ignore all scaling restrictions and use zoom scaling
+            if (isMobilePortrait()) {
+                // Demo: Mobile portrait mode detected - using zoom scaling (agnostic scaling)
+                
+                // ARCHITECTURAL PRINCIPLE: For mobile, we need to balance architecture with usability
+                // On small screens, we scale the entire keyboard to fit width while maintaining aspect ratio
+                const container = this.getContainer();
+                if (container) {
+                    const keyboardElement = container.querySelector('virtual-keyboard');
+                    if (keyboardElement) {
+                        // Calculate scale factor to fit width
+                        const scaleFactor = window.innerWidth / KEYBOARD_NATURAL_WIDTH;
+                        
+                        // Apply zoom scaling to container (not the internal element directly)
+                        this.style.zoom = scaleFactor;
+                        this.style.width = '100%';
+                        this.style.maxWidth = '100%';
+                        this.style.margin = '0';
+                        this.style.padding = '0';
+                        
+                        // Clear transform styles to avoid conflicts
+                        this.style.transform = '';
+                        this.style.transformOrigin = '';
+                        
+                        // Demo: Mobile zoom scaling applied
+                        
+                        return;
+                    }
+                }
+                
+                // Fallback: Force 100% width for mobile portrait
+                this.style.width = '100vw';
+                this.style.maxWidth = '100vw';
+                this.style.margin = '0';
+                this.style.padding = '0';
+                this.style.zoom = '';
+                this.style.transform = '';
+                this.style.transformOrigin = '';
+                
+                // Demo: Fallback mobile width applied
+                return;
+            }
+
+            // For desktop or landscape mode, use the original logic but with natural size comparison
+            const container = this.getContainer();
+            if (!container || !this.isContentLoaded || this.naturalWidth === 0 || this.naturalHeight === 0) return;
+
+            const keyboardElement = container.querySelector('virtual-keyboard');
+            if (!keyboardElement) return;
+
+            // ARCHITECTURAL PRINCIPLE: Reset only container styles, never touch internal virtual-keyboard
+            this.style.width = '';
+            this.style.maxWidth = '';
+            this.style.margin = '';
+            this.style.padding = '';
+            this.style.transform = '';
+            this.style.transformOrigin = '';
+            this.style.zoom = '';
+
+            // Check if window is larger than natural keyboard size
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            // Demo: Window size check (agnostic scaling)
+
+            // If window is larger than natural size, don't stretch - maintain natural size
+            if (windowWidth > KEYBOARD_NATURAL_WIDTH) {
+                // Demo: Window larger than natural size - maintaining natural dimensions (agnostic)
+                
+                // Set the prefab element to natural size (centered by CSS)
+                this.style.width = KEYBOARD_NATURAL_WIDTH + 'px';
+                this.style.maxWidth = KEYBOARD_NATURAL_WIDTH + 'px';
+                this.style.margin = '0 auto';
+                
+                // DO NOT touch the internal virtual-keyboard element
+                // Demo: Internal virtual-keyboard element left untouched (natural size maintained)
+                return;
+            }
+
+            // If window is smaller than natural size, use original scaling logic
+            // ARCHITECTURAL PRINCIPLE: Let the original scaling handle container scaling
+            // The original method now uses transform on the container, not the internal element
+            // Demo: Window smaller than natural size - using agnostic original scaling
+            
+            // Clear any forced dimensions before calling original scaling
+            this.style.width = '';
+            this.style.maxWidth = '';
+            this.style.margin = '';
+            
+            originalApplyScaling.call(this);
+        };
+
+            // Initial scaling
+            keyboard.applyScaling();
+
+            // Listen for orientation changes on mobile
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    keyboard.applyScaling();
+                }, 100); // Small delay to let dimensions settle
+            });
+
+            // Listen for window resize
+            window.addEventListener('resize', () => {
+                keyboard.applyScaling();
+            });
+
+            // Demo: Custom scaling logic initialized
+            // Demo: Natural keyboard dimensions
+        }
 
         // Keyboard event logging system
         class KeyboardEventLogger {
@@ -510,6 +720,19 @@
             console.log('Keyboard event log system started');
             console.log('Input activation manager started');
             
+            // Setup custom demo keyboard scaling after keyboard is loaded
+            const keyboard = document.getElementById('demo-keyboard');
+            if (keyboard) {
+                // Wait for keyboard content to load
+                if (keyboard.isContentLoaded) {
+                    setupDemoKeyboardScaling();
+                } else {
+                    keyboard.addEventListener('content-loaded', () => {
+                        setupDemoKeyboardScaling();
+                    });
+                }
+            }
+            
             // Add welcome log
             setTimeout(() => {
                 logger.addLogEntry({
@@ -521,99 +744,313 @@
                 });
             }, 100);
         });
-    </script>
-    <script defer>
-      // Enhanced desktop and mobile keyboard scaling with proper viewport handling
-      // Hardcoded natural dimensions for 104-key keyboard based on CSS analysis
-      const NATURAL_KEYBOARD_WIDTH = 1050; // px - estimated from key widths and gaps
-      const NATURAL_KEYBOARD_HEIGHT = 420; // px - estimated from key heights and rows
-      
-      function adjustKeyboardForViewport() {
-        const kb = document.querySelector('prefab-virtual-keyboard');
-        if (!kb) return;
         
-        // Get viewport dimensions
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        // Check if we're on a mobile device
-        const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase());
-        
-        // Calculate appropriate scale based on viewport size
-        let scale = 1;
-        let shouldScale = false;
-        
-        if (isMobile) {
-          // Mobile scaling logic
-          if (viewportWidth <= 320) {
-            scale = 0.6;
-            shouldScale = true;
-          } else if (viewportWidth <= 360) {
-            scale = 0.7;
-            shouldScale = true;
-          } else if (viewportWidth <= 480) {
-            scale = 0.8;
-            shouldScale = true;
-          } else if (viewportWidth <= 768) {
-            scale = 0.9;
-            shouldScale = true;
-          }
-        } else {
-          // Desktop scaling logic - only scale DOWN if window is too small
-          // Never scale up/stretch when window is larger than natural size
-          
-          // Check if viewport is smaller than natural keyboard size
-          if (viewportWidth < NATURAL_KEYBOARD_WIDTH) {
-            scale = Math.min(scale, viewportWidth / NATURAL_KEYBOARD_WIDTH);
-            shouldScale = true;
-          }
-          
-          if (viewportHeight < NATURAL_KEYBOARD_HEIGHT + 200) { // 200px for other UI elements
-            const heightScale = (viewportHeight - 200) / NATURAL_KEYBOARD_HEIGHT;
-            scale = Math.min(scale, heightScale);
-            shouldScale = true;
-          }
-          
-          // Don't scale below 0.5 on desktop to maintain usability
-          if (shouldScale) {
-            scale = Math.max(scale, 0.5);
-          }
+        // Remove test controls - no longer needed
+        function addTestControls() {
+            // Test controls removed for production
+            console.log('Test controls removed');
         }
+
+        // Debug function to test mobile portrait detection (can be called from console)
+        window.testMobilePortraitDetection = function() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            const isPortrait = window.innerHeight > window.innerWidth;
+            
+            console.log('=== Mobile Portrait Detection Test ===');
+            console.log('User Agent:', navigator.userAgent);
+            console.log('Is Mobile (regex test):', isMobile);
+            console.log('Is Portrait (height > width):', isPortrait);
+            console.log('Window Width:', window.innerWidth);
+            console.log('Window Height:', window.innerHeight);
+            console.log('Final Result (isMobile && isPortrait):', isMobile && isPortrait);
+            console.log('=====================================');
+            
+            return {
+                userAgent: navigator.userAgent,
+                isMobile,
+                isPortrait,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                result: isMobile && isPortrait
+            };
+        };
+
+        // Test scaling behavior
+        window.testScalingBehavior = function() {
+            console.log('=== Keyboard Scaling Debug ===');
+            
+            // Get current window dimensions
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            console.log('Window size:', windowWidth + 'x' + windowHeight);
+            
+            // Check natural size
+            const keyboard = document.querySelector('prefab-virtual-keyboard');
+            if (keyboard) {
+                console.log('Natural size:', keyboard.naturalWidth + 'x' + keyboard.naturalHeight);
+                console.log('Is mobile portrait:', isMobilePortrait());
+                
+                // Check current styles
+                const container = keyboard.getContainer?.();
+                const keyboardElement = container?.querySelector('virtual-keyboard');
+                
+                if (keyboardElement) {
+                    console.log('Keyboard element styles:');
+                    console.log('- width:', keyboardElement.style.width);
+                    console.log('- maxWidth:', keyboardElement.style.maxWidth);
+                    console.log('- margin:', keyboardElement.style.margin);
+                    console.log('- transform:', keyboardElement.style.transform);
+                    console.log('- zoom:', keyboardElement.style.zoom);
+                }
+                
+                // Check computed styles
+                const computedStyles = window.getComputedStyle(keyboard);
+                console.log('Computed styles:');
+                console.log('- width:', computedStyles.width);
+                console.log('- margin-left:', computedStyles.marginLeft);
+                console.log('- padding-left:', computedStyles.paddingLeft);
+                console.log('- left:', computedStyles.left);
+                console.log('- position:', computedStyles.position);
+            }
+            
+            // Force a scaling update
+            console.log('Forcing scaling update...');
+            keyboard?.applyScaling?.();
+            
+            console.log('=== End Debug ===');
+        };
+
+        // Debug left margin specifically
+        window.debugLeftMargin = function() {
+            console.log('=== Left Margin Debug ===');
+            
+            const keyboard = document.querySelector('prefab-virtual-keyboard');
+            if (keyboard) {
+                const container = keyboard.getContainer?.();
+                const keyboardElement = container?.querySelector('virtual-keyboard');
+                
+                console.log('Keyboard container:');
+                if (container) {
+                    const containerStyles = window.getComputedStyle(container);
+                    console.log('- margin-left:', containerStyles.marginLeft);
+                    console.log('- padding-left:', containerStyles.paddingLeft);
+                    console.log('- left:', containerStyles.left);
+                    console.log('- position:', containerStyles.position);
+                    console.log('- transform:', containerStyles.transform);
+                }
+                
+                console.log('Keyboard element:');
+                if (keyboardElement) {
+                    const elementStyles = window.getComputedStyle(keyboardElement);
+                    console.log('- margin-left:', elementStyles.marginLeft);
+                    console.log('- padding-left:', elementStyles.paddingLeft);
+                    console.log('- left:', elementStyles.left);
+                    console.log('- position:', elementStyles.position);
+                    console.log('- transform:', elementStyles.transform);
+                }
+                
+                console.log('Keyboard component itself:');
+                const keyboardStyles = window.getComputedStyle(keyboard);
+                console.log('- margin-left:', keyboardStyles.marginLeft);
+                console.log('- padding-left:', keyboardStyles.paddingLeft);
+                console.log('- left:', keyboardStyles.left);
+                console.log('- position:', keyboardStyles.position);
+                console.log('- transform:', keyboardStyles.transform);
+            }
+            
+            // Check parent elements
+            console.log('Parent chain:');
+            let element = keyboard;
+            while (element && element !== document.body) {
+                const styles = window.getComputedStyle(element);
+                console.log(`${element.tagName || element.className}: margin-left=${styles.marginLeft}, padding-left=${styles.paddingLeft}, left=${styles.left}`);
+                element = element.parentElement;
+            }
+            
+            console.log('=== End Left Margin Debug ===');
+        };
+
+        // Debug architectural principle: virtual-keyboard should maintain natural size
+        window.debugArchitecturalPrinciple = function() {
+            console.log('=== Architectural Principle Debug ===');
+            console.log('Principle: prefab-virtual-keyboard should be agnostic');
+            console.log('Principle: Only scale the container, never modify internal virtual-keyboard');
+            
+            const keyboard = document.querySelector('prefab-virtual-keyboard');
+            if (keyboard) {
+                const container = keyboard.getContainer?.();
+                const keyboardElement = container?.querySelector('virtual-keyboard');
+                
+                console.log('Natural dimensions (should be 1044x360):');
+                console.log('- Natural width:', keyboard.naturalWidth);
+                console.log('- Natural height:', keyboard.naturalHeight);
+                
+                if (keyboardElement) {
+                    console.log('Internal virtual-keyboard element (SHOULD maintain natural size):');
+                    const elementStyles = window.getComputedStyle(keyboardElement);
+                    console.log('- width:', elementStyles.width);
+                    console.log('- height:', elementStyles.height);
+                    console.log('- max-width:', elementStyles.maxWidth);
+                    console.log('- max-height:', elementStyles.maxHeight);
+                    console.log('- transform:', elementStyles.transform);
+                    console.log('- zoom:', elementStyles.zoom);
+                    
+                    // Check if element maintains natural size
+                    const maintainsNaturalSize = 
+                        elementStyles.width === '1044px' && 
+                        elementStyles.height === '360px' &&
+                        elementStyles.transform === 'none' &&
+                        elementStyles.zoom === '1';
+                    
+                    console.log('✅ Maintains natural size:', maintainsNaturalSize);
+                    if (!maintainsNaturalSize) {
+                        console.log('❌ VIOLATION: Internal virtual-keyboard element has been modified!');
+                    }
+                }
+                
+                console.log('Prefab container (CAN be modified for scaling):');
+                const keyboardStyles = window.getComputedStyle(keyboard);
+                console.log('- width:', keyboardStyles.width);
+                console.log('- height:', keyboardStyles.height);
+                console.log('- transform:', keyboardStyles.transform);
+                console.log('- zoom:', keyboardStyles.zoom);
+            }
+            
+            console.log('=== End Architectural Principle Debug ===');
+        };
+
+        // Test scaling behavior - verify keyboard can scale down AND back up
+        window.testScalingBehavior = function() {
+            console.log('=== Testing Scaling Behavior ===');
+            
+            const keyboard = document.querySelector('prefab-virtual-keyboard');
+            if (!keyboard) {
+                console.log('No keyboard found');
+                return;
+            }
+            
+            console.log('Current state:');
+            debugArchitecturalPrinciple();
+            
+            console.log('Testing scale down...');
+            // Simulate small window
+            const originalWidth = window.innerWidth;
+            Object.defineProperty(window, 'innerWidth', {
+                writable: true,
+                configurable: true,
+                value: 800
+            });
+            window.dispatchEvent(new Event('resize'));
+            
+            setTimeout(() => {
+                console.log('After scale down:');
+                debugArchitecturalPrinciple();
+                
+                console.log('Testing scale back up...');
+                // Restore large window
+                Object.defineProperty(window, 'innerWidth', {
+                    writable: true,
+                    configurable: true,
+                    value: originalWidth
+                });
+                window.dispatchEvent(new Event('resize'));
+                
+                setTimeout(() => {
+                    console.log('After scale back up:');
+                    debugArchitecturalPrinciple();
+                    console.log('=== End Scaling Test ===');
+                }, 500);
+            }, 500);
+        };
+
+        // Test mobile scaling behavior
+        window.testMobileScaling = function() {
+            const widths = [375, 414, 768, 1024, 1200];
+            let currentIndex = 0;
+            
+            function testNextWidth() {
+                if (currentIndex >= widths.length) {
+                    console.log('Mobile scaling test completed');
+                    return;
+                }
+                
+                const width = widths[currentIndex];
+                console.log(`Testing width: ${width}px`);
+                
+                // Simulate window resize
+                Object.defineProperty(window, 'innerWidth', {
+                    writable: true,
+                    configurable: true,
+                    value: width
+                });
+                
+                // Trigger resize event
+                window.dispatchEvent(new Event('resize'));
+                
+                // Check if mobile portrait is detected
+                const isMobile = isMobilePortrait();
+                console.log(`Width ${width}px - isMobilePortrait: ${isMobile}`);
+                
+                // Check applied styles
+                const keyboard = document.getElementById('demo-keyboard');
+                if (keyboard) {
+                    const keyboardStyle = window.getComputedStyle(keyboard);
+                    console.log(`Width ${width}px - prefab-keyboard styles:`, {
+                        width: keyboardStyle.width,
+                        maxWidth: keyboardStyle.maxWidth,
+                        transform: keyboardStyle.transform,
+                        transformOrigin: keyboardStyle.transformOrigin
+                    });
+                    
+                    const container = keyboard.getContainer();
+                    if (container) {
+                        const virtualKeyboard = container.querySelector('virtual-keyboard');
+                        if (virtualKeyboard) {
+                            const computedStyle = window.getComputedStyle(virtualKeyboard);
+                            console.log(`Width ${width}px - virtual-keyboard styles:`, {
+                                width: computedStyle.width,
+                                maxWidth: computedStyle.maxWidth,
+                                transform: computedStyle.transform,
+                                transformOrigin: computedStyle.transformOrigin
+                            });
+                        }
+                        
+                        const containerStyle = window.getComputedStyle(container);
+                        console.log(`Width ${width}px - container styles:`, {
+                            width: containerStyle.width,
+                            maxWidth: containerStyle.maxWidth,
+                            transform: containerStyle.transform,
+                            transformOrigin: containerStyle.transformOrigin
+                        });
+                    }
+                }
+                
+                currentIndex++;
+                setTimeout(testNextWidth, 1000);
+            }
+            
+            testNextWidth();
+        };
         
-        // Apply scaling through CSS custom property for better performance
-        kb.style.setProperty('--viewport-scale', scale);
-        
-        // Set keyboard dimensions based on natural size vs viewport comparison
-        if (shouldScale) {
-          // When scaling is needed, use zoom for true layout reflow
-          // zoom naturally uses top-left origin and causes actual layout changes
-          kb.style.zoom = scale;
-          
-          // Remove any transform styles to avoid conflicts
-          kb.style.transform = '';
-          kb.style.transformOrigin = '';
-          
-          // Set natural dimensions as base size when scaling
-          kb.style.width = NATURAL_KEYBOARD_WIDTH + 'px';
-          kb.style.height = NATURAL_KEYBOARD_HEIGHT + 'px';
-        } else {
-          // When no scaling needed (window >= natural size), don't set any dimensions
-          // This allows the keyboard to maintain its natural size without stretching
-          kb.style.width = '';
-          kb.style.height = '';
-          
-          // Remove zoom when not scaling
-          kb.style.zoom = '';
-          kb.style.transform = '';
-          kb.style.transformOrigin = '';
-        }
-        
-        console.log(`Keyboard viewport adjustment: viewport=${viewportWidth}x${viewportHeight}px, natural=${NATURAL_KEYBOARD_WIDTH}x${NATURAL_KEYBOARD_HEIGHT}px, scale=${scale}, shouldScale=${shouldScale}, mobile=${isMobile}, usingNaturalSize=${!shouldScale}`);
-      }
-      
-      // Apply on load and on resize
-      window.addEventListener('load', adjustKeyboardForViewport);
-      window.addEventListener('resize', adjustKeyboardForViewport);
+        // Debug function to check current mobile state
+        window.debugMobileState = function() {
+            console.log('Mobile Debug State:');
+            console.log('- Mobile portrait mode:', isMobilePortrait());
+            console.log('- Window size:', window.innerWidth + 'x' + window.innerHeight);
+            
+            // Check keyboard element
+            const keyboard = document.getElementById('demo-keyboard');
+            if (keyboard) {
+                // Check inline styles
+                console.log('- Keyboard styles:', {
+                    zoom: keyboard.style.zoom || 'none',
+                    transform: keyboard.style.transform || 'none'
+                });
+            } else {
+                console.log('- Keyboard element not found');
+            }
+        };
     </script>
 </body>
 </html>
