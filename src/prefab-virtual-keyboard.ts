@@ -344,15 +344,13 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       this.windowResizeListener = null;
     }
     
-    // Add new listener if viewport units are used
-    if (this.hasViewportUnits()) {
-      this.windowResizeListener = () => {
-        console.log('PrefabVirtualKeyboard: Window resize detected for viewport units');
-        this.applyScaling();
-      };
-      window.addEventListener('resize', this.windowResizeListener);
-      console.log('PrefabVirtualKeyboard: Window resize listener added for viewport units');
-    }
+    // Always add window resize listener for automatic scaling
+    this.windowResizeListener = () => {
+      console.log('PrefabVirtualKeyboard: Window resize detected - recalculating scaling');
+      this.applyScaling();
+    };
+    window.addEventListener('resize', this.windowResizeListener);
+    console.log('PrefabVirtualKeyboard: Window resize listener added for automatic scaling');
   }
 
   private updateResizeObserver() {
@@ -449,7 +447,35 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     if (attrWidth > 0) targetWidth = attrWidth;
     if (attrHeight > 0) targetHeight = attrHeight;
 
-    // If no target dimensions are specified, use natural dimensions
+    // Auto-detect container constraints if no explicit dimensions are set
+    const shouldAutoScale = targetWidth === 0 && targetHeight === 0;
+    
+    if (shouldAutoScale) {
+      // Get available space from parent container or viewport
+      const parentWidth = this.parentElement?.getBoundingClientRect().width || window.innerWidth;
+      const availableWidth = Math.min(parentWidth, window.innerWidth) - 20; // 20px padding/margin allowance
+      const availableHeight = window.innerHeight - 100; // 100px for other UI elements
+      
+      // Only scale if keyboard natural size exceeds available space
+      // Don't scale up when window is larger than natural size
+      if (this.naturalWidth > availableWidth) {
+        targetWidth = availableWidth;
+      }
+      
+      if (this.naturalHeight > availableHeight) {
+        targetHeight = availableHeight;
+      }
+      
+      // If no scaling is needed (window >= natural size), don't set any dimensions
+      // This allows the keyboard to maintain its natural size without stretching
+      if (targetWidth === 0 && targetHeight === 0) {
+        keyboardElement.style.zoom = '';
+        keyboardElement.style.transform = '';
+        return;
+      }
+    }
+
+    // If no target dimensions are specified or needed, use natural dimensions
     if (targetWidth === 0 && targetHeight === 0) {
       keyboardElement.style.transform = '';
       return;
@@ -473,9 +499,19 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       scaleX = scaleY;
     }
 
-    // Apply scaling transformation
-    keyboardElement.style.transformOrigin = 'top left';
-    keyboardElement.style.transform = `scale(${scaleX}, ${scaleY})`;
+    // Use zoom property for true layout reflow instead of transform scale
+    // zoom naturally uses top-left as origin and causes actual layout changes
+    const zoomValue = Math.min(scaleX, scaleY); // Use uniform zoom to maintain aspect ratio
+    
+    // Apply zoom to the keyboard element for true layout reflow
+    keyboardElement.style.zoom = zoomValue;
+    
+    // Clear any existing transform to avoid conflicts
+    keyboardElement.style.transform = '';
+    keyboardElement.style.transformOrigin = '';
+    
+    // The container will automatically take up the correct space due to zoom
+    // No need to manually set dimensions
 
     console.log('PrefabVirtualKeyboard: Scaling application completed', {
       naturalWidth: this.naturalWidth,
@@ -487,7 +523,8 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       aspectRatioPreserved: !(targetWidth > 0 && targetHeight > 0),
       unitsUsed: Array.from(this.currentUnits),
       hasViewportUnits: this.hasViewportUnits(),
-      hasContainerRelativeUnits: this.hasContainerRelativeUnits()
+      hasContainerRelativeUnits: this.hasContainerRelativeUnits(),
+      autoScaled: shouldAutoScale
     });
   }
 }

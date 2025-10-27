@@ -37,6 +37,21 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+        }
+
+        /* Virtual keyboard container styles */
+        .keyboard-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px auto;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        prefab-virtual-keyboard {
+            display: block;
+            margin: 0 auto;
         }
 
         .input-section label {
@@ -55,6 +70,7 @@
             font-family: inherit;
             resize: vertical;
             transition: border-color 0.3s;
+            box-sizing: border-box; /* Ensure padding doesn't cause width overflow */
         }
 
         #text-input:focus {
@@ -142,6 +158,87 @@
         }
      
     </style>
+    <style>
+        /* Desktop responsive styles for small windows */
+        @media screen and (max-width: 1200px) {
+            .keyboard-container {
+                padding: 0 15px;
+            }
+            
+            prefab-virtual-keyboard {
+                display: block;
+                width: auto !important; /* Use auto width to prevent stretching */
+                max-width: 100% !important;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Mobile responsive styles for virtual keyboard */
+        @media screen and (max-width: 768px) {
+            /* Container adjustments */
+            .demo-container {
+                padding: 10px;
+            }
+            
+            .keyboard-container {
+                padding: 0 10px;
+                margin: 20px auto;
+            }
+            
+            /* Input section adjustments */
+            .input-section {
+                margin: 0 auto 20px;
+                padding: 15px;
+            }
+            
+            /* Keyboard container responsive scaling */
+            prefab-virtual-keyboard {
+                display: block;
+                width: 100% !important;
+                max-width: 100vw !important;
+                margin: 0 auto;
+            }
+            
+            /* Ensure keyboard content fits within viewport */
+            prefab-virtual-keyboard::part(keyboard-container) {
+                max-width: 100vw !important;
+                transform-origin: top left !important;
+            }
+            
+            /* Scale down keyboard keys on mobile */
+            @media screen and (max-width: 480px) {
+                prefab-virtual-keyboard {
+                    zoom: 0.8 !important; /* Use zoom instead of transform */
+                    margin: 0 auto;
+                }
+            }
+            
+            @media screen and (max-width: 360px) {
+                prefab-virtual-keyboard {
+                    zoom: 0.7 !important; /* Use zoom instead of transform */
+                    margin: 0 auto;
+                }
+            }
+            
+            /* Log section adjustments */
+            .log-section {
+                margin: 20px auto;
+            }
+            
+            .event-log {
+                max-height: 200px;
+                font-size: 11px;
+            }
+        }
+        
+        /* Ensure proper scaling for very small screens */
+        @media screen and (max-width: 320px) {
+            prefab-virtual-keyboard {
+                transform: scale(0.6) !important;
+                transform-origin: top left !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="demo-container">
@@ -159,13 +256,16 @@
             </div>
         </div>
         
-        <!-- Use prefab-virtual-keyboard element to display virtual keyboard -->
-        <prefab-virtual-keyboard 
-        id="demo-keyboard"
-        keyboard-css-src="./qwerty-104-key-keyboard.css" 
-        keyboard-html-src="./qwerty-104-key-keyboard.html"
-        >
-    </prefab-virtual-keyboard>
+        <!-- Virtual keyboard container -->
+        <div class="keyboard-container">
+            <!-- Use prefab-virtual-keyboard element to display virtual keyboard -->
+            <prefab-virtual-keyboard 
+            id="demo-keyboard"
+            keyboard-css-src="/qwerty-104-key-keyboard.css" 
+            keyboard-html-src="/qwerty-104-key-keyboard.html"
+            >
+        </prefab-virtual-keyboard>
+        </div>
         
         <!-- Event log area -->
         <div class="log-section">
@@ -320,16 +420,14 @@
                             modifierStr = ` [${activeModifiers.join('+')}]`;
                         }
                         
-                        // Add additional property information
-                        if (entry.modifiers.repeat) {
-                            modifierStr += ' (repeat)';
-                        }
-                        if (entry.modifiers.isComposing) {
-                            modifierStr += ' (composing)';
-                        }
-                        if (entry.modifiers.location && entry.modifiers.location !== 0) {
-                            const locationNames = ['', 'Left', 'Right', 'Numpad'];
-                            modifierStr += ` (${locationNames[entry.modifiers.location] || 'Unknown'})`;
+                        // Add additional property information using modern JS features
+                        modifierStr += entry.modifiers.repeat ? ' (repeat)' : '';
+                        modifierStr += entry.modifiers.isComposing ? ' (composing)' : '';
+                        
+                        const locationNames = ['', 'Left', 'Right', 'Numpad'];
+                        const location = entry.modifiers.location ?? 0;
+                        if (location !== 0) {
+                            modifierStr += ` (${locationNames[location] ?? 'Unknown'})`;
                         }
                     }
                     
@@ -425,11 +523,97 @@
         });
     </script>
     <script defer>
-
-      if (navigator.userAgent.toLowerCase().includes('mobile')) {
+      // Enhanced desktop and mobile keyboard scaling with proper viewport handling
+      // Hardcoded natural dimensions for 104-key keyboard based on CSS analysis
+      const NATURAL_KEYBOARD_WIDTH = 1050; // px - estimated from key widths and gaps
+      const NATURAL_KEYBOARD_HEIGHT = 420; // px - estimated from key heights and rows
+      
+      function adjustKeyboardForViewport() {
         const kb = document.querySelector('prefab-virtual-keyboard');
-        if (kb) kb.style.width = '100vw';
+        if (!kb) return;
+        
+        // Get viewport dimensions
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Check if we're on a mobile device
+        const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase());
+        
+        // Calculate appropriate scale based on viewport size
+        let scale = 1;
+        let shouldScale = false;
+        
+        if (isMobile) {
+          // Mobile scaling logic
+          if (viewportWidth <= 320) {
+            scale = 0.6;
+            shouldScale = true;
+          } else if (viewportWidth <= 360) {
+            scale = 0.7;
+            shouldScale = true;
+          } else if (viewportWidth <= 480) {
+            scale = 0.8;
+            shouldScale = true;
+          } else if (viewportWidth <= 768) {
+            scale = 0.9;
+            shouldScale = true;
+          }
+        } else {
+          // Desktop scaling logic - only scale DOWN if window is too small
+          // Never scale up/stretch when window is larger than natural size
+          
+          // Check if viewport is smaller than natural keyboard size
+          if (viewportWidth < NATURAL_KEYBOARD_WIDTH) {
+            scale = Math.min(scale, viewportWidth / NATURAL_KEYBOARD_WIDTH);
+            shouldScale = true;
+          }
+          
+          if (viewportHeight < NATURAL_KEYBOARD_HEIGHT + 200) { // 200px for other UI elements
+            const heightScale = (viewportHeight - 200) / NATURAL_KEYBOARD_HEIGHT;
+            scale = Math.min(scale, heightScale);
+            shouldScale = true;
+          }
+          
+          // Don't scale below 0.5 on desktop to maintain usability
+          if (shouldScale) {
+            scale = Math.max(scale, 0.5);
+          }
+        }
+        
+        // Apply scaling through CSS custom property for better performance
+        kb.style.setProperty('--viewport-scale', scale);
+        
+        // Set keyboard dimensions based on natural size vs viewport comparison
+        if (shouldScale) {
+          // When scaling is needed, use zoom for true layout reflow
+          // zoom naturally uses top-left origin and causes actual layout changes
+          kb.style.zoom = scale;
+          
+          // Remove any transform styles to avoid conflicts
+          kb.style.transform = '';
+          kb.style.transformOrigin = '';
+          
+          // Set natural dimensions as base size when scaling
+          kb.style.width = NATURAL_KEYBOARD_WIDTH + 'px';
+          kb.style.height = NATURAL_KEYBOARD_HEIGHT + 'px';
+        } else {
+          // When no scaling needed (window >= natural size), don't set any dimensions
+          // This allows the keyboard to maintain its natural size without stretching
+          kb.style.width = '';
+          kb.style.height = '';
+          
+          // Remove zoom when not scaling
+          kb.style.zoom = '';
+          kb.style.transform = '';
+          kb.style.transformOrigin = '';
+        }
+        
+        console.log(`Keyboard viewport adjustment: viewport=${viewportWidth}x${viewportHeight}px, natural=${NATURAL_KEYBOARD_WIDTH}x${NATURAL_KEYBOARD_HEIGHT}px, scale=${scale}, shouldScale=${shouldScale}, mobile=${isMobile}, usingNaturalSize=${!shouldScale}`);
       }
+      
+      // Apply on load and on resize
+      window.addEventListener('load', adjustKeyboardForViewport);
+      window.addEventListener('resize', adjustKeyboardForViewport);
     </script>
 </body>
 </html>

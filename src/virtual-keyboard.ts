@@ -1,4 +1,4 @@
-import { VirtualKey } from './virtual-key.js';
+import type { VirtualKey } from './virtual-key.js';
 
 // Debug configuration for console logging
 interface DebugConfig {

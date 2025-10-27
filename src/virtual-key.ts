@@ -1,4 +1,4 @@
-import { VirtualKeyboard } from "./virtual-keyboard";
+import { VirtualKeyboard } from "./virtual-keyboard.js";
 
 // Debug configuration for console logging
 interface DebugConfig {
@@ -12,32 +12,32 @@ const debug: DebugConfig = {
 };
 
 export class VirtualKey extends HTMLElement {
-  private mousedownHandler: (e: Event) => void;
-  private mouseupHandler: (e: Event) => void;
-  private mouseleaveHandler: (e: Event) => void;
-  private touchstartHandler: (e: Event) => void;
-  private touchendHandler: (e: Event) => void;
-  private touchcancelHandler: (e: Event) => void;
-  private clickHandler: (e: Event) => void;
+  private mousedownHandler!: (e: Event) => void;
+  private mouseupHandler!: (e: Event) => void;
+  private mouseleaveHandler!: (e: Event) => void;
+  private touchstartHandler!: (e: Event) => void;
+  private touchendHandler!: (e: Event) => void;
+  private touchcancelHandler!: (e: Event) => void;
+  private clickHandler!: (e: Event) => void;
 
   constructor() {
     super();
     
-    // Bind event handlers to maintain proper 'this' context - TESTING SELECTIVE COMPILATION
-    this.mousedownHandler = (e) => {
+    // Use optional chaining operator and modern syntax
+    this.mousedownHandler = (e: Event) => {
       e.preventDefault();
       this.parentKeyboard?.keyDown(this);
     };
     
-    this.mouseupHandler = (e) => {
+    this.mouseupHandler = (e: Event) => {
       e.preventDefault();
       this.parentKeyboard?.keyUp(this);
     };
     
-    this.mouseleaveHandler = (e) => {
+    this.mouseleaveHandler = (e: Event) => {
       // For normal keys (non-modifier, non-toggle), auto-release on mouseleave to stop repeat
       const keyboard = this.parentKeyboard;
-      if (keyboard && keyboard.keys.isNormalKey(this)) {
+      if (keyboard?.keys.isNormalKey(this)) {
         if (keyboard.state.isKeyDown(this) && keyboard.state.repeatKey === this) {
           keyboard.keyUp(this);
         }
@@ -46,23 +46,21 @@ export class VirtualKey extends HTMLElement {
       e.preventDefault();
     };
     
-    this.touchstartHandler = (e) => {
+    this.touchstartHandler = (e: Event) => {
       e.preventDefault();
       this.parentKeyboard?.keyDown(this);
     };
     
-    this.touchendHandler = (e) => {
+    this.touchendHandler = (e: Event) => {
       e.preventDefault();
       this.parentKeyboard?.keyUp(this);
     };
     
-    this.touchcancelHandler = (e) => {
-      if (this.parentKeyboard?.state.isKeyDown(this)) {
-        this.parentKeyboard?.keyUp(this);
-      }
+    this.touchcancelHandler = (e: Event) => {
+      this.parentKeyboard?.state.isKeyDown(this) && this.parentKeyboard?.keyUp(this);
     };
     
-    this.clickHandler = (e) => {
+    this.clickHandler = (e: Event) => {
       e.preventDefault();
     };
   }
@@ -127,17 +125,16 @@ export class VirtualKey extends HTMLElement {
   }
 
   get parentKeyboard(): VirtualKeyboard | null {
-    let el: Element | null = this;
-    while (el = el.parentElement) {
-      if (el.tagName.toLowerCase() === 'virtual-keyboard') {
-        return el as VirtualKeyboard;
-      }
+    // Use modern syntax and optional chaining
+    const keyboard = this.closest('virtual-keyboard') as VirtualKeyboard | null;
+    
+    if (!keyboard) {
+      const error = new Error('<virtual-keyboard> ancestor element not found');
+      debug.showConsole && console.error(`[VirtualKey] Virtual key must be placed inside a virtual-keyboard element:`, error.message);
+      throw error;
     }
-    const error = new Error('<virtual-keyboard> ancestor element not found');
-    if (debug.showConsole) {
-      console.error(`[VirtualKey] Virtual key must be placed inside a virtual-keyboard element:`, error.message);
-    }
-    throw error;
+    
+    return keyboard;
   }
 
   private render() {

@@ -41,9 +41,9 @@ interface PolyfillElement {
 }
 
 class MousePolyfill {
-  private polyfillElements: Map<Element, PolyfillElement> = new Map();
+  private polyfillElements = new Map<Element, PolyfillElement>();
   private isTouchDevice: boolean;
-  private touchStates: Map<number, TouchState> = new Map(); // touch identifier -> state
+  private touchStates = new Map<number, TouchState>(); // touch identifier -> state
   private readonly DRAG_THRESHOLD_TIME = 400; // ms
   private readonly RIGHT_CLICK_THRESHOLD_TIME = 800; // ms
   private readonly MOVE_THRESHOLD_DISTANCE = 10; // pixels
@@ -52,8 +52,8 @@ class MousePolyfill {
   private readonly SINGLE_CLICK_DELAY = 250; // ms
   private readonly VIBRATE_THRESHOLD_TIME = 500; // ms - time threshold to trigger vibration
   private readonly VIBRATE_DURATION = 30; // ms - vibration duration
-  private _debugEnabled: boolean = false;
-  private _vibrateEnabled: boolean = true;
+  private _debugEnabled = false;
+  private _vibrateEnabled = true;
 
   private log(message: string, ...args: any[]): void {
     if (!this._debugEnabled || !debug.showConsole) return;
@@ -65,8 +65,8 @@ class MousePolyfill {
     debug.showConsole = enabled;
   }
 
-  private lastGlobalClickTime: number = 0;
-  private lastGlobalClickPosition: { x: number; y: number } = { x: 0, y: 0 };
+  private lastGlobalClickTime = 0;
+  private lastGlobalClickPosition = { x: 0, y: 0 };
   private lastClickInfo: { time: number; x: number; y: number } | null = null;
 
   constructor() {
