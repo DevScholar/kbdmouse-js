@@ -180,14 +180,14 @@ export class VirtualKeyboard extends HTMLElement {
       });
     },
 
-    // Apply visual effect when a key is pressed down (legacy method)
+    // Apply visual effect when a key is pressed down
     applyKeyDownVisualEffect: (virtualKey: VirtualKey) => {
       if (virtualKey) {
         virtualKey.classList.add('key-down');
       }
     },
 
-    // Remove visual effect when a key is released (legacy method)
+    // Remove visual effect when a key is released
     applyKeyUpVisualEffect: (virtualKey: VirtualKey) => {
       if (virtualKey) {
         virtualKey.classList.remove('key-down');
@@ -222,10 +222,10 @@ export class VirtualKeyboard extends HTMLElement {
 
   state = {
     // Track currently keyDown keys
-    activeKeys: [] as VirtualKey[],
+    keyDownKeys: [] as VirtualKey[],
     
-    // Set of currently active modifier keys
-    activeModifiers: new Set<string>(),
+    // Set of currently keyDown modifier keys
+    keyDownModifiers: new Set<string>(),
     
     // Map of toggle key states
     toggleStates: new Map<string, boolean>(),
@@ -239,52 +239,52 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Check if a key is currently keyDown
     isKeyDown: (virtualKey: VirtualKey): boolean => {
-      return this.state.activeKeys.includes(virtualKey);
+      return this.state.keyDownKeys.includes(virtualKey);
     },
 
     // Add key to keyDown state
     addKeyDownKey: (virtualKey: VirtualKey) => {
-      if (!this.state.activeKeys.includes(virtualKey)) {
-        this.state.activeKeys.push(virtualKey);
+      if (!this.state.keyDownKeys.includes(virtualKey)) {
+        this.state.keyDownKeys.push(virtualKey);
       }
     },
 
     // Remove key from keyDown state
     removeKeyDownKey: (virtualKey: VirtualKey) => {
-      const index = this.state.activeKeys.indexOf(virtualKey);
+      const index = this.state.keyDownKeys.indexOf(virtualKey);
       if (index !== -1) {
-        this.state.activeKeys.splice(index, 1);
+        this.state.keyDownKeys.splice(index, 1);
       }
     },
 
     // Check if a key is currently pressed by code
     isKeyPressed: (code: string): boolean => {
-      return this.state.activeKeys.some(key => key.getAttribute('code') === code);
+      return this.state.keyDownKeys.some(key => key.getAttribute('code') === code);
     },
 
     // Get list of currently pressed keys
     getPressedKeys: (): VirtualKey[] => {
-      return [...this.state.activeKeys];
+      return [...this.state.keyDownKeys];
     },
 
-    // Add a modifier key to active set
+    // Add a modifier key to keyDown set
     addModifier: (modifier: string) => {
-      this.state.activeModifiers.add(modifier);
+      this.state.keyDownModifiers.add(modifier);
     },
 
-    // Remove a modifier key from active set
+    // Remove a modifier key from keyDown set
     removeModifier: (modifier: string) => {
-      this.state.activeModifiers.delete(modifier);
+      this.state.keyDownModifiers.delete(modifier);
     },
 
-    // Get list of active modifier keys
-    getActiveModifiers: (): string[] => {
-      return Array.from(this.state.activeModifiers);
+    // Get list of keyDown modifier keys
+    getKeyDownModifiers: (): string[] => {
+      return Array.from(this.state.keyDownModifiers);
     },
 
-    // Check if a modifier is active
-    isModifierActive: (modifier: string): boolean => {
-      return this.state.activeModifiers.has(modifier);
+    // Check if a modifier is keyDown
+    isModifierKeyDown: (modifier: string): boolean => {
+      return this.state.keyDownModifiers.has(modifier);
     },
 
     // Set toggle key state
@@ -297,21 +297,21 @@ export class VirtualKeyboard extends HTMLElement {
       return this.state.toggleStates.get(code) || false;
     },
 
-    // Clear all pressed keys (useful for reset)
-    clearAllPressedKeys: () => {
-      this.state.activeKeys.length = 0;
+    // Clear all keyDown keys (useful for reset)
+    clearAllKeyDownKeys: () => {
+      this.state.keyDownKeys.length = 0;
     },
 
     // Reset all modifier states
     resetModifiers: () => {
-      this.state.activeModifiers.clear();
+      this.state.keyDownModifiers.clear();
     },
 
-    // Key up all modifier keys (trigger keyup first, then remove from active set)
+    // Key up all modifier keys (trigger keyup first, then remove from keyDown set)
     keyUpAllModifiers: () => {
-      const activeModifiers = this.state.getActiveModifiers();
+      const keyDownModifiers = this.state.getKeyDownModifiers();
       // Create a copy of the array to avoid modification during iteration
-      const modifiersToRelease = [...activeModifiers];
+      const modifiersToRelease = [...keyDownModifiers];
       
       modifiersToRelease.forEach(modifier => {
         // Find the virtual key for this modifier and trigger keyup
@@ -331,7 +331,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Reset all keyboard states
     resetAllStates: () => {
-      this.state.clearAllPressedKeys();
+      this.state.clearAllKeyDownKeys();
       this.state.resetModifiers();
       this.state.resetToggleStates();
       this.state.stopRepeat();
@@ -390,13 +390,13 @@ export class VirtualKeyboard extends HTMLElement {
     // Get current modifier key states
     getModifierStates: () => {
       return {
-        shift: this.state.isModifierActive('Shift'),
-        ctrl: this.state.isModifierActive('Control'),
-        alt: this.state.isModifierActive('Alt'),
-        meta: this.state.isModifierActive('Meta'),
+        shift: this.state.isModifierKeyDown('Shift'),
+        ctrl: this.state.isModifierKeyDown('Control'),
+        alt: this.state.isModifierKeyDown('Alt'),
+        meta: this.state.isModifierKeyDown('Meta'),
         capsLock: this.state.getToggleState('CapsLock'),
         numLock: this.state.getToggleState('NumLock'),
-        hasOtherModifiers: this.state.isModifierActive('Control') || this.state.isModifierActive('Alt') || this.state.isModifierActive('Meta')
+        hasOtherModifiers: this.state.isModifierKeyDown('Control') || this.state.isModifierKeyDown('Alt') || this.state.isModifierKeyDown('Meta')
       };
     }
   };
@@ -818,34 +818,7 @@ export class VirtualKeyboard extends HTMLElement {
   }
 
 
-  // Legacy method - redirects to visual sub-object
-  applyKeyDownVisualEffect(virtualKey: VirtualKey) {
-    this.visual.applyKeyDownEffect(virtualKey);
-  }
-
-  // Legacy method - redirects to visual sub-object  
-  applyKeyUpVisualEffect(virtualKey: VirtualKey) {
-    this.visual.applyKeyUpEffect(virtualKey);
-  }
-
-  // Legacy method - redirects to visual sub-object for text transformation
-  applyShiftVisualEffect(text: string): string {
-    // This is a text transformation method, not a visual effect method
-    // Apply shift transformation to the text and return the result
-    const modifiers = this.state.getModifierStates();
-    if (modifiers.shift && text.length === 1) {
-      // For single characters, apply shift transformation
-      const shiftMap: { [key: string]: string } = {
-        '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
-        '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':', "'": '"', ',': '<', '.': '>', '/': '?',
-        '`': '~', 'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E', 'f': 'F', 'g': 'G', 'h': 'H', 'i': 'I',
-        'j': 'J', 'k': 'K', 'l': 'L', 'm': 'M', 'n': 'N', 'o': 'O', 'p': 'P', 'q': 'Q', 'r': 'R', 's': 'S',
-        't': 'T', 'u': 'U', 'v': 'V', 'w': 'W', 'x': 'X', 'y': 'Y', 'z': 'Z'
-      };
-      return shiftMap[text] || text.toUpperCase();
-    }
-    return text;
-  }
+  // Direct visual effect calls - legacy redirect removed for cleanup
 
   editing = {
     // Currently focused input element for text editing
@@ -1320,12 +1293,12 @@ export class VirtualKeyboard extends HTMLElement {
     }
   };
 
-  // Legacy method - redirects to keys sub-object
+  // Key management methods
   isToggleKey(virtualKey: VirtualKey): boolean {
     return this.keys.isToggleKey(virtualKey);
   }
 
-  // Legacy method - redirects to keys sub-object
+  // Key state management methods
   isModifierKey(virtualKey: VirtualKey): boolean {
     return this.keys.isModifierKey(virtualKey);
   }
@@ -1346,10 +1319,7 @@ export class VirtualKeyboard extends HTMLElement {
 
 
 
-  // Legacy property - redirects to state sub-object
-  get keyDownList(): VirtualKey[] {
-    return this.state.activeKeys;
-  }
+
 
   // New key state management system for better key repeat support
   keyState = {
@@ -1363,7 +1333,7 @@ export class VirtualKeyboard extends HTMLElement {
         
         if (isCurrentlyPressed) {
           // Modifier key is already pressed - toggle it off
-          this.releaseModifierKey(virtualKey);
+          this.keyUpModifierKey(virtualKey);
           return;
         }
         // Modifier key is not pressed - continue to press it
@@ -1372,7 +1342,7 @@ export class VirtualKeyboard extends HTMLElement {
       // Set key state to pressed
       this.setKeyState(virtualKey, true);
       
-      // Apply visual effects
+      // Apply visual effects (direct call, legacy redirect removed)
       this.visual.applyKeyDownEffect(virtualKey);
       
       // Dispatch keydown event
@@ -1421,7 +1391,7 @@ export class VirtualKeyboard extends HTMLElement {
       // Handle normal keys and toggle keys
       this.setKeyState(virtualKey, false);
       
-      // Apply visual effects
+      // Apply visual effects (direct call, legacy redirect removed)
       this.visual.applyKeyUpEffect(virtualKey);
       
       // Dispatch keyup event
@@ -1431,10 +1401,10 @@ export class VirtualKeyboard extends HTMLElement {
       if (this.keys.isNormalKey(virtualKey)) {
         this.handleTextInput(virtualKey);
         
-        // Auto-release modifier keys after text input is handled
+        // Auto-keyUp modifier keys after text input is handled
         // This ensures modifier states are consistent between keydown and keyup
-        // Only release modifier keys that are currently in keydown state
-        this.releaseModifierKeys();
+        // Only keyUp modifier keys that are currently in keydown state
+        this.keyUpAllModifiers();
       }
     }
   };
@@ -1464,7 +1434,7 @@ export class VirtualKeyboard extends HTMLElement {
         const currentState = this.state.getToggleState(toggleCode);
         this.state.setToggleState(toggleCode, !currentState);
         
-        // Apply visual effects for toggle keys
+        // Apply visual effects for toggle keys (direct calls)
         if (code === 'CapsLock') {
           this.visual.applyCapsLockVisualEffect(!currentState);
         } else if (code === 'NumLock') {
@@ -1478,10 +1448,10 @@ export class VirtualKeyboard extends HTMLElement {
         this.state.setToggleState(code, !currentState);
       }
     } else {
-      // Remove from active keys
+      // Remove from keyDown keys
       this.state.removeKeyDownKey(virtualKey);
       
-      // Only handle physical toggle keys and normal keys release
+      // Only handle physical toggle keys and normal keys keyUp
       // Modifier keys should maintain their state until explicitly toggled
       if (this.keys.isPhysicalToggleKey(virtualKey)) {
         // Physical toggle keys don't need special handling on release
@@ -1489,28 +1459,28 @@ export class VirtualKeyboard extends HTMLElement {
       } else if (this.keys.isNormalKey(virtualKey)) {
         // Normal keys don't need special handling on release
       }
-      // Note: Modifier keys are NOT handled here to prevent automatic release
-      // They should only be released when explicitly toggled via keyUp
+      // Note: Modifier keys are NOT handled here to prevent automatic keyUp
+      // They should only be keyUp when explicitly toggled via keyUp
     }
   }
 
-  // Handle key press down (legacy method - redirects to new system)
+  // Handle key press down - main API for VirtualKey elements
   keyDown(virtualKey: VirtualKey) {
     this.keyState.initialKeyDown(virtualKey);
   }
 
-  // Handle key release (redirects to new system)
+  // Handle key release - main API for VirtualKey elements
   keyUp(virtualKey: VirtualKey) {
     this.keyState.keyUp(virtualKey);
   }
 
-  // Automatically release all pressed modifier keys (ctrl, shift, alt, meta only)
-  private releaseModifierKeys() {
+  // Automatically keyUp all pressed modifier keys (ctrl, shift, alt, meta only)
+  private keyUpAllModifiers() {
     const modifierCodes = ['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'];
     
-    const beforeModifiers = this.state.getActiveModifiers();
+    const beforeModifiers = this.state.getKeyDownModifiers();
     if (debug.enabled) {
-        console.log('releaseModifierKeys called', { before: beforeModifiers });
+        console.log('keyUpAllModifiers called', { before: beforeModifiers });
       }
     
     // Only release modifier keys that are currently in keydown state
@@ -1530,15 +1500,15 @@ export class VirtualKeyboard extends HTMLElement {
         
         releasedCount++;
         
-        // Apply visual effects
-        this.visual.applyKeyUpEffect(modifierKey);
+        // Apply visual effects (direct call, legacy redirect removed)
+      this.visual.applyKeyUpEffect(modifierKey);
         
         // Dispatch event
         this.event.dispatchKeyUp(modifierKey);
       }
     }
     
-    const afterModifiers = this.state.getActiveModifiers();
+    const afterModifiers = this.state.getKeyDownModifiers();
     if (debug.enabled) {
       console.log(`Released ${releasedCount} modifier keys`, { 
         before: beforeModifiers, 
@@ -1547,12 +1517,12 @@ export class VirtualKeyboard extends HTMLElement {
     }
   }
 
-  // Release a single modifier key
-  private releaseModifierKey(virtualKey: VirtualKey) {
+  // KeyUp a single modifier key
+  private keyUpModifierKey(virtualKey: VirtualKey) {
     const code = virtualKey.getAttribute('code') || '';
     
     if (debug.enabled) {
-      console.log('releaseModifierKey called for:', code);
+      console.log('keyUpModifierKey called for:', code);
     }
     
     // Reset toggle state for this modifier
@@ -1579,7 +1549,7 @@ export class VirtualKeyboard extends HTMLElement {
     this.event.dispatchKeyUp(virtualKey);
     
     if (debug.enabled) {
-      console.log('Active modifiers after single release:', this.state.getActiveModifiers());
+      console.log('KeyDown modifiers after single release:', this.state.getKeyDownModifiers());
     }
   }
 
@@ -1826,9 +1796,20 @@ export class VirtualKeyboard extends HTMLElement {
         }
       }
       } else if (key.length === 1) {
-        // Single character keys (punctuation, etc.) - apply modifier transformations
-      const finalChar = this.applyModifierTransformations(key);
-      this.editing.insertText(finalChar);
+        // Single character keys (punctuation, etc.)
+        let finalChar = key;
+        
+        // For non-letter single characters in shift state, use the key's own shift-key attribute
+        if (modifiers.shift && !key.match(/[a-zA-Z]/)) {
+          const shiftKey = virtualKey.getAttribute('shift-key') || '';
+          const shiftCode = virtualKey.getAttribute('shift-code') || '';
+          finalChar = shiftKey || shiftCode || key;
+        } else {
+          // Apply modifier transformations for other cases
+          finalChar = this.applyModifierTransformations(key);
+        }
+        
+        this.editing.insertText(finalChar);
       }
   }
 
@@ -1922,22 +1903,20 @@ export class VirtualKeyboard extends HTMLElement {
         transformed = transformed.toUpperCase();
       }
     }
-    // Handle non-letter keys' Shift effect
-    else if (modifiers.shift) {
-      transformed = this.applyShiftVisualEffect(transformed);
-    }
+    // For non-letter keys, rely on VirtualKey element's own shift-key attributes
+    // The HTML template already defines the correct shift characters
     
     return transformed;
   }
 
 
 
-  // Legacy method - redirects to event sub-object
+  // Event management methods
   triggerKeyUpEvent(virtualKey: VirtualKey) {
     this.event.dispatchKeyUp(virtualKey);
   }
 
-  // Legacy method - redirects to event sub-object
+  // Event dispatch methods
   triggerKeyDownEvent(virtualKey: VirtualKey) {
     this.event.dispatchKeyDown(virtualKey);
   }
