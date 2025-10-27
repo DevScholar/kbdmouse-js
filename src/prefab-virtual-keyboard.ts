@@ -2,6 +2,11 @@
  * HTML Transporter - PrefabVirtualKeyboard with auto-scaling functionality
  * Can calculate natural size and CSS-specified size, using scaleX and scaleY for automatic scaling
  */
+
+// Import virtual keyboard modules directly
+import { VirtualKeyboard } from './virtual-keyboard.js';
+import { VirtualKey } from './virtual-key.js';
+
 // Debug configuration for console logging
 interface DebugConfig {
   enabled: boolean;
@@ -60,7 +65,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['keyboard-css-src', 'keyboard-html-src', 'virtual-keyboard-script-src', 'virtual-key-script-src', 'width', 'height', 'shadow-dom'];
+    return ['keyboard-css-src', 'keyboard-html-src', 'width', 'height', 'shadow-dom'];
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
@@ -84,8 +89,6 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     this.isLoading = true;
     const cssSrc = this.getAttribute('keyboard-css-src') || '';
     const htmlSrc = this.getAttribute('keyboard-html-src') || '';
-    const virtualKeyboardScriptSrc = this.getAttribute('virtual-keyboard-script-src') || '';
-    const virtualKeyScriptSrc = this.getAttribute('virtual-key-script-src') || '';
 
     if (!htmlSrc) {
       const container = this.getContainer();
@@ -112,21 +115,6 @@ export class PrefabVirtualKeyboard extends HTMLElement {
         }
       }
       
-      // Load and register custom element scripts first
-      if (virtualKeyScriptSrc && !container.querySelector(`script[src="${virtualKeyScriptSrc}"]`)) {
-        const scriptElement = document.createElement('script');
-        scriptElement.type = 'module';
-        scriptElement.src = virtualKeyScriptSrc;
-        container.appendChild(scriptElement);
-      }
-
-      if (virtualKeyboardScriptSrc && !container.querySelector(`script[src="${virtualKeyboardScriptSrc}"]`)) {
-        const scriptElement = document.createElement('script');
-        scriptElement.type = 'module';
-        scriptElement.src = virtualKeyboardScriptSrc;
-        container.appendChild(scriptElement);
-      }
-
       // Load CSS and HTML in parallel
       const [cssContent, htmlContent] = await Promise.all([
         cssSrc ? this.fetchContent(cssSrc) : Promise.resolve(''),
@@ -135,11 +123,14 @@ export class PrefabVirtualKeyboard extends HTMLElement {
 
       // Insert content based on DOM type
       if (this.shadowRootInstance) {
-        // Shadow DOM - use style tag
+        // Shadow DOM - use style tag and ensure custom elements are defined
         this.shadowRootInstance.innerHTML = `
           <style>${cssContent}</style>
           ${htmlContent}
         `;
+        
+        // Define custom elements in shadow DOM context if not already defined
+        this.defineCustomElementsInShadowDom();
       } else {
         // Light DOM - create style element and insert HTML
         if (container && container !== this) {
@@ -171,8 +162,6 @@ export class PrefabVirtualKeyboard extends HTMLElement {
         }
       }
 
-
-
       this.isContentLoaded = true;
       this.isLoading = false;
 
@@ -193,6 +182,19 @@ export class PrefabVirtualKeyboard extends HTMLElement {
         this.innerHTML = `<div style="color: red;">Load failed: ${errorObj.message}</div>`;
       }
       this.isLoading = false;
+    }
+  }
+
+  private defineCustomElementsInShadowDom() {
+    // Define custom elements in the shadow DOM context
+    if (this.shadowRootInstance) {
+      // Check if elements are already defined to avoid re-definition errors
+      if (!customElements.get('virtual-keyboard')) {
+        customElements.define('virtual-keyboard', VirtualKeyboard);
+      }
+      if (!customElements.get('virtual-key')) {
+        customElements.define('virtual-key', VirtualKey);
+      }
     }
   }
 
