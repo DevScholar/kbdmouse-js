@@ -29,7 +29,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
   }
 
   private initializeShadowDom() {
-    const enableShadowDom = this.getAttribute('shadowdom') !== 'false'; // Default to true
+    const enableShadowDom = this.getAttribute('shadow-dom') !== 'false'; // Default to true
     this.shadowDomEnabled = enableShadowDom; // Track the state
     
     if (enableShadowDom) {
@@ -60,14 +60,16 @@ export class PrefabVirtualKeyboard extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['keyboard-css-src', 'keyboard-html-src', 'virtual-keyboard-script-src', 'virtual-key-script-src', 'width', 'height', 'shadowdom'];
+    return ['keyboard-css-src', 'keyboard-html-src', 'virtual-keyboard-script-src', 'virtual-key-script-src', 'width', 'height', 'shadow-dom'];
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
     if (oldValue !== newValue) {
       if (name === 'width' || name === 'height') {
         this.applyScaling();
-      } else {
+        this.updateResizeObserver();
+      }
+      else {
         this.loadContent();
       }
     }
@@ -276,7 +278,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
 
   // Setter for shadow DOM - properly handles enable/disable
   setShadowDomEnabled(enabled: boolean): void {
-    this.setAttribute('shadowdom', enabled.toString());
+    this.setAttribute('shadow-dom', enabled.toString());
   }
 
   private calculateNaturalSize() {
@@ -311,8 +313,59 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       this.resizeObserver = new ResizeObserver(() => {
         this.applyScaling();
       });
-      this.resizeObserver.observe(this);
     }
+    
+    // Disconnect existing observations
+    this.resizeObserver.disconnect();
+    
+    // Determine what to observe based on current units
+    if (this.hasContainerRelativeUnits() && this.parentElement) {
+      // Observe parent container for relative units like %, em, rem
+      this.resizeObserver.observe(this.parentElement);
+      console.log('PrefabVirtualKeyboard: Observing parent container for relative units');
+    } else if (this.hasViewportUnits() || this.currentUnits.has('px')) {
+      // Observe element itself for viewport units and pixels
+      this.resizeObserver.observe(this);
+      console.log('PrefabVirtualKeyboard: Observing element itself for viewport/absolute units');
+    }
+    
+    // Setup window resize listener for viewport units
+    this.setupWindowResizeListener();
+  }
+
+  private windowResizeListener?: (() => void) | null;
+  private currentUnits: Set<string> = new Set();
+
+  private setupWindowResizeListener() {
+    if (this.windowResizeListener) {
+      window.removeEventListener('resize', this.windowResizeListener);
+      this.windowResizeListener = null;
+    }
+    
+    // Add new listener if viewport units are used
+    if (this.hasViewportUnits()) {
+      this.windowResizeListener = () => {
+        console.log('PrefabVirtualKeyboard: Window resize detected for viewport units');
+        this.applyScaling();
+      };
+      window.addEventListener('resize', this.windowResizeListener);
+      console.log('PrefabVirtualKeyboard: Window resize listener added for viewport units');
+    }
+  }
+
+  private updateResizeObserver() {
+    // Update what we're observing based on current units
+    this.setupResizeObserver();
+  }
+
+  private hasViewportUnits(): boolean {
+    const viewportUnits = ['vh', 'vw', 'vmin', 'vmax'];
+    return Array.from(this.currentUnits).some(unit => viewportUnits.includes(unit));
+  }
+
+  private hasContainerRelativeUnits(): boolean {
+    const containerUnits = ['%', 'em', 'rem'];
+    return Array.from(this.currentUnits).some(unit => containerUnits.includes(unit));
   }
 
   private parseCssValue(value: string): number {
@@ -323,6 +376,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     
     // Handle pure numbers (default to pixels)
     if (/^\d+(\.\d+)?$/.test(cleanValue)) {
+      this.currentUnits.add('px');
       return parseFloat(cleanValue);
     }
     
@@ -332,6 +386,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     
     const numValue = parseFloat(match[1]);
     const unit = match[2];
+    this.currentUnits.add(unit);
     
     switch (unit) {
       case 'px':
@@ -376,6 +431,9 @@ export class PrefabVirtualKeyboard extends HTMLElement {
 
     const keyboardElement = container.querySelector('virtual-keyboard') as HTMLElement;
     if (!keyboardElement) return;
+
+    // Clear current units tracking before parsing new values
+    this.currentUnits.clear();
 
     // Get CSS-specified dimensions
     const computedStyle = getComputedStyle(this);
@@ -424,7 +482,10 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       targetHeight,
       scaleX,
       scaleY,
-      aspectRatioPreserved: !(targetWidth > 0 && targetHeight > 0)
+      aspectRatioPreserved: !(targetWidth > 0 && targetHeight > 0),
+      unitsUsed: Array.from(this.currentUnits),
+      hasViewportUnits: this.hasViewportUnits(),
+      hasContainerRelativeUnits: this.hasContainerRelativeUnits()
     });
   }
 }
