@@ -108,7 +108,6 @@ import { MousePolyfill } from './mouse-polyfill.js';
  
  // Enable polyfill for specific element
  mousePolyfill.addPolyfillFor(document.getElementById('demo-area'));
- mousePolyfill.debug = true; // Enable debug mode
 ```
 
 ```html
