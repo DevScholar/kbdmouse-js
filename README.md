@@ -12,7 +12,7 @@ This project provides **hardware-accurate keyboard emulation** for:
 
 - **Emulator Applications**: Accurate PC hardware keyboard behavior emulation
 
-- **Hardware Simulation**: Recreate traditional PC input experiences with exact hardware behavior
+- **Hardware Emulation**: Recreate traditional PC input experiences with exact hardware behavior
 
 ## Core Features
 
@@ -135,7 +135,7 @@ import { MousePolyfill } from './mouse-polyfill.js';
 - **Debugging Support**: Comprehensive input event inspection for development
 
 ### Use Cases
-✅ **Emulator Development**: PC hardware simulation requiring exact keyboard behavior
+✅ **Emulator Development**: PC hardware emulation requiring exact keyboard behavior
 ✅ **Hardware Emulation**: Recreating traditional PC input experiences with good accuracy
 
 ❌ **Not Suitable For**:
