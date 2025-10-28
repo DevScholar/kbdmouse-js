@@ -122,6 +122,14 @@ import { MousePolyfill } from './mouse-polyfill.js';
 - **Event Debugging**: Comprehensive mouse event logging for development
 - **Hardware Emulation**: Accurate mouse behavior for emulator applications
 
+### Touch Gesture Controls
+
+The system supports intelligent touch gestures that translate to mouse events:
+
+- **Normal Mouse Movement**: When finger stays in place for 400ms or less before moving (with a movement threshold of 10 pixels), it is treated as normal mouse movement without pressing any mouse buttons
+- **Left Button Drag Mode**: When finger stays in place for more than 400ms but not more than 800ms before moving, it is treated as left button drag mode. Releasing finger triggers left mouse button release
+- **Right Click**: When finger stays in place for more than 800ms without moving, it is treated as a right mouse button click
+
 
 
 ## Important Notes
