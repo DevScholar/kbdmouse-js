@@ -92,8 +92,6 @@ import { PrefabVirtualKeyboard } from './dist/prefab-virtual-keyboard.js';
   id="emulator-keyboard"
   keyboard-css-src="./qwerty-104-key-keyboard.css" 
   keyboard-html-src="./qwerty-104-key-keyboard.html"
-  virtual-key-script-src="./virtual-key.js"
-  virtual-keyboard-script-src="./virtual-keyboard.js"
 >
 </prefab-virtual-keyboard>
 ```
@@ -170,12 +168,6 @@ src/
 
 - **Requirements**: ES modules (`type="module"`), Custom Elements
 
-```html
-<!-- Use type="module" for all imports -->
-<script type="module">
-  import './dist/virtual-keyboard.js';
-</script>
-```
 
 ## License
 
