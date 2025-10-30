@@ -26,7 +26,6 @@ This project provides **hardware-accurate keyboard emulation** for:
 
 
 ### 📝 Event Debugging
-- **Physical/virtual keyboard synchronization** 
 - **Detailed key state tracking** and event sequence debugging
 
 ### 🖱️ Mouse Support
@@ -52,22 +51,22 @@ npm run build
 
 ### Build Configuration
 
-The project builds ES modules exclusively:
+The project builds modern ES modules:
 
-- **TypeScript Config**: `tsconfig.json` with `"module": "ES2022"`
-- **Output Format**: Pure ES modules in `dist/` directory
+- **TypeScript Config**: `tsconfig.json` with `"module": "ESNext"`
+- **Output Format**: ES modules (`.mjs`) and CommonJS (`.js`) in `dist/` directory
 - **Source Maps**: Generated for debugging (`.js.map` files)
-- **No UMD/CommonJS**: Modern ES module format only
+- **Modern Syntax**: Target ES2022 for modern browser compatibility
 
 ### Output Structure
 
 After building, the `dist/` directory will contain:
 ```
 dist/
-├── virtual-key.js              # Virtual key component
-├── virtual-keyboard.js         # Keyboard behavior emulation
-├── prefab-virtual-keyboard.js  # Ready-to-use emulator keyboard
-├── mouse-polyfill.js           # Mouse event polyfill
+├── kbdmouse-js.mjs             # Main ES module entry point
+├── kbdmouse-js.js              # CommonJS entry point
+├── qwerty-104-key-keyboard.css # Keyboard layout styles
+├── qwerty-104-key-keyboard.html # Keyboard layout HTML
 └── *.js.map                    # Source map files
 ```
 
@@ -79,8 +78,11 @@ dist/
 Suitable for PC emulators requiring accurate hardware keyboard behavior:
 
 ```javascript
-// Import the prefab virtual keyboard
-import { PrefabVirtualKeyboard } from './dist/prefab-virtual-keyboard.js';
+// Import the prefab virtual keyboard (ES module)
+import { PrefabVirtualKeyboard } from './dist/kbdmouse-js.mjs';
+
+// The custom element is automatically registered when the module is imported
+// You can now use <prefab-virtual-keyboard> in your HTML
 ```
 
 ```html
@@ -90,22 +92,25 @@ import { PrefabVirtualKeyboard } from './dist/prefab-virtual-keyboard.js';
 <!-- Hardware-accurate keyboard for PC emulators -->
 <prefab-virtual-keyboard
   id="emulator-keyboard"
-  keyboard-css-src="./qwerty-104-key-keyboard.css" 
-  keyboard-html-src="./qwerty-104-key-keyboard.html"
+  keyboard-css-src="/qwerty-104-key-keyboard.css" 
+  keyboard-html-src="/qwerty-104-key-keyboard.html"
 >
 </prefab-virtual-keyboard>
 ```
 
 #### Mouse Demo
 ```javascript
-// Import mouse polyfill for touch devices
-import { MousePolyfill } from './mouse-polyfill.js';
- 
- // Create instance
- const mousePolyfill = new MousePolyfill();
- 
- // Enable polyfill for specific element
- mousePolyfill.addPolyfillFor(document.getElementById('demo-area'));
+// Import mouse polyfill for touch devices (ES module)
+import { MousePolyfill } from './dist/kbdmouse-js.mjs';
+
+// Create instance - automatically detects touch devices
+const mousePolyfill = new MousePolyfill();
+
+// Enable polyfill for specific element
+mousePolyfill.addPolyfillFor(document.getElementById('demo-area'));
+
+// Optional: Enable debug logging
+mousePolyfill.debug.setLogFunction((message) => console.log('[Mouse]', message));
 ```
 
 ```html
@@ -127,6 +132,8 @@ The system supports intelligent touch gestures that translate to mouse events:
 - **Normal Mouse Movement**: When finger stays in place for 400ms or less before moving (with a movement threshold of 10 pixels), it is treated as normal mouse movement without pressing any mouse buttons
 - **Left Button Drag Mode**: When finger stays in place for more than 400ms but not more than 800ms before moving, it is treated as left button drag mode. Releasing finger triggers left mouse button release
 - **Right Click**: When finger stays in place for more than 800ms without moving, it is treated as a right mouse button click
+
+**Note**: All modules are exported through the main entry point. Import specific classes from `kbdmouse-js.mjs` rather than individual module files.
 
 
 
@@ -158,15 +165,21 @@ src/
 ├── virtual-key.ts              # Virtual key component
 ├── virtual-keyboard.ts         # Keyboard behavior emulation
 ├── prefab-virtual-keyboard.ts  # Ready-to-use emulator keyboard
-├── mouse-polyfill.ts           # Mouse event polyfill for legacy browsers
-├── qwerty-104-key-keyboard.*   # 104-key hardware layout files
-├── main.ts                     # Entry point
+├── mouse-polyfill.ts           # Mouse event polyfill for touch devices
+├── main.ts                     # Main entry point - exports all modules
 └── typescript.svg              # TypeScript logo
+
+public/
+├── qwerty-104-key-keyboard.css # 104-key hardware layout styles
+├── qwerty-104-key-keyboard.html # 104-key hardware layout HTML
+└── vite.svg                    # Vite logo
 ```
 
 ## Browser Support
 
-- **Requirements**: ES modules (`type="module"`), Custom Elements
+- **Requirements**: ES modules (`type="module"`), Custom Elements, ES2022 syntax
+- **Module Loading**: Use `type="module"` in script tags for ES module imports
+- **Modern Browsers**: Designed for modern browsers with ES2022+ support
 
 
 ## License
