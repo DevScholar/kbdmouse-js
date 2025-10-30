@@ -159,38 +159,8 @@
             padding: 2px 0;
         }
         
-        .log-entry.mouse {
-            color: #007bff;
-        }
-        
-        .log-entry.touch {
-            color: #28a745;
-        }
-        
-        .log-entry.keyboard {
-            color: #dc3545;
-        }
-        
-        .log-entry.other {
-            color: #6c757d;
-        }
-        
-        .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .status.enabled {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status.disabled {
-            background-color: #f8d7da;
-            color: #721c24;
+        .log-entry {
+            color: #333;
         }
         
         /* Context menu styles */
@@ -237,29 +207,12 @@
         <p>This demo emulates mouse-based dragging without touch events, with optional mouse polyfill for touch devices.</p>
         
         <div class="controls">
-            <div class="control-group">
-                <label>Event Type Filter:</label>
-                <input type="text" id="eventFilter" value="contextmenu,click,dblclick,mousedown,mousemove,mouseup,mouseenter,mouseleave,mouseover,mouseout,touchstart,touchmove,touchend,touchcancel" placeholder="Enter comma-separated event names (empty = all events)">
-                <button id="resetFilter" class="btn-secondary">Reset to Default</button>
-            </div>
+
             
             <div class="control-group">
                 <label>Mouse Polyfill:</label>
-                <span id="polyfillStatus" class="status disabled">DISABLED</span>
                 <button id="togglePolyfill" class="btn-primary">Enable Polyfill</button>
                 <button id="clearLog" class="btn-secondary">Clear Log</button>
-            </div>
-            
-            <div class="control-group">
-                <label>Vibration:</label>
-                <span id="vibrateStatus" class="status enabled">ENABLED</span>
-                <button id="toggleVibrate" class="btn-secondary">Disable Vibration</button>
-            </div>
-            
-            <div class="control-group">
-                <label>Debug Mode:</label>
-                <span id="debugStatus" class="status disabled">DISABLED</span>
-                <button id="toggleDebug" class="btn-secondary">Enable Debug</button>
             </div>
             
             <div class="control-group">
@@ -271,7 +224,7 @@
             <div class="control-group">
                 <label>Testing:</label>
                 <button id="testVibration" class="btn-secondary">Test Vibration</button>
-        
+                <button id="toggleVibrate" class="btn-secondary">Disable Vibration</button>
             </div>
         </div>
         
@@ -303,13 +256,53 @@
         // Import mouse polyfill
         import { MousePolyfill } from './mouse-polyfill.js';
         
+        // Simple log container class
+        class LogContainer {
+            constructor() {
+                this.logContent = document.getElementById('logContent');
+                this.logCount = document.getElementById('logCount');
+                this.bindClearButton();
+            }
+            
+            bindClearButton() {
+                const clearBtn = document.getElementById('clearLog');
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', () => this.clearLog());
+                }
+            }
+            
+            addLog(message) {
+                // Keep only the last 100 entries
+                const entries = this.logContent.children;
+                if (entries.length >= 100) {
+                    entries[0].remove();
+                }
+                
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                div.textContent = message;
+                this.logContent.appendChild(div);
+                this.logContent.scrollTop = this.logContent.scrollHeight;
+                this.logCount.textContent = `${entries.length + 1}/100`;
+            }
+            
+            clearLog() {
+                this.logContent.innerHTML = '';
+                this.logCount.textContent = '0/100';
+            }
+        }
+        
         class MouseDemo {
             constructor() {
                 // Create mouse polyfill instance
                 this.mousePolyfill = new MousePolyfill();
                 
+                // Enable debug logging for demo
+                if (this.mousePolyfill.debug) {
+                    this.mousePolyfill.debug.enabled = true;
+                }
+                
                 this.polyfillEnabled = false;
-                this.debugEnabled = false;
                 this.vibrateEnabled = true;
                 this.draggedElement = null;
                 this.dragOffset = { x: 0, y: 0 };
@@ -318,7 +311,6 @@
                 this.initializeElements();
                 this.setupEventListeners();
                 this.updatePolyfillButtonState();
-                this.updateDebugButtonState();
                 this.updateVibrateButtonState();
             }
             
@@ -328,17 +320,14 @@
                 this.addDraggableBtn = document.getElementById('addDraggable');
                 this.clearDraggablesBtn = document.getElementById('clearDraggables');
                 this.testVibrationBtn = document.getElementById('testVibration');
-        
-                this.polyfillStatus = document.getElementById('polyfillStatus');
+                this.clearLogBtn = document.getElementById('clearLog');
+                this.toggleVibrateBtn = document.getElementById('toggleVibrate');
                 this.contextMenu = document.getElementById('contextMenu');
                 this.menuAddDraggable = document.getElementById('menuAddDraggable');
                 this.menuClearDraggables = document.getElementById('menuClearDraggables');
                 this.menuTogglePolyfill = document.getElementById('menuTogglePolyfill');
+                this.menuClearLog = document.getElementById('menuClearLog');
                 this.menuResetDemo = document.getElementById('menuResetDemo');
-                this.debugStatus = document.getElementById('debugStatus');
-                this.toggleDebugBtn = document.getElementById('toggleDebug');
-                this.vibrateStatus = document.getElementById('vibrateStatus');
-                this.toggleVibrateBtn = document.getElementById('toggleVibrate');
             }
             
             setupEventListeners() {
@@ -364,11 +353,13 @@
                 this.togglePolyfillBtn.addEventListener('click', this.togglePolyfill.bind(this));
                 this.addDraggableBtn.addEventListener('click', this.addDraggable.bind(this));
                 this.clearDraggablesBtn.addEventListener('click', this.clearDraggables.bind(this));
-                this.toggleDebugBtn.addEventListener('click', this.toggleDebug.bind(this));
                 this.toggleVibrateBtn.addEventListener('click', this.toggleVibrate.bind(this));
                 
                 // Test controls
                 this.testVibrationBtn.addEventListener('click', this.testVibration.bind(this));
+                
+                // Log controls
+                this.clearLogBtn.addEventListener('click', this.clearLog.bind(this));
                 
                 // Context menu events
                 document.addEventListener('click', this.hideContextMenu.bind(this));
@@ -381,41 +372,42 @@
             
             // Mouse event handlers
             handleMouseDown(event) {
+                // Mouse event handled by mousePolyfill debug logging
                 if (event.target.classList.contains('draggable')) {
                     this.startDrag(event.target, event.clientX, event.clientY);
                 }
             }
             
             handleMouseMove(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleMouseUp(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleMouseEnter(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleMouseLeave(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleMouseOver(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleMouseOut(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleClick(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleDoubleClick(event) {
-                // Removed logging - demo page is the debugger
+                // Mouse event handled by mousePolyfill debug logging
             }
             
             handleContextMenu(event) {
@@ -426,19 +418,24 @@
             
             // Touch event handlers
             handleTouchStart(event) {
-                // Removed logging - demo page is the debugger
+                // Touch event handled by mousePolyfill debug logging
             }
             
             handleTouchMove(event) {
-                // Removed logging - demo page is the debugger
+                // Touch event handled by mousePolyfill debug logging
             }
             
             handleTouchEnd(event) {
-                // Removed logging - demo page is the debugger
+                // Touch event handled by mousePolyfill debug logging
             }
             
             handleTouchCancel(event) {
-                // Removed logging - demo page is the debugger
+                // Touch event handled by mousePolyfill debug logging
+            }
+            
+            // Wheel event handler
+            handleWheel(event) {
+                event.preventDefault();
             }
             
             // Global mouse handlers for dragging
@@ -454,7 +451,6 @@
                 }
             }
             
-            // Dragging functionality
             startDrag(element, clientX, clientY) {
                 this.draggedElement = element;
                 this.draggedElement.classList.add('dragging');
@@ -462,6 +458,13 @@
                 const rect = this.draggedElement.getBoundingClientRect();
                 this.dragOffset.x = clientX - rect.left;
                 this.dragOffset.y = clientY - rect.top;
+            }
+            
+            endDrag() {
+                if (this.draggedElement) {
+                    this.draggedElement.classList.remove('dragging');
+                    this.draggedElement = null;
+                }
             }
             
             updateDrag(clientX, clientY) {
@@ -480,106 +483,20 @@
                 this.draggedElement.style.top = `${y}px`;
             }
             
-            endDrag() {
-                if (this.draggedElement) {
-                    this.draggedElement.classList.remove('dragging');
-                    this.draggedElement = null;
-                }
-            }
-            
-            // Logging functionality
-            logEvent(eventType, eventData) {
-                if (!this.shouldLogEvent(eventType)) {
-                    return;
-                }
-                
-                const now = new Date();
-                const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
-                let eventInfo = `${timestamp} - ${eventType}`;
-                
-                if (eventData instanceof MouseEvent) {
-                    eventInfo += ` [${Math.round(eventData.clientX)}, ${Math.round(eventData.clientY)}]`;
-                    eventInfo += ` button:${eventData.button} buttons:${eventData.buttons}`;
-                    // Check if event is generated by polyfill using optional chaining
-                    if (eventData.isTrusted === false || eventData.isPolyfill) {
-                        eventInfo += ' [POLYFILL]';
-                    }
-                } else if (eventData instanceof TouchEvent) {
-                    const touch = eventData.touches[0] ?? eventData.changedTouches[0];
-                    if (touch) {
-                        eventInfo += ` [${Math.round(touch.clientX)}, ${Math.round(touch.clientY)}]`;
-                    }
-                } else if (eventData && typeof eventData === 'object') {
-                    eventInfo += ` ${JSON.stringify(eventData)}`;
-                }
-                
-                this.addLogEntry(eventType, eventInfo);
-            }
-            
-            shouldLogEvent(eventType) {
-                if (this.eventFilter.size === 0) {
-                    return true; // Log all events if filter is empty
-                }
-                return this.eventFilter.has(eventType);
-            }
-            
+            // Simple logging methods
             addLogEntry(eventType, message) {
-                this.logEntries.push({ type: eventType, message });
-                
-                // Keep only the last 100 entries
-                if (this.logEntries.length > this.maxLogEntries) {
-                    this.logEntries.shift();
-                }
-                
-                this.updateLogDisplay();
-            }
-            
-            updateLogDisplay() {
-                this.logContent.innerHTML = '';
-                
-                this.logEntries.forEach(entry => {
-                    const div = document.createElement('div');
-                    div.className = `log-entry ${this.getEventCategory(entry.type)}`;
-                    div.textContent = entry.message;
-                    this.logContent.appendChild(div);
-                });
-                
-                this.logContent.scrollTop = this.logContent.scrollHeight;
-                this.logCount.textContent = `${this.logEntries.length}/${this.maxLogEntries}`;
-            }
-            
-            getEventCategory(eventType) {
-                if (eventType.startsWith('mouse') || eventType === 'drag-start' || eventType === 'drag-end' || eventType === 'click' || eventType === 'dblclick' || eventType === 'contextmenu') {
-                    return 'mouse';
-                } else if (eventType.startsWith('touch')) {
-                    return 'touch';
-                } else if (eventType.startsWith('key')) {
-                    return 'keyboard';
-                } else {
-                    return 'other';
+                if (window.logContainer) {
+                    window.logContainer.addLog(message);
                 }
             }
             
             clearLog() {
-                this.logEntries = [];
-                this.updateLogDisplay();
-            }
-            
-            // Event filter functionality
-            updateEventFilter() {
-                const filterValue = this.eventFilterInput.value.trim();
-                
-                if (filterValue === '') {
-                    this.eventFilter.clear();
-                } else {
-                    this.eventFilter = new Set(filterValue.split(',').map(s => s.trim()));
+                if (window.logContainer) {
+                    window.logContainer.clearLog();
                 }
             }
             
-            resetEventFilter() {
-                this.eventFilterInput.value = 'mousedown,mousemove,mouseup,mouseenter,mouseleave,mouseover,mouseout,click,dblclick,contextmenu,touchstart,touchmove,touchend,touchcancel';
-                this.updateEventFilter();
-            }
+
             
             // Polyfill functionality
             togglePolyfill() {
@@ -587,60 +504,24 @@
                 
                 if (this.polyfillEnabled) {
                     this.mousePolyfill.addPolyfillFor(this.demoArea);
+                    this.mousePolyfill.enableMouseLogListener(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Disable Polyfill';
-                    this.polyfillStatus.textContent = 'ENABLED';
-                    this.polyfillStatus.className = 'status enabled';
                 } else {
                     this.mousePolyfill.removePolyfillFor(this.demoArea);
+                    this.mousePolyfill.disableMouseLogListener(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Enable Polyfill';
-                    this.polyfillStatus.textContent = 'DISABLED';
-                    this.polyfillStatus.className = 'status disabled';
                 }
             }
             
             // Update polyfill button state
             updatePolyfillButtonState() {
-                if (!this.isTouchDevice) {
-                    this.togglePolyfillBtn.disabled = true;
-                    this.togglePolyfillBtn.title = 'Polyfill is only available on touch devices';
-                    this.togglePolyfillBtn.style.cursor = 'not-allowed';
-                } else {
-                    this.togglePolyfillBtn.disabled = false;
-                    this.togglePolyfillBtn.title = '';
-                    this.togglePolyfillBtn.style.cursor = 'pointer';
-                }
+                // Allow polyfill on all devices for debugging purposes
+                this.togglePolyfillBtn.disabled = false;
+                this.togglePolyfillBtn.title = '';
+                this.togglePolyfillBtn.style.cursor = 'pointer';
             }
 
-            // Debug mode control
-            toggleDebug() {
-                this.debugEnabled = !this.debugEnabled;
-                
-                // Set mouse polyfill debug state
-                this.mousePolyfill.debug = this.debugEnabled;
-                
-                if (this.debugEnabled) {
-                    this.toggleDebugBtn.textContent = 'Disable Debug';
-                    this.debugStatus.textContent = 'ENABLED';
-                    this.debugStatus.className = 'status enabled';
-                } else {
-                    this.toggleDebugBtn.textContent = 'Enable Debug';
-                    this.debugStatus.textContent = 'DISABLED';
-                    this.debugStatus.className = 'status disabled';
-                }
-            }
-            
-            // Update debug button state
-            updateDebugButtonState() {
-                if (this.debugEnabled) {
-                    this.toggleDebugBtn.textContent = 'Disable Debug';
-                    this.debugStatus.textContent = 'ENABLED';
-                    this.debugStatus.className = 'status enabled';
-                } else {
-                    this.toggleDebugBtn.textContent = 'Enable Debug';
-                    this.debugStatus.textContent = 'DISABLED';
-                    this.debugStatus.className = 'status disabled';
-                }
-            }
+
             
             // Vibration control
             toggleVibrate() {
@@ -651,27 +532,17 @@
                 
                 if (this.vibrateEnabled) {
                     this.toggleVibrateBtn.textContent = 'Disable Vibration';
-                    this.vibrateStatus.textContent = 'ENABLED';
-                    this.vibrateStatus.className = 'status enabled';
                 } else {
                     this.toggleVibrateBtn.textContent = 'Enable Vibration';
-                    this.vibrateStatus.textContent = 'DISABLED';
-                    this.vibrateStatus.className = 'status disabled';
                 }
-                
-                this.logEvent('vibration-toggle', { enabled: this.vibrateEnabled });
             }
             
             // Update vibration button state
             updateVibrateButtonState() {
                 if (this.vibrateEnabled) {
                     this.toggleVibrateBtn.textContent = 'Disable Vibration';
-                    this.vibrateStatus.textContent = 'ENABLED';
-                    this.vibrateStatus.className = 'status enabled';
                 } else {
                     this.toggleVibrateBtn.textContent = 'Enable Vibration';
-                    this.vibrateStatus.textContent = 'DISABLED';
-                    this.vibrateStatus.className = 'status disabled';
                 }
             }
             
@@ -690,13 +561,15 @@
                 draggable.style.top = `${Math.random() * maxY}px`;
                 
                 this.demoArea.appendChild(draggable);
-                this.logEvent('add-draggable', { count: this.demoArea.querySelectorAll('.draggable').length });
+                // Removed system log - adding draggable is a system event, not a mouse/touch event
+                // this.logEvent('add-draggable', { count: this.demoArea.querySelectorAll('.draggable').length });
             }
             
             clearDraggables() {
                 const draggables = this.demoArea.querySelectorAll('.draggable');
                 draggables.forEach(draggable => draggable.remove());
-                this.logEvent('clear-draggables', { count: 0 });
+                // Removed system log - clearing draggables is a system event, not a mouse/touch event
+                // this.logEvent('clear-draggables', { count: 0 });
             }
             
             // Context menu functionality
@@ -743,7 +616,8 @@
                     this.toggleVibrate();
                 }
                 this.resetEventFilter();
-                this.logEvent('demo-reset', { message: 'Demo reset to initial state' });
+                // Removed system log - demo reset is a system event, not a mouse/touch event
+                // this.logEvent('demo-reset', { message: 'Demo reset to initial state' });
             }
             
             // Test vibration functionality
@@ -751,19 +625,53 @@
                 if ('vibrate' in navigator) {
                     try {
                         navigator.vibrate(200);
-                        this.logEvent('vibration-test', { duration: 200, success: true });
+                        // Removed system log - vibration test is a system event, not a mouse/touch event
+                        // this.logEvent('vibration-test', { duration: 200, success: true });
                     } catch (error) {
-                        this.logEvent('vibration-test', { error: error.message, success: false });
+                        // Removed system log - vibration test is a system event, not a mouse/touch event
+                        // this.logEvent('vibration-test', { error: error.message, success: false });
                     }
                 } else {
-                    this.logEvent('vibration-test', { error: 'Vibration not supported', success: false });
+                    // Removed system log - vibration test is a system event, not a mouse/touch event
+                        // this.logEvent('vibration-test', { error: 'Vibration not supported', success: false });
                 }
             }
         }
         
         // Initialize the demo when the page loads
         document.addEventListener('DOMContentLoaded', () => {
-            new MouseDemo();
+            window.logContainer = new LogContainer(); // Make log container globally accessible
+            
+            console.log('DOM loaded, initializing MouseDemo');
+            const demo = new MouseDemo();
+            console.log('MouseDemo initialized');
+            
+            // Setup custom log function for the demo's mouse polyfill instance
+            // 默认情况下，日志会输出到控制台 (console.log)
+            // 你可以重写日志函数来自定义输出行为，例如：
+            // demo.mousePolyfill.debug.setLogFunction((message) => {
+            //     // 自定义日志处理逻辑
+            //     console.log('自定义日志: ' + message);
+            //     // 或者输出到DOM元素
+            //     // document.getElementById('myLog').innerHTML += message + '<br>';
+            // });
+            if (demo.mousePolyfill.debug && demo.mousePolyfill.debug.setLogFunction) {
+                demo.mousePolyfill.debug.setLogFunction((message) => {
+                    // Add to visual log container
+                    if (window.logContainer) {
+                        window.logContainer.addLog(message);
+                    }
+                });
+                // Enable debug logging for demo
+                demo.mousePolyfill.debug.enabled = true;
+            }
+            
+            // Add welcome log
+            setTimeout(() => {
+                if (window.logContainer) {
+                    window.logContainer.addLog('Mouse demo initialized');
+                }
+            }, 100);
         });
     </script>
 </body>

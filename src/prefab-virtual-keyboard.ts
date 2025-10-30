@@ -27,6 +27,59 @@ export class PrefabVirtualKeyboard extends HTMLElement {
   private shadowRootInstance: ShadowRoot | null = null;
   private shadowDomEnabled = true;
 
+  // Debug sub-object with configurable log function - disabled by default
+  debug = {
+    enabled: false,
+    logFunction: (message: string) => console.log(message),
+    
+    // Set custom log function
+    setLogFunction: (fn: (message: string) => void) => {
+      this.debug.logFunction = fn;
+      this.debug.enabled = false;
+    },
+    
+    // Log method that uses the configured log function
+    log: (message: string) => {
+      if (this.debug.enabled) {
+        this.debug.logFunction(message);
+      }
+    },
+    
+    // Format timestamp as [HH:mm:ss.SSS]
+    formatTimestamp: (): string => {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      const milliseconds = now.getMilliseconds().toString().padStart(3, '0');
+      return `[${hours}:${minutes}:${seconds}.${milliseconds}]`;
+    },
+    
+    // Log keyboard event in specified format
+    logKeyboardEvent: (eventType: string, event: KeyboardEvent) => {
+      const timestamp = this.debug.formatTimestamp();
+      
+      // Get key and code from event
+      const key = event.key || 'Unknown';
+      const code = event.code || 'unknown';
+      
+      // Format modifier keys: c=ctrl, a=alt, s=shift, m=meta
+      const mods = [];
+      if (event.ctrlKey) mods.push('c');
+      if (event.altKey) mods.push('a');
+      if (event.shiftKey) mods.push('s');
+      if (event.metaKey) mods.push('m');
+      const modStr = mods.join('');
+      
+      // Determine source (physical or virtual)
+      const source = (event as any).isVirtualKeyboard ? 'virtual' : 'physical';
+      
+      // Format: [HH:mm:ss.SSS]event=keyup/keydown/keypress,key=a,code=KeyA,mod=修饰键状态,source=physical/virtual
+      const logMessage = `${timestamp}event=${eventType},key=${key},code=${code},mod=${modStr},source=${source}`;
+      this.debug.log(logMessage);
+    }
+  };
+
   constructor() {
     super();
     // Don't initialize shadow DOM here - wait for connectedCallback

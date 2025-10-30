@@ -1,30 +1,33 @@
 import type { VirtualKey } from './virtual-key.js';
 
-// Debug configuration for console logging
-interface DebugConfig {
-  enabled: boolean;
-  showConsole: boolean;
-}
-
-const debug: DebugConfig = {
-  enabled: false,
-  showConsole: true
-};
-
 export class VirtualKeyboard extends HTMLElement {
   // Configuration options
   private config = {
-    debug: false
+    debug: true
+  };
+  
+  // Debug sub-object with configurable log function - always active for DOM logging
+  debug = {
+    enabled: true,
+    logFunction: (message: string) => console.log(message),
+    
+    // Set custom log function
+    setLogFunction: (fn: (message: string) => void) => {
+      this.debug.logFunction = fn;
+      this.debug.enabled = false;
+      this.config.debug = true;
+    },
+    
+    // Log method that uses the configured log function
+    log: (message: string) => {
+      if (this.debug.enabled) {
+        this.debug.logFunction(message);
+      }
+    }
   };
 
   constructor() {
     super();
-    // Initialize debug mode from attribute if present
-    if (this.hasAttribute('debug')) {
-      const debugValue = this.getAttribute('debug');
-      this.config.debug = debugValue !== 'false';
-      debug.enabled = this.config.debug;
-    }
     this.initializeFocusManagement();
     // Initialize NumLock to be OFF by default (like real keyboards)
     this.initializeNumLockState();
@@ -36,17 +39,11 @@ export class VirtualKeyboard extends HTMLElement {
   }
 
   // Sub-object categories for better organization
-  
-  // Debug logging method - simple console output
-  private log(message: string, ...args: any[]): void {
-    if (this.config.debug && debug.showConsole) {
-      console.log(`[VirtualKeyboard] ${message}`, ...args);
-    }
-  }
 
-  // Static method to control console output
+  // Static method to control console output (deprecated - use debug sub-object instead)
   static setConsoleOutput(enabled: boolean): void {
-    debug.showConsole = enabled;
+    // This method is kept for backward compatibility but is deprecated
+    // Use the debug sub-object instead: keyboard.debug.setLogFunction(fn)
   }
 
   // Make setConsoleOutput available globally
@@ -96,7 +93,6 @@ export class VirtualKeyboard extends HTMLElement {
         else if (this.keys.isModifierKey(virtualKey)) {
           // Check if modifier key is still pressed (toggle state)
           const isToggleActive = this.state.isKeyDown(virtualKey);
-          this.log(`applyKeyUpEffect for ${virtualKey.getAttribute('code')}: isKeyDown=${isToggleActive}`);
           
           // Update aria-pressed state
           virtualKey.setAttribute('aria-pressed', isToggleActive ? 'true' : 'false');
@@ -345,10 +341,6 @@ export class VirtualKeyboard extends HTMLElement {
       }
 
       // Log key repeat start at debug level
-      if (this.config.debug && debug.showConsole) {
-        console.log(`[VirtualKeyboard] Key repeat started for: ${virtualKey.getAttribute('code')}`);
-      }
-
       // Stop any existing repeat
       this.state.stopRepeat();
 
@@ -378,10 +370,7 @@ export class VirtualKeyboard extends HTMLElement {
         this.state.repeatTimer = null;
       }
       if (this.state.repeatKey) {
-        // Log key repeat stop at debug level
-        if (this.config.debug && debug.showConsole) {
-          console.log(`[VirtualKeyboard] Key repeat stopped for: ${this.state.repeatKey.getAttribute('code')}`);
-        }
+        // Key repeat stopped
       }
       this.state.isRepeating = false;
       this.state.repeatKey = null;
@@ -642,6 +631,98 @@ export class VirtualKeyboard extends HTMLElement {
       window.dispatchEvent(keyUpEvent);
     },
 
+    // Dispatch keypress event to window (for eligible keys)
+    dispatchKeyPress: (virtualKey: VirtualKey) => {
+      const code = virtualKey.getAttribute('code') || '';
+      
+      // Only dispatch keypress for keys that produce character input
+      // Skip modifier keys, navigation keys, and function keys
+      if (this.keys.isModifierKey(virtualKey) || 
+          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 
+           'Insert', 'Delete', 'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 
+           'F10', 'F11', 'F12'].includes(code)) {
+        return;
+      }
+      
+      // Collect current modifier states before creating the event
+      const modifiers = this.state.getModifierStates();
+      
+      // Determine the correct key value based on modifier state
+      let key = virtualKey.getAttribute('key') || virtualKey.getAttribute('label') || '';
+      
+      // Handle NumLock state for numpad keys
+      if (code.startsWith('Numpad')) {
+        // When NumLock is OFF, numpad number keys should produce navigation keys (skip keypress)
+        if (!modifiers.numLock) {
+          return;
+        }
+        // When NumLock is ON, use the number keys as normal
+        else if (modifiers.shift) {
+          const shiftKey = virtualKey.getAttribute('shift-key') || '';
+          if (shiftKey) {
+            key = shiftKey;
+          }
+        }
+      }
+      // Handle letter keys with Caps Lock + Shift combination (should be lowercase)
+      else if (code.startsWith('Key') && modifiers.capsLock && modifiers.shift) {
+        key = key.toLowerCase();
+      }
+      // Handle other cases with Shift (number keys and other keys with shift-text)
+      else if (modifiers.shift) {
+        const shiftKey = virtualKey.getAttribute('shift-key') || '';
+        const shiftCode = virtualKey.getAttribute('shift-code') || '';
+        if (shiftKey || shiftCode) {
+          key = shiftKey || shiftCode;
+        }
+      }
+      // Handle Caps Lock only (should be uppercase)
+      else if (modifiers.capsLock) {
+        key = key.toUpperCase();
+      }
+
+      const keyPressEvent = new KeyboardEvent('keypress', {
+        key: key,
+        code: code,
+        location: 0,
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: window,
+        // Include modifier key states to match standard KeyboardEvent behavior
+        shiftKey: modifiers.shift,
+        ctrlKey: modifiers.ctrl,
+        altKey: modifiers.alt,
+        metaKey: modifiers.meta
+      });
+
+      // Add getModifierState method to match standard KeyboardEvent interface
+      (keyPressEvent as any).getModifierState = (keyArg: string) => {
+        switch (keyArg) {
+          case 'Shift': return modifiers.shift;
+          case 'Control': return modifiers.ctrl;
+          case 'Alt': return modifiers.alt;
+          case 'Meta': return modifiers.meta;
+          case 'CapsLock': return modifiers.capsLock;
+          case 'NumLock': return modifiers.numLock;
+          default: return false;
+        }
+      };
+
+      (keyPressEvent as any).isVirtualKeyboard = true;
+      (keyPressEvent as any).sourceElement = virtualKey;
+      
+      // Set target to the currently focused element to match physical keyboard behavior
+      // Virtual keyboard should not steal focus - events should go to the active element (maintain focus)
+      const activeElement = document.activeElement || document.body;
+      Object.defineProperty(keyPressEvent, 'target', {
+        value: activeElement,
+        writable: false
+      });
+      
+      window.dispatchEvent(keyPressEvent);
+    },
+
     // Handle key click event (keyboard navigation with Enter/Space)
     handleKeyClick: (virtualKey: VirtualKey) => {
       // ====== Keyboard navigation mode - complete key sequence for all keys ======
@@ -695,9 +776,6 @@ export class VirtualKeyboard extends HTMLElement {
   // Public API: Enable or disable debug logging
   public setDebug(enabled: boolean): void {
     this.config.debug = enabled;
-    if (debug.enabled) {
-      console.log(`Debug logging ${enabled ? 'enabled' : 'disabled'}`);
-    }
   }
 
   // Public API: Get current debug state
@@ -707,21 +785,8 @@ export class VirtualKeyboard extends HTMLElement {
 
   // Handle attribute changes
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-    if (name === 'debug') {
-      const enabled = newValue !== null && newValue !== 'false';
-      this.setDebug(enabled);
-    } else if (name === 'log-level') {
-      const levelMap: { [key: string]: string } = {
-        'error': 'error',
-        'warn': 'warn',
-        'info': 'info',
-        'debug': 'debug'
-      };
-      const level = levelMap[newValue || 'info'] || 'info';
-      if (debug.enabled) {
-        console.log(`Log level set to: ${level}`);
-      }
-    }
+    // Debug functionality is managed by prefab keyboard element
+    // No debug attributes should be handled here
   }
 
 
@@ -755,12 +820,6 @@ export class VirtualKeyboard extends HTMLElement {
       const target = event.target as HTMLElement;
       if (this.isEditableElement(target)) {
         this.editing.activeElement = target;
-        if (debug.enabled) {
-          console.log('Focus set to', { 
-            tagName: target.tagName, 
-            id: target.id || target.className 
-          });
-        }
       }
     }, true);
 
@@ -769,9 +828,6 @@ export class VirtualKeyboard extends HTMLElement {
       const target = event.target as HTMLElement;
       if (target === this.editing.activeElement) {
         this.editing.activeElement = null;
-        if (debug.enabled) {
-          console.log('Focus cleared');
-        }
       }
     }, true);
   }
@@ -784,9 +840,6 @@ export class VirtualKeyboard extends HTMLElement {
     if (numLockKey) {
       // Don't add NumLock to active keys initially, so it starts as OFF
       // The visual state will be handled by the CSS and visual effects
-      if (debug.enabled) {
-        console.log('NumLock initialized to OFF (default)');
-      }
     }
   }
 
@@ -1201,9 +1254,7 @@ export class VirtualKeyboard extends HTMLElement {
         }
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
-        if (debug.showConsole) {
         console.error('Copy operation failed. Please check clipboard permissions.', error);
-      }
       }
       return false;
     },
@@ -1221,9 +1272,7 @@ export class VirtualKeyboard extends HTMLElement {
         }
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
-        if (debug.showConsole) {
         console.error('Paste operation failed. Please check clipboard permissions.', error);
-      }
       }
       return false;
     },
@@ -1285,9 +1334,7 @@ export class VirtualKeyboard extends HTMLElement {
         return true;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
-        if (debug.showConsole) {
         console.error('Select all operation failed.', error);
-      }
         return false;
       }
     }
@@ -1325,7 +1372,6 @@ export class VirtualKeyboard extends HTMLElement {
   keyState = {
     // Initial key down - handles state setup and initial event
     initialKeyDown: (virtualKey: VirtualKey) => {
-      this.log('initialKeyDown called for:', virtualKey.getAttribute('code'));
       
       // Handle modifier key toggle behavior
       if (this.keys.isModifierKey(virtualKey)) {
@@ -1348,6 +1394,9 @@ export class VirtualKeyboard extends HTMLElement {
       // Dispatch keydown event
       this.event.dispatchKeyDown(virtualKey);
       
+      // Dispatch keypress event for eligible keys (after keydown)
+      this.event.dispatchKeyPress(virtualKey);
+      
       // Start key repeat for normal keys only
       if (this.keys.isNormalKey(virtualKey)) {
         this.state.startRepeat(virtualKey);
@@ -1356,7 +1405,6 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Repeating key down - only sends events and handles text input, doesn't change state
     repeatingKeyDown: (virtualKey: VirtualKey) => {
-      this.log('repeatingKeyDown called for:', virtualKey.getAttribute('code'));
       
       // For repeating keys, only dispatch event and handle text input
       // Don't change state or apply visual effects again
@@ -1370,7 +1418,6 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Key up - handles state cleanup and final event
     keyUp: (virtualKey: VirtualKey) => {
-      this.log('keyUp called for:', virtualKey.getAttribute('code'));
       
       // Only process if key is actually down
       if (!this.state.isKeyDown(virtualKey)) {
@@ -1479,9 +1526,6 @@ export class VirtualKeyboard extends HTMLElement {
     const modifierCodes = ['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'];
     
     const beforeModifiers = this.state.getKeyDownModifiers();
-    if (debug.enabled) {
-        console.log('keyUpAllModifiers called', { before: beforeModifiers });
-      }
     
     // Only release modifier keys that are currently in keydown state
     let releasedCount = 0;
@@ -1509,21 +1553,11 @@ export class VirtualKeyboard extends HTMLElement {
     }
     
     const afterModifiers = this.state.getKeyDownModifiers();
-    if (debug.enabled) {
-      console.log(`Released ${releasedCount} modifier keys`, { 
-        before: beforeModifiers, 
-        after: afterModifiers 
-      });
-    }
   }
 
   // KeyUp a single modifier key
   private keyUpModifierKey(virtualKey: VirtualKey) {
     const code = virtualKey.getAttribute('code') || '';
-    
-    if (debug.enabled) {
-      console.log('keyUpModifierKey called for:', code);
-    }
     
     // Reset toggle state for this modifier
     this.state.setToggleState(code, false);
@@ -1547,10 +1581,6 @@ export class VirtualKeyboard extends HTMLElement {
     
     // Dispatch event
     this.event.dispatchKeyUp(virtualKey);
-    
-    if (debug.enabled) {
-      console.log('KeyDown modifiers after single release:', this.state.getKeyDownModifiers());
-    }
   }
 
   // Handle text input based on key type
@@ -1913,12 +1943,69 @@ export class VirtualKeyboard extends HTMLElement {
 
   // Event management methods
   triggerKeyUpEvent(virtualKey: VirtualKey) {
+    const code = virtualKey.getAttribute('code') || '';
+    const key = virtualKey.getAttribute('key') || '';
+    const modifiers = this.state.getModifierStates();
+    const modStr = this.getModifierString(modifiers);
+    const timestamp = new Date();
+    const timeStr = timestamp.toTimeString().split(' ')[0] + '.' + timestamp.getMilliseconds().toString().padStart(3, '0');
+    
+    this.debug.log(`[${timeStr}]event=keyup,key=${key},code=${code},mod=${modStr},source=virtual`);
     this.event.dispatchKeyUp(virtualKey);
   }
 
   // Event dispatch methods
   triggerKeyDownEvent(virtualKey: VirtualKey) {
+    const code = virtualKey.getAttribute('code') || '';
+    const key = virtualKey.getAttribute('key') || '';
+    const modifiers = this.state.getModifierStates();
+    const modStr = this.getModifierString(modifiers);
+    const timestamp = new Date();
+    const timeStr = timestamp.toTimeString().split(' ')[0] + '.' + timestamp.getMilliseconds().toString().padStart(3, '0');
+    
+    this.debug.log(`[${timeStr}]event=keydown,key=${key},code=${code},mod=${modStr},source=virtual`);
     this.event.dispatchKeyDown(virtualKey);
+    
+    // Also trigger keypress for character-producing keys
+    if (this.shouldTriggerKeypress(code)) {
+      this.triggerKeyPressEvent(virtualKey);
+    }
+  }
+  
+  // Helper method to determine if keypress should be triggered
+  private shouldTriggerKeypress(code: string): boolean {
+    // Don't trigger keypress for modifier keys, navigation keys, and function keys
+    const skipCodes = [
+      'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight',
+      'CapsLock', 'NumLock', 'ScrollLock',
+      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 
+      'Insert', 'Delete', 'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 
+      'F10', 'F11', 'F12'
+    ];
+    return !skipCodes.includes(code);
+  }
+  
+  // Helper method to get modifier string (c,a,s format)
+  private getModifierString(modifiers: any): string {
+    let modStr = '';
+    if (modifiers.ctrl) modStr += 'c';
+    if (modifiers.alt) modStr += 'a';
+    if (modifiers.shift) modStr += 's';
+    if (modifiers.meta) modStr += 'm';
+    return modStr || 'none';
+  }
+  
+  // Trigger keypress event with proper logging
+  triggerKeyPressEvent(virtualKey: VirtualKey) {
+    const code = virtualKey.getAttribute('code') || '';
+    const key = virtualKey.getAttribute('key') || '';
+    const modifiers = this.state.getModifierStates();
+    const modStr = this.getModifierString(modifiers);
+    const timestamp = new Date();
+    const timeStr = timestamp.toTimeString().split(' ')[0] + '.' + timestamp.getMilliseconds().toString().padStart(3, '0');
+    
+    this.debug.log(`[${timeStr}]event=keypress,key=${key},code=${code},mod=${modStr},source=virtual`);
+    this.event.dispatchKeyPress(virtualKey);
   }
 
 }

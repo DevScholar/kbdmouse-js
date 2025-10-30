@@ -6,12 +6,12 @@
 // Debug configuration for console logging
 interface DebugConfig {
   enabled: boolean;
-  showConsole: boolean;
+  logFunction: (message: string) => void;
 }
 
 const debug: DebugConfig = {
   enabled: false,
-  showConsole: true
+  logFunction: (message: string) => console.log(message)
 };
 
 interface TouchState {
@@ -55,14 +55,102 @@ class MousePolyfill {
   private _debugEnabled = false;
   private _vibrateEnabled = true;
 
+  // Low-coupling mouse log listener - always active for DOM logging
+  private mouseLogListener = (event: MouseEvent | TouchEvent) => {
+    let eventType = '';
+    let x = 0;
+    let y = 0;
+    let button: number | undefined;
+    let buttons: number | undefined;
+    let source: 'physical' | 'virtual' = 'physical';
+    
+    if (event instanceof MouseEvent) {
+      eventType = event.type;
+      x = event.clientX;
+      y = event.clientY;
+      button = event.button;
+      buttons = event.buttons;
+      source = (event as any).isVirtualMouse ? 'virtual' : 'physical';
+    } else if (event instanceof TouchEvent) {
+      eventType = event.type;
+      if (event.touches.length > 0) {
+        x = event.touches[0].clientX;
+        y = event.touches[0].clientY;
+      } else if (event.changedTouches.length > 0) {
+        x = event.changedTouches[0].clientX;
+        y = event.changedTouches[0].clientY;
+      }
+      source = 'physical'; // Touch events are always physical
+    }
+    
+    // Log the mouse event using the debug format
+    this.debug.logMouseEvent(eventType, x, y, button, buttons, source);
+  };
+
+  // Track if mouse log listener is enabled
+  private mouseLogListenerEnabled = false;
+
+  // Debug sub-object with configurable log function - always active for DOM logging
+  debug = {
+    enabled: true,
+    logFunction: (message: string) => console.log(message),
+    
+    // Set custom log function
+    setLogFunction: (fn: (message: string) => void) => {
+      this.debug.logFunction = fn;
+      // Keep debug enabled when setting custom log function
+      this.debug.enabled = true;
+      this._debugEnabled = true;
+    },
+    
+    // Log method that uses the configured log function
+    log: (message: string) => {
+      if (this.debug.enabled) {
+        this.debug.logFunction(message);
+      }
+    },
+    
+    // Format timestamp as [HH:mm:ss.SSS]
+    formatTimestamp: (): string => {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      const milliseconds = now.getMilliseconds().toString().padStart(3, '0');
+      return `[${hours}:${minutes}:${seconds}.${milliseconds}]`;
+    },
+    
+    // Log mouse/touch event in specified format
+    logMouseEvent: (eventType: string, x: number, y: number, button?: number, buttons?: number, source: 'physical' | 'virtual' = 'virtual') => {
+      const timestamp = this.debug.formatTimestamp();
+      let logMessage = `${timestamp}event=${eventType},x=${x},y=${y}`;
+      
+      // Add button and buttons for mouse events
+      if (button !== undefined) {
+        logMessage += `,button=${button}`;
+      }
+      if (buttons !== undefined) {
+        logMessage += `,buttons=${buttons}`;
+      }
+      
+      logMessage += `,source=${source}`;
+      this.debug.log(logMessage);
+    }
+  };
+
   private log(message: string, ...args: any[]): void {
-    if (!this._debugEnabled || !debug.showConsole) return;
-    console.log(`[MousePolyfill] ${message}`, ...args);
+    const formattedMessage = `[MousePolyfill] ${message}`;
+    if (args.length > 0) {
+      this.debug.log(`${formattedMessage} ${args.map(arg => JSON.stringify(arg)).join(' ')}`);
+    } else {
+      this.debug.log(formattedMessage);
+    }
   }
 
-  // Static method to control console output
+  // Static method to control console output (deprecated - use debug sub-object instead)
   static setConsoleOutput(enabled: boolean): void {
-    debug.showConsole = enabled;
+    // This method is kept for backward compatibility but is deprecated
+    // Use the debug sub-object instead: mousePolyfill.debug.setLogFunction(fn)
   }
 
   private lastGlobalClickTime = 0;
@@ -104,14 +192,54 @@ class MousePolyfill {
   }
 
   /**
+   * Enable mouse log listener for the given element
+   * @param element The element to attach listeners to
+   */
+  enableMouseLogListener(element: Element): void {
+    if (this.mouseLogListenerEnabled) return;
+    
+    element.addEventListener('mousedown', this.mouseLogListener as EventListener);
+    element.addEventListener('mouseup', this.mouseLogListener as EventListener);
+    element.addEventListener('mousemove', this.mouseLogListener as EventListener);
+    element.addEventListener('click', this.mouseLogListener as EventListener);
+    element.addEventListener('dblclick', this.mouseLogListener as EventListener);
+    element.addEventListener('contextmenu', this.mouseLogListener as EventListener);
+    element.addEventListener('touchstart', this.mouseLogListener as EventListener);
+    element.addEventListener('touchend', this.mouseLogListener as EventListener);
+    element.addEventListener('touchmove', this.mouseLogListener as EventListener);
+    
+    this.mouseLogListenerEnabled = true;
+    this.log('Mouse log listener enabled');
+  }
+
+  /**
+   * Disable mouse log listener
+   * @param element The element to remove listeners from
+   */
+  disableMouseLogListener(element: Element): void {
+    if (!this.mouseLogListenerEnabled) return;
+    
+    element.removeEventListener('mousedown', this.mouseLogListener as EventListener);
+    element.removeEventListener('mouseup', this.mouseLogListener as EventListener);
+    element.removeEventListener('mousemove', this.mouseLogListener as EventListener);
+    element.removeEventListener('click', this.mouseLogListener as EventListener);
+    element.removeEventListener('dblclick', this.mouseLogListener as EventListener);
+    element.removeEventListener('contextmenu', this.mouseLogListener as EventListener);
+    element.removeEventListener('touchstart', this.mouseLogListener as EventListener);
+    element.removeEventListener('touchend', this.mouseLogListener as EventListener);
+    element.removeEventListener('touchmove', this.mouseLogListener as EventListener);
+    
+    this.mouseLogListenerEnabled = false;
+    this.log('Mouse log listener disabled');
+  }
+
+  /**
    * Add polyfill for a specific element
    * @param element The element to add polyfill for
    */
   addPolyfillFor(element: Element): void {
-    if (!this.isTouchDevice) {
-      // No effect on non-touch devices
-      return;
-    }
+    // Allow polyfill on all devices for debugging purposes
+    // On desktop, it will only log events but not interfere with normal mouse behavior
 
     if (this.polyfillElements.has(element)) {
       // Already has polyfill
@@ -173,11 +301,8 @@ class MousePolyfill {
     // Remove from polyfill elements map
     this.polyfillElements.delete(element);
     
-    if (this._debugEnabled && debug.showConsole) {
-      console.log(`[MousePolyfill] Removed polyfill from element`, { 
-        tagName: element.tagName, 
-        id: element.id || element.className 
-      });
+    if (this._debugEnabled) {
+      this.debug.log(`[MousePolyfill] Removed polyfill from element ${element.tagName} ${element.id || element.className}`);
     }
   }
 
@@ -238,12 +363,12 @@ class MousePolyfill {
         touchState.hasVibrated = true;
         // Simplify vibration logs - Only output once in debug mode
         if (this._debugEnabled) {
-          console.log(`[Vibration] Touch ${touchId}: triggered ${this.VIBRATE_DURATION}ms`);
+          this.debug.log(`[Vibration] Touch ${touchId}: triggered ${this.VIBRATE_DURATION}ms`);
         }
       } catch (error) {
         const errorObj = error instanceof Error ? error : new Error(String(error));
-        if (this._debugEnabled && debug.showConsole) {
-          console.error(`[MousePolyfill] Vibration error for touch ${touchId}:`, errorObj.message);
+        if (this._debugEnabled) {
+          this.debug.log(`[MousePolyfill] Vibration error for touch ${touchId}: ${errorObj.message}`);
         }
       }
     }

@@ -210,6 +210,8 @@
 
         /* Plain text log styles - simplified */
 
+
+
         /* Scrollbar styles */
         .event-log::-webkit-scrollbar {
             width: 8px;
@@ -317,6 +319,8 @@
             </div>
         </div>
         
+
+        
         <!-- Virtual keyboard container -->
         <div class="keyboard-container">
             <!-- Use prefab-virtual-keyboard element to display virtual keyboard -->
@@ -354,16 +358,6 @@
             const isPortrait = window.innerHeight > window.innerWidth;
             const isSmallScreen = window.innerWidth <= 768; // Consider small screens as mobile-like
             
-            console.log('Demo: Mobile portrait detection', {
-                userAgent: navigator.userAgent,
-                isMobile,
-                isPortrait,
-                isSmallScreen,
-                windowWidth: window.innerWidth,
-                windowHeight: window.innerHeight,
-                result: (isMobile && isPortrait) || isSmallScreen
-            });
-            
             return (isMobile && isPortrait) || isSmallScreen;
         }
 
@@ -376,101 +370,92 @@
             const originalApplyScaling = keyboard.applyScaling;
 
             // Override applyScaling with demo-specific logic
-        keyboard.applyScaling = function() {
-            // ARCHITECTURAL PRINCIPLE: prefab-virtual-keyboard should be agnostic
-            // It should scale the container without touching the internal virtual-keyboard element
-            
-            // For mobile portrait mode, ignore all scaling restrictions and use zoom scaling
-            if (isMobilePortrait()) {
-                // Demo: Mobile portrait mode detected - using zoom scaling (agnostic scaling)
+            keyboard.applyScaling = function() {
+                // ARCHITECTURAL PRINCIPLE: prefab-virtual-keyboard should be agnostic
+                // It should scale the container without touching the internal virtual-keyboard element
                 
-                // ARCHITECTURAL PRINCIPLE: For mobile, we need to balance architecture with usability
-                // On small screens, we scale the entire keyboard to fit width while maintaining aspect ratio
-                const container = this.getContainer();
-                if (container) {
-                    const keyboardElement = container.querySelector('virtual-keyboard');
-                    if (keyboardElement) {
-                        // Calculate scale factor to fit width
-                        const scaleFactor = window.innerWidth / KEYBOARD_NATURAL_WIDTH;
-                        
-                        // Apply zoom scaling to container (not the internal element directly)
-                        this.style.zoom = scaleFactor;
-                        this.style.width = '100%';
-                        this.style.maxWidth = '100%';
-                        this.style.margin = '0';
-                        this.style.padding = '0';
-                        
-                        // Clear transform styles to avoid conflicts
-                        this.style.transform = '';
-                        this.style.transformOrigin = '';
-                        
-                        // Demo: Mobile zoom scaling applied
-                        
-                        return;
+                // For mobile portrait mode, ignore all scaling restrictions and use zoom scaling
+                if (isMobilePortrait()) {
+                    // ARCHITECTURAL PRINCIPLE: For mobile, we need to balance architecture with usability
+                    // On small screens, we scale the entire keyboard to fit width while maintaining aspect ratio
+                    const container = this.getContainer();
+                    if (container) {
+                        const keyboardElement = container.querySelector('virtual-keyboard');
+                        if (keyboardElement) {
+                            // Calculate scale factor to fit width
+                            const scaleFactor = window.innerWidth / KEYBOARD_NATURAL_WIDTH;
+                            
+                            // Apply zoom scaling to container (not the internal element directly)
+                            this.style.zoom = scaleFactor;
+                            this.style.width = '100%';
+                            this.style.maxWidth = '100%';
+                            this.style.margin = '0';
+                            this.style.padding = '0';
+                            
+                            // Clear transform styles to avoid conflicts
+                            this.style.transform = '';
+                            this.style.transformOrigin = '';
+                            
+                            return;
+                        }
                     }
+                    
+                    // Fallback: Force 100% width for mobile portrait
+                    this.style.width = '100vw';
+                    this.style.maxWidth = '100vw';
+                    this.style.margin = '0';
+                    this.style.padding = '0';
+                    this.style.zoom = '';
+                    this.style.transform = '';
+                    this.style.transformOrigin = '';
+                    
+                    return;
                 }
-                
-                // Fallback: Force 100% width for mobile portrait
-                this.style.width = '100vw';
-                this.style.maxWidth = '100vw';
-                this.style.margin = '0';
-                this.style.padding = '0';
-                this.style.zoom = '';
+
+                // For desktop or landscape mode, use the original logic but with natural size comparison
+                const container = this.getContainer();
+                if (!container || !this.isContentLoaded || this.naturalWidth === 0 || this.naturalHeight === 0) return;
+
+                const keyboardElement = container.querySelector('virtual-keyboard');
+                if (!keyboardElement) return;
+
+                // ARCHITECTURAL PRINCIPLE: Reset only container styles, never touch internal virtual-keyboard
+                this.style.width = '';
+                this.style.maxWidth = '';
+                this.style.margin = '';
+                this.style.padding = '';
                 this.style.transform = '';
                 this.style.transformOrigin = '';
+                this.style.zoom = '';
+
+                // Check if window is larger than natural keyboard size
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
                 
-                // Demo: Fallback mobile width applied
-                return;
+                // Demo: Window size check (agnostic scaling)
+
+                // If window is larger than natural size, don't stretch - maintain natural size
+                if (windowWidth > KEYBOARD_NATURAL_WIDTH) {
+                    // Set the prefab element to natural size (centered by CSS)
+                    this.style.width = KEYBOARD_NATURAL_WIDTH + 'px';
+                    this.style.maxWidth = KEYBOARD_NATURAL_WIDTH + 'px';
+                    this.style.margin = '0 auto';
+                    
+                    // DO NOT touch the internal virtual-keyboard element
+                    return;
+                }
+
+                // If window is smaller than natural size, use original scaling logic
+                // ARCHITECTURAL PRINCIPLE: Let the original scaling handle container scaling
+                // The original method now uses transform on the container, not the internal element
+                
+                // Clear any forced dimensions before calling original scaling
+                this.style.width = '';
+                this.style.maxWidth = '';
+                this.style.margin = '';
+                
+                originalApplyScaling.call(this);
             }
-
-            // For desktop or landscape mode, use the original logic but with natural size comparison
-            const container = this.getContainer();
-            if (!container || !this.isContentLoaded || this.naturalWidth === 0 || this.naturalHeight === 0) return;
-
-            const keyboardElement = container.querySelector('virtual-keyboard');
-            if (!keyboardElement) return;
-
-            // ARCHITECTURAL PRINCIPLE: Reset only container styles, never touch internal virtual-keyboard
-            this.style.width = '';
-            this.style.maxWidth = '';
-            this.style.margin = '';
-            this.style.padding = '';
-            this.style.transform = '';
-            this.style.transformOrigin = '';
-            this.style.zoom = '';
-
-            // Check if window is larger than natural keyboard size
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-            
-            // Demo: Window size check (agnostic scaling)
-
-            // If window is larger than natural size, don't stretch - maintain natural size
-            if (windowWidth > KEYBOARD_NATURAL_WIDTH) {
-                // Demo: Window larger than natural size - maintaining natural dimensions (agnostic)
-                
-                // Set the prefab element to natural size (centered by CSS)
-                this.style.width = KEYBOARD_NATURAL_WIDTH + 'px';
-                this.style.maxWidth = KEYBOARD_NATURAL_WIDTH + 'px';
-                this.style.margin = '0 auto';
-                
-                // DO NOT touch the internal virtual-keyboard element
-                // Demo: Internal virtual-keyboard element left untouched (natural size maintained)
-                return;
-            }
-
-            // If window is smaller than natural size, use original scaling logic
-            // ARCHITECTURAL PRINCIPLE: Let the original scaling handle container scaling
-            // The original method now uses transform on the container, not the internal element
-            // Demo: Window smaller than natural size - using agnostic original scaling
-            
-            // Clear any forced dimensions before calling original scaling
-            this.style.width = '';
-            this.style.maxWidth = '';
-            this.style.margin = '';
-            
-            originalApplyScaling.call(this);
-        };
 
             // Initial scaling
             keyboard.applyScaling();
@@ -486,168 +471,14 @@
             window.addEventListener('resize', () => {
                 keyboard.applyScaling();
             });
+        };
 
-            // Demo: Custom scaling logic initialized
-            // Demo: Natural keyboard dimensions
-        }
-
-        // Keyboard event logging system
-        class KeyboardEventLogger {
+        // Simple log container management
+        class LogContainer {
             constructor() {
                 this.logContainer = document.getElementById('event-log');
                 this.clearButton = document.getElementById('clear-log');
-                this.maxLogEntries = 100;
-                this.logEntries = [];
-                
-                this.initializeEventListeners();
                 this.bindClearButton();
-            }
-
-            initializeEventListeners() {
-                // Listen to all keyboard events uniformly
-                window.addEventListener('keydown', (event) => {
-                    const source = this.isVirtualKeyboardEvent(event) ? 'virtual' : 'physical';
-                    this.logEvent('keydown', source, event);
-                });
-
-                window.addEventListener('keyup', (event) => {
-                    const source = this.isVirtualKeyboardEvent(event) ? 'virtual' : 'physical';
-                    this.logEvent('keyup', source, event);
-                });
-
-                // Listen to text input area changes
-                const textInput = document.getElementById('text-input');
-                if (textInput) {
-                    textInput.addEventListener('input', (event) => {
-                        this.logInputEvent(event);
-                    });
-                }
-            }
-
-            isVirtualKeyboardEvent(event) {
-                // Check virtual keyboard marker on event object first
-                if (event.isVirtualKeyboard) {
-                    return true;
-                }
-                
-                // Fallback to path checking (compatibility)
-                const path = event.composedPath();
-                for (let el of path) {
-                    if (el && el.tagName) {
-                        const tag = el.tagName.toLowerCase();
-                        if (tag === 'virtual-key' || tag === 'virtual-keyboard' || tag === 'prefab-virtual-keyboard') {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            logEvent(type, source, event) {
-                const timestamp = new Date().toLocaleTimeString();
-                
-                let keyInfo = '';
-                let codeInfo = '';
-
-                if (source === 'virtual' || source === 'physical') {
-                    // Handle all keyboard events uniformly, whether virtual or physical
-                    keyInfo = event.key || 'Unknown';
-                    codeInfo = event.code || 'unknown';
-                }
-
-                // Check virtual keyboard marker
-                const isVirtualKeyboard = event.isVirtualKeyboard || false;
-                const actualSource = isVirtualKeyboard ? 'virtual' : source;
-
-                // Get standard KeyboardEvent modifier key states
-                const modifiers = {
-                    ctrl: event.ctrlKey || false,
-                    alt: event.altKey || false,
-                    shift: event.shiftKey || false,
-                    meta: event.metaKey || false,
-                    repeat: event.repeat || false,
-                    isComposing: event.isComposing || false,
-                    location: event.location || 0
-                };
-
-                const logEntry = {
-                    timestamp,
-                    type,
-                    source: actualSource,
-                    key: keyInfo,
-                    code: codeInfo,
-                    isVirtualKeyboard: isVirtualKeyboard, // Add marker information
-                    modifiers: modifiers, // Add modifier key states
-                    fullEvent: event // Complete native event object
-                };
-
-                this.addLogEntry(logEntry);
-            }
-
-            logInputEvent(event) {
-                const timestamp = new Date().toLocaleTimeString();
-                const logEntry = {
-                    timestamp,
-                    type: 'input',
-                    source: 'text',
-                    key: event.data || 'Backspace/Del',
-                    code: 'input',
-                    fullEvent: event
-                };
-
-                this.addLogEntry(logEntry);
-            }
-
-            addLogEntry(logEntry) {
-                this.logEntries.push(logEntry); // Add to end
-                
-                // Limit log entries
-                if (this.logEntries.length > this.maxLogEntries) {
-                    this.logEntries = this.logEntries.slice(-this.maxLogEntries);
-                }
-
-                this.renderLog();
-            }
-
-            renderLog() {
-                // Plain text log format
-                const logText = this.logEntries.map(entry => {
-                    const typeMarker = entry.type === 'keydown' ? '▼' : '▲';
-                    const sourceMarker = entry.source === 'physical' ? '🔧' : 
-                                        entry.source === 'virtual' ? '⌨️' : '📝';
-                    const virtualMarker = entry.isVirtualKeyboard ? ' (virtual)' : '';
-                    
-                    // Format modifier keys display
-                    let modifierStr = '';
-                    if (entry.modifiers) {
-                        const activeModifiers = [];
-                        if (entry.modifiers.ctrl) activeModifiers.push('Ctrl');
-                        if (entry.modifiers.alt) activeModifiers.push('Alt');
-                        if (entry.modifiers.shift) activeModifiers.push('Shift');
-                        if (entry.modifiers.meta) activeModifiers.push('Meta');
-                        
-                        if (activeModifiers.length > 0) {
-                            modifierStr = ` [${activeModifiers.join('+')}]`;
-                        }
-                        
-                        // Add additional property information using modern JS features
-                        modifierStr += entry.modifiers.repeat ? ' (repeat)' : '';
-                        modifierStr += entry.modifiers.isComposing ? ' (composing)' : '';
-                        
-                        const locationNames = ['', 'Left', 'Right', 'Numpad'];
-                        const location = entry.modifiers.location ?? 0;
-                        if (location !== 0) {
-                            modifierStr += ` (${locationNames[location] ?? 'Unknown'})`;
-                        }
-                    }
-                    
-                    return `${entry.timestamp} ${typeMarker}${sourceMarker} ${entry.type} ${entry.source} ${entry.key} [${entry.code}]${virtualMarker}${modifierStr}`;
-                }).join('\n');
-                
-                this.logContainer.textContent = logText;
-                
-                // Auto-scroll to bottom (latest logs)
-                this.logContainer.scrollTop = this.logContainer.scrollHeight;
             }
 
             bindClearButton() {
@@ -657,20 +488,20 @@
             }
 
             clearLog() {
-                this.logEntries = [];
-                this.renderLog();
+                this.logContainer.textContent = '';
+            }
+
+            addLog(message) {
+                const timestamp = new Date().toLocaleTimeString('en-US', { 
+                    hour12: false, 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
                 
-                // Add clear notification (system log entry)
-                const logEntry = {
-                    timestamp: new Date().toLocaleTimeString(),
-                    type: 'system',
-                    source: 'log',
-                    key: 'Log cleared',
-                    code: 'clear'
-                };
-                
-                this.logEntries.push(logEntry);
-                this.renderLog();
+                const logEntry = `[${timestamp}] ${message}`;
+                this.logContainer.textContent += logEntry + '\n';
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
             }
         }
 
@@ -700,12 +531,10 @@
 
             activateInput(inputElement) {
                 inputElement.classList.add(this.activeClass);
-                console.log('Input field activated:', inputElement.id);
             }
 
             deactivateInput(inputElement) {
                 inputElement.classList.remove(this.activeClass);
-                console.log('Input field deactivated:', inputElement.id);
             }
         }
 
@@ -713,12 +542,10 @@
 
 
 
-        // Initialize keyboard event log system
+        // Initialize keyboard demo
         document.addEventListener('DOMContentLoaded', () => {
-            const logger = new KeyboardEventLogger();
+            window.logContainer = new LogContainer(); // Make log container globally accessible
             const inputManager = new InputActivationManager();
-            console.log('Keyboard event log system started');
-            console.log('Input activation manager started');
             
             // Setup custom demo keyboard scaling after keyboard is loaded
             const keyboard = document.getElementById('demo-keyboard');
@@ -731,326 +558,81 @@
                         setupDemoKeyboardScaling();
                     });
                 }
+                
+                // Setup custom log function for virtual keyboard debug logging
+                // This connects the prefab keyboard debug to our visual log container
+                if (keyboard.debug && keyboard.debug.setLogFunction) {
+                    keyboard.debug.setLogFunction((message) => {
+                        // Add to visual log container
+                        if (window.logContainer) {
+                            window.logContainer.addLog(message);
+                        }
+                    });
+                    // Enable debug logging for demo
+                    keyboard.debug.enabled = true;
+                }
             }
+            
+            // Add window-level keyboard event listeners for physical keyboard events
+            window.addEventListener('keydown', (event) => {
+                const source = event.isVirtualKeyboard ? 'virtual' : 'physical';
+                const modifiers = [];
+                if (event.ctrlKey) modifiers.push('c');
+                if (event.altKey) modifiers.push('a');
+                if (event.shiftKey) modifiers.push('s');
+                if (event.metaKey) modifiers.push('m');
+                
+                const logMessage = `event=${event.type},key=${event.key},code=${event.code},mod=${modifiers.join('')},source=${source}`;
+                if (window.logContainer) {
+                    window.logContainer.addLog(logMessage);
+                }
+            });
+            
+            window.addEventListener('keyup', (event) => {
+                const source = event.isVirtualKeyboard ? 'virtual' : 'physical';
+                const modifiers = [];
+                if (event.ctrlKey) modifiers.push('c');
+                if (event.altKey) modifiers.push('a');
+                if (event.shiftKey) modifiers.push('s');
+                if (event.metaKey) modifiers.push('m');
+                
+                const logMessage = `event=${event.type},key=${event.key},code=${event.code},mod=${modifiers.join('')},source=${source}`;
+                if (window.logContainer) {
+                    window.logContainer.addLog(logMessage);
+                }
+            });
+            
+            window.addEventListener('keypress', (event) => {
+                const source = event.isVirtualKeyboard ? 'virtual' : 'physical';
+                const modifiers = [];
+                if (event.ctrlKey) modifiers.push('c');
+                if (event.altKey) modifiers.push('a');
+                if (event.shiftKey) modifiers.push('s');
+                if (event.metaKey) modifiers.push('m');
+                
+                const logMessage = `event=${event.type},key=${event.key},code=${event.code},mod=${modifiers.join('')},source=${source}`;
+                if (window.logContainer) {
+                    window.logContainer.addLog(logMessage);
+                }
+            });
             
             // Add welcome log
             setTimeout(() => {
-                logger.addLogEntry({
-                    timestamp: new Date().toLocaleTimeString(),
-                    type: 'system',
-                    source: 'log',
-                    key: 'Keyboard event listener started',
-                    code: 'ready'
-                });
+                if (window.logContainer) {
+                    window.logContainer.addLog('Keyboard demo initialized');
+                }
             }, 100);
         });
         
-        // Remove test controls - no longer needed
-        function addTestControls() {
-            // Test controls removed for production
-            console.log('Test controls removed');
-        }
-
-        // Debug function to test mobile portrait detection (can be called from console)
-        window.testMobilePortraitDetection = function() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-            const isPortrait = window.innerHeight > window.innerWidth;
-            
-            console.log('=== Mobile Portrait Detection Test ===');
-            console.log('User Agent:', navigator.userAgent);
-            console.log('Is Mobile (regex test):', isMobile);
-            console.log('Is Portrait (height > width):', isPortrait);
-            console.log('Window Width:', window.innerWidth);
-            console.log('Window Height:', window.innerHeight);
-            console.log('Final Result (isMobile && isPortrait):', isMobile && isPortrait);
-            console.log('=====================================');
-            
-            return {
-                userAgent: navigator.userAgent,
-                isMobile,
-                isPortrait,
-                windowWidth: window.innerWidth,
-                windowHeight: window.innerHeight,
-                result: isMobile && isPortrait
-            };
-        };
-
-        // Test scaling behavior
-        window.testScalingBehavior = function() {
-            console.log('=== Keyboard Scaling Debug ===');
-            
-            // Get current window dimensions
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-            console.log('Window size:', windowWidth + 'x' + windowHeight);
-            
-            // Check natural size
-            const keyboard = document.querySelector('prefab-virtual-keyboard');
-            if (keyboard) {
-                console.log('Natural size:', keyboard.naturalWidth + 'x' + keyboard.naturalHeight);
-                console.log('Is mobile portrait:', isMobilePortrait());
-                
-                // Check current styles
-                const container = keyboard.getContainer?.();
-                const keyboardElement = container?.querySelector('virtual-keyboard');
-                
-                if (keyboardElement) {
-                    console.log('Keyboard element styles:');
-                    console.log('- width:', keyboardElement.style.width);
-                    console.log('- maxWidth:', keyboardElement.style.maxWidth);
-                    console.log('- margin:', keyboardElement.style.margin);
-                    console.log('- transform:', keyboardElement.style.transform);
-                    console.log('- zoom:', keyboardElement.style.zoom);
-                }
-                
-                // Check computed styles
-                const computedStyles = window.getComputedStyle(keyboard);
-                console.log('Computed styles:');
-                console.log('- width:', computedStyles.width);
-                console.log('- margin-left:', computedStyles.marginLeft);
-                console.log('- padding-left:', computedStyles.paddingLeft);
-                console.log('- left:', computedStyles.left);
-                console.log('- position:', computedStyles.position);
-            }
-            
-            // Force a scaling update
-            console.log('Forcing scaling update...');
-            keyboard?.applyScaling?.();
-            
-            console.log('=== End Debug ===');
-        };
-
-        // Debug left margin specifically
-        window.debugLeftMargin = function() {
-            console.log('=== Left Margin Debug ===');
-            
-            const keyboard = document.querySelector('prefab-virtual-keyboard');
-            if (keyboard) {
-                const container = keyboard.getContainer?.();
-                const keyboardElement = container?.querySelector('virtual-keyboard');
-                
-                console.log('Keyboard container:');
-                if (container) {
-                    const containerStyles = window.getComputedStyle(container);
-                    console.log('- margin-left:', containerStyles.marginLeft);
-                    console.log('- padding-left:', containerStyles.paddingLeft);
-                    console.log('- left:', containerStyles.left);
-                    console.log('- position:', containerStyles.position);
-                    console.log('- transform:', containerStyles.transform);
-                }
-                
-                console.log('Keyboard element:');
-                if (keyboardElement) {
-                    const elementStyles = window.getComputedStyle(keyboardElement);
-                    console.log('- margin-left:', elementStyles.marginLeft);
-                    console.log('- padding-left:', elementStyles.paddingLeft);
-                    console.log('- left:', elementStyles.left);
-                    console.log('- position:', elementStyles.position);
-                    console.log('- transform:', elementStyles.transform);
-                }
-                
-                console.log('Keyboard component itself:');
-                const keyboardStyles = window.getComputedStyle(keyboard);
-                console.log('- margin-left:', keyboardStyles.marginLeft);
-                console.log('- padding-left:', keyboardStyles.paddingLeft);
-                console.log('- left:', keyboardStyles.left);
-                console.log('- position:', keyboardStyles.position);
-                console.log('- transform:', keyboardStyles.transform);
-            }
-            
-            // Check parent elements
-            console.log('Parent chain:');
-            let element = keyboard;
-            while (element && element !== document.body) {
-                const styles = window.getComputedStyle(element);
-                console.log(`${element.tagName || element.className}: margin-left=${styles.marginLeft}, padding-left=${styles.paddingLeft}, left=${styles.left}`);
-                element = element.parentElement;
-            }
-            
-            console.log('=== End Left Margin Debug ===');
-        };
-
-        // Debug architectural principle: virtual-keyboard should maintain natural size
-        window.debugArchitecturalPrinciple = function() {
-            console.log('=== Architectural Principle Debug ===');
-            console.log('Principle: prefab-virtual-keyboard should be agnostic');
-            console.log('Principle: Only scale the container, never modify internal virtual-keyboard');
-            
-            const keyboard = document.querySelector('prefab-virtual-keyboard');
-            if (keyboard) {
-                const container = keyboard.getContainer?.();
-                const keyboardElement = container?.querySelector('virtual-keyboard');
-                
-                console.log('Natural dimensions (should be 1044x360):');
-                console.log('- Natural width:', keyboard.naturalWidth);
-                console.log('- Natural height:', keyboard.naturalHeight);
-                
-                if (keyboardElement) {
-                    console.log('Internal virtual-keyboard element (SHOULD maintain natural size):');
-                    const elementStyles = window.getComputedStyle(keyboardElement);
-                    console.log('- width:', elementStyles.width);
-                    console.log('- height:', elementStyles.height);
-                    console.log('- max-width:', elementStyles.maxWidth);
-                    console.log('- max-height:', elementStyles.maxHeight);
-                    console.log('- transform:', elementStyles.transform);
-                    console.log('- zoom:', elementStyles.zoom);
-                    
-                    // Check if element maintains natural size
-                    const maintainsNaturalSize = 
-                        elementStyles.width === '1044px' && 
-                        elementStyles.height === '360px' &&
-                        elementStyles.transform === 'none' &&
-                        elementStyles.zoom === '1';
-                    
-                    console.log('✅ Maintains natural size:', maintainsNaturalSize);
-                    if (!maintainsNaturalSize) {
-                        console.log('❌ VIOLATION: Internal virtual-keyboard element has been modified!');
-                    }
-                }
-                
-                console.log('Prefab container (CAN be modified for scaling):');
-                const keyboardStyles = window.getComputedStyle(keyboard);
-                console.log('- width:', keyboardStyles.width);
-                console.log('- height:', keyboardStyles.height);
-                console.log('- transform:', keyboardStyles.transform);
-                console.log('- zoom:', keyboardStyles.zoom);
-            }
-            
-            console.log('=== End Architectural Principle Debug ===');
-        };
-
-        // Test scaling behavior - verify keyboard can scale down AND back up
-        window.testScalingBehavior = function() {
-            console.log('=== Testing Scaling Behavior ===');
-            
-            const keyboard = document.querySelector('prefab-virtual-keyboard');
-            if (!keyboard) {
-                console.log('No keyboard found');
-                return;
-            }
-            
-            console.log('Current state:');
-            debugArchitecturalPrinciple();
-            
-            console.log('Testing scale down...');
-            // Simulate small window
-            const originalWidth = window.innerWidth;
-            Object.defineProperty(window, 'innerWidth', {
-                writable: true,
-                configurable: true,
-                value: 800
-            });
-            window.dispatchEvent(new Event('resize'));
-            
-            setTimeout(() => {
-                console.log('After scale down:');
-                debugArchitecturalPrinciple();
-                
-                console.log('Testing scale back up...');
-                // Restore large window
-                Object.defineProperty(window, 'innerWidth', {
-                    writable: true,
-                    configurable: true,
-                    value: originalWidth
-                });
-                window.dispatchEvent(new Event('resize'));
-                
-                setTimeout(() => {
-                    console.log('After scale back up:');
-                    debugArchitecturalPrinciple();
-                    console.log('=== End Scaling Test ===');
-                }, 500);
-            }, 500);
-        };
-
-        // Test mobile scaling behavior
-        window.testMobileScaling = function() {
-            const widths = [375, 414, 768, 1024, 1200];
-            let currentIndex = 0;
-            
-            function testNextWidth() {
-                if (currentIndex >= widths.length) {
-                    console.log('Mobile scaling test completed');
-                    return;
-                }
-                
-                const width = widths[currentIndex];
-                console.log(`Testing width: ${width}px`);
-                
-                // Simulate window resize
-                Object.defineProperty(window, 'innerWidth', {
-                    writable: true,
-                    configurable: true,
-                    value: width
-                });
-                
-                // Trigger resize event
-                window.dispatchEvent(new Event('resize'));
-                
-                // Check if mobile portrait is detected
-                const isMobile = isMobilePortrait();
-                console.log(`Width ${width}px - isMobilePortrait: ${isMobile}`);
-                
-                // Check applied styles
-                const keyboard = document.getElementById('demo-keyboard');
-                if (keyboard) {
-                    const keyboardStyle = window.getComputedStyle(keyboard);
-                    console.log(`Width ${width}px - prefab-keyboard styles:`, {
-                        width: keyboardStyle.width,
-                        maxWidth: keyboardStyle.maxWidth,
-                        transform: keyboardStyle.transform,
-                        transformOrigin: keyboardStyle.transformOrigin
-                    });
-                    
-                    const container = keyboard.getContainer();
-                    if (container) {
-                        const virtualKeyboard = container.querySelector('virtual-keyboard');
-                        if (virtualKeyboard) {
-                            const computedStyle = window.getComputedStyle(virtualKeyboard);
-                            console.log(`Width ${width}px - virtual-keyboard styles:`, {
-                                width: computedStyle.width,
-                                maxWidth: computedStyle.maxWidth,
-                                transform: computedStyle.transform,
-                                transformOrigin: computedStyle.transformOrigin
-                            });
-                        }
-                        
-                        const containerStyle = window.getComputedStyle(container);
-                        console.log(`Width ${width}px - container styles:`, {
-                            width: containerStyle.width,
-                            maxWidth: containerStyle.maxWidth,
-                            transform: containerStyle.transform,
-                            transformOrigin: containerStyle.transformOrigin
-                        });
-                    }
-                }
-                
-                currentIndex++;
-                setTimeout(testNextWidth, 1000);
-            }
-            
-            testNextWidth();
-        };
-        
         // Debug function to check current mobile state
         window.debugMobileState = function() {
-            console.log('Mobile Debug State:');
-            console.log('- Mobile portrait mode:', isMobilePortrait());
-            console.log('- Window size:', window.innerWidth + 'x' + window.innerHeight);
-            
-            // Check keyboard element
             const keyboard = document.getElementById('demo-keyboard');
             if (keyboard) {
                 // Check inline styles
-                console.log('- Keyboard styles:', {
-                    zoom: keyboard.style.zoom || 'none',
-                    transform: keyboard.style.transform || 'none'
-                });
-            } else {
-                console.log('- Keyboard element not found');
             }
         };
+        
+
     </script>
 </body>
 </html>
