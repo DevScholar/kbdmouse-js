@@ -439,6 +439,45 @@ export class VirtualKeyboard extends HTMLElement {
   };
 
   event = {
+// Helper function to get keyCode/which values for legacy properties
+    getLegacyKeyCode: (key: string, code: string): number => {
+      // Map common keys to their legacy keyCode values
+      const keyCodeMap: { [key: string]: number } = {
+        'Backspace': 8, 'Tab': 9, 'Enter': 13, 'Escape': 27, 'Space': 32,
+        'PageUp': 33, 'PageDown': 34, 'End': 35, 'Home': 36,
+        'ArrowLeft': 37, 'ArrowUp': 38, 'ArrowRight': 39, 'ArrowDown': 40,
+        'Insert': 45, 'Delete': 46,
+        '0': 48, '1': 49, '2': 50, '3': 51, '4': 52, '5': 53, '6': 54, '7': 55, '8': 56, '9': 57,
+        'a': 65, 'b': 66, 'c': 67, 'd': 68, 'e': 69, 'f': 70, 'g': 71, 'h': 72, 'i': 73, 'j': 74,
+        'k': 75, 'l': 76, 'm': 77, 'n': 78, 'o': 79, 'p': 80, 'q': 81, 'r': 82, 's': 83, 't': 84,
+        'u': 85, 'v': 86, 'w': 87, 'x': 88, 'y': 89, 'z': 90,
+        'F1': 112, 'F2': 113, 'F3': 114, 'F4': 115, 'F5': 116, 'F6': 117,
+        'F7': 118, 'F8': 119, 'F9': 120, 'F10': 121, 'F11': 122, 'F12': 123
+      };
+      
+      // Try to get from key first, then code
+      return keyCodeMap[key] || keyCodeMap[code.replace('Key', '')] || 0;
+    },
+
+    // Helper function to get correct location value for keys
+    getKeyLocation: (code: string): number => {
+      // Standard keys: location 0
+      // Left-side keys: location 1
+      if (code === 'ShiftLeft' || code === 'ControlLeft' || code === 'AltLeft' || code === 'MetaLeft') {
+        return 1;
+      }
+      // Right-side keys: location 2  
+      if (code === 'ShiftRight' || code === 'ControlRight' || code === 'AltRight' || code === 'MetaRight') {
+        return 2;
+      }
+      // Numpad keys: location 3
+      if (code.startsWith('Numpad')) {
+        return 3;
+      }
+      // Everything else: standard location
+      return 0;
+    },
+
     // Dispatch keydown event to window
     dispatchKeyDown: (virtualKey: VirtualKey) => {
       const code = virtualKey.getAttribute('code') || '';
@@ -496,7 +535,7 @@ export class VirtualKeyboard extends HTMLElement {
       const keyDownEvent = new KeyboardEvent('keydown', {
         key: key,
         code: code,
-        location: 0,
+        location: this.event.getKeyLocation(code),
         bubbles: true,
         cancelable: true,
         composed: true,
@@ -505,7 +544,10 @@ export class VirtualKeyboard extends HTMLElement {
         shiftKey: modifiers.shift,
         ctrlKey: modifiers.ctrl,
         altKey: modifiers.alt,
-        metaKey: modifiers.meta
+        metaKey: modifiers.meta,
+        // Add missing standard properties
+        repeat: false, // Virtual keyboard doesn't auto-repeat initially
+        isComposing: false // Not part of composition session
       });
 
       // Add getModifierState method to match standard KeyboardEvent interface
@@ -520,9 +562,59 @@ export class VirtualKeyboard extends HTMLElement {
           default: return false;
         }
       };
+      
+      // Add standard DOM event methods
+      (keyDownEvent as any).preventDefault = function() {
+        this.returnValue = false;
+      };
+      
+      (keyDownEvent as any).stopPropagation = function() {
+        this._stopPropagation = true;
+      };
+      
+      (keyDownEvent as any).stopImmediatePropagation = function() {
+        this._stopImmediatePropagation = true;
+        this._stopPropagation = true;
+      };
+      
+      // Add legacy properties for backward compatibility (deprecated but still used)
+      const keyCode = this.event.getLegacyKeyCode(key, code);
+      Object.defineProperty(keyDownEvent, 'keyCode', {
+        value: keyCode,
+        writable: false,
+        configurable: false
+      });
+      
+      Object.defineProperty(keyDownEvent, 'charCode', {
+        value: 0, // keydown events don't have charCode
+        writable: false,
+        configurable: false
+      });
+      
+      Object.defineProperty(keyDownEvent, 'which', {
+        value: keyCode, // which should match keyCode for keydown
+        writable: false,
+        configurable: false
+      });
 
       (keyDownEvent as any).isVirtualKeyboard = true;
-      (keyDownEvent as any).sourceElement = virtualKey;
+      (keyDownEvent as any).virtualKeyElement = virtualKey;
+      
+      // Add timeStamp if not present (isTrusted is read-only and managed by browser)
+      if (!keyDownEvent.timeStamp) {
+        Object.defineProperty(keyDownEvent, 'timeStamp', {
+          value: performance.now(),
+          writable: false,
+          configurable: false
+        });
+      }
+      
+      // Add inputType for input-related events (keyboard input)
+      Object.defineProperty(keyDownEvent, 'inputType', {
+        value: 'insertText',
+        writable: false,
+        configurable: false
+      });
       
       // Set target to the currently focused element to match physical keyboard behavior
       // Virtual keyboard should not steal focus - events should go to the active element (maintain focus)
@@ -530,6 +622,24 @@ export class VirtualKeyboard extends HTMLElement {
       Object.defineProperty(keyDownEvent, 'target', {
         value: activeElement,
         writable: false
+      });
+      
+      // Add event chain properties
+      Object.defineProperty(keyDownEvent, 'currentTarget', {
+        value: activeElement,
+        writable: false
+      });
+      
+      Object.defineProperty(keyDownEvent, 'eventPhase', {
+        value: Event.AT_TARGET,
+        writable: false
+      });
+      
+      Object.defineProperty(keyDownEvent, 'defaultPrevented', {
+        get: function() {
+          return this.returnValue === false;
+        },
+        enumerable: true
       });
       
       window.dispatchEvent(keyDownEvent);
@@ -592,7 +702,7 @@ export class VirtualKeyboard extends HTMLElement {
       const keyUpEvent = new KeyboardEvent('keyup', {
         key: key,
         code: code,
-        location: 0,
+        location: this.event.getKeyLocation(code),
         bubbles: true,
         cancelable: true,
         composed: true,
@@ -601,7 +711,10 @@ export class VirtualKeyboard extends HTMLElement {
         shiftKey: modifiers.shift,
         ctrlKey: modifiers.ctrl,
         altKey: modifiers.alt,
-        metaKey: modifiers.meta
+        metaKey: modifiers.meta,
+        // Add missing standard properties
+        repeat: false, // Virtual keyboard doesn't auto-repeat initially
+        isComposing: false // Not part of composition session
       });
 
       // Add getModifierState method to match standard KeyboardEvent interface
@@ -616,9 +729,59 @@ export class VirtualKeyboard extends HTMLElement {
           default: return false;
         }
       };
+      
+      // Add standard DOM event methods
+      (keyUpEvent as any).preventDefault = function() {
+        this.returnValue = false;
+      };
+      
+      (keyUpEvent as any).stopPropagation = function() {
+        this._stopPropagation = true;
+      };
+      
+      (keyUpEvent as any).stopImmediatePropagation = function() {
+        this._stopImmediatePropagation = true;
+        this._stopPropagation = true;
+      };
+      
+      // Add legacy properties for backward compatibility (deprecated but still used)
+      const keyCode = this.event.getLegacyKeyCode(key, code);
+      Object.defineProperty(keyUpEvent, 'keyCode', {
+        value: keyCode,
+        writable: false,
+        configurable: false
+      });
+      
+      Object.defineProperty(keyUpEvent, 'charCode', {
+        value: 0, // keyup events don't have charCode
+        writable: false,
+        configurable: false
+      });
+      
+      Object.defineProperty(keyUpEvent, 'which', {
+        value: keyCode, // which should match keyCode for keyup
+        writable: false,
+        configurable: false
+      });
 
       (keyUpEvent as any).isVirtualKeyboard = true;
-      (keyUpEvent as any).sourceElement = virtualKey;
+      (keyUpEvent as any).virtualKeyElement = virtualKey;
+      
+      // Add timeStamp if not present (isTrusted is read-only and managed by browser)
+      if (!keyUpEvent.timeStamp) {
+        Object.defineProperty(keyUpEvent, 'timeStamp', {
+          value: performance.now(),
+          writable: false,
+          configurable: false
+        });
+      }
+      
+      // Add inputType for input-related events (keyboard input)
+      Object.defineProperty(keyUpEvent, 'inputType', {
+        value: 'insertText',
+        writable: false,
+        configurable: false
+      });
       
       // Set target to the currently focused element to match physical keyboard behavior
       // Virtual keyboard should not steal focus - events should go to the active element (maintain focus)
@@ -626,6 +789,24 @@ export class VirtualKeyboard extends HTMLElement {
       Object.defineProperty(keyUpEvent, 'target', {
         value: activeElement,
         writable: false
+      });
+      
+      // Add event chain properties
+      Object.defineProperty(keyUpEvent, 'currentTarget', {
+        value: activeElement,
+        writable: false
+      });
+      
+      Object.defineProperty(keyUpEvent, 'eventPhase', {
+        value: Event.AT_TARGET,
+        writable: false
+      });
+      
+      Object.defineProperty(keyUpEvent, 'defaultPrevented', {
+        get: function() {
+          return this.returnValue === false;
+        },
+        enumerable: true
       });
       
       window.dispatchEvent(keyUpEvent);
@@ -684,7 +865,7 @@ export class VirtualKeyboard extends HTMLElement {
       const keyPressEvent = new KeyboardEvent('keypress', {
         key: key,
         code: code,
-        location: 0,
+        location: this.event.getKeyLocation(code),
         bubbles: true,
         cancelable: true,
         composed: true,
@@ -693,7 +874,10 @@ export class VirtualKeyboard extends HTMLElement {
         shiftKey: modifiers.shift,
         ctrlKey: modifiers.ctrl,
         altKey: modifiers.alt,
-        metaKey: modifiers.meta
+        metaKey: modifiers.meta,
+        // Add missing standard properties
+        repeat: false, // Virtual keyboard doesn't auto-repeat initially
+        isComposing: false // Not part of composition session
       });
 
       // Add getModifierState method to match standard KeyboardEvent interface
@@ -708,9 +892,60 @@ export class VirtualKeyboard extends HTMLElement {
           default: return false;
         }
       };
+      
+      // Add standard DOM event methods
+      (keyPressEvent as any).preventDefault = function() {
+        this.returnValue = false;
+      };
+      
+      (keyPressEvent as any).stopPropagation = function() {
+        this._stopPropagation = true;
+      };
+      
+      (keyPressEvent as any).stopImmediatePropagation = function() {
+        this._stopImmediatePropagation = true;
+        this._stopPropagation = true;
+      };
+      
+      // Add legacy properties for backward compatibility (deprecated but still used)
+      const keyCode = this.event.getLegacyKeyCode(key, code);
+      const charCode = key.length === 1 ? key.charCodeAt(0) : 0;
+      Object.defineProperty(keyPressEvent, 'keyCode', {
+        value: keyCode,
+        writable: false,
+        configurable: false
+      });
+      
+      Object.defineProperty(keyPressEvent, 'charCode', {
+        value: charCode, // keypress events have charCode for character keys
+        writable: false,
+        configurable: false
+      });
+      
+      Object.defineProperty(keyPressEvent, 'which', {
+        value: charCode || keyCode, // which is charCode for printable chars, keyCode otherwise
+        writable: false,
+        configurable: false
+      });
 
       (keyPressEvent as any).isVirtualKeyboard = true;
-      (keyPressEvent as any).sourceElement = virtualKey;
+      (keyPressEvent as any).virtualKeyElement = virtualKey;
+      
+      // Add timeStamp if not present (isTrusted is read-only and managed by browser)
+      if (!keyPressEvent.timeStamp) {
+        Object.defineProperty(keyPressEvent, 'timeStamp', {
+          value: performance.now(),
+          writable: false,
+          configurable: false
+        });
+      }
+      
+      // Add inputType for input-related events (keyboard input)
+      Object.defineProperty(keyPressEvent, 'inputType', {
+        value: 'insertText',
+        writable: false,
+        configurable: false
+      });
       
       // Set target to the currently focused element to match physical keyboard behavior
       // Virtual keyboard should not steal focus - events should go to the active element (maintain focus)
@@ -718,6 +953,24 @@ export class VirtualKeyboard extends HTMLElement {
       Object.defineProperty(keyPressEvent, 'target', {
         value: activeElement,
         writable: false
+      });
+      
+      // Add event chain properties
+      Object.defineProperty(keyPressEvent, 'currentTarget', {
+        value: activeElement,
+        writable: false
+      });
+      
+      Object.defineProperty(keyPressEvent, 'eventPhase', {
+        value: Event.AT_TARGET,
+        writable: false
+      });
+      
+      Object.defineProperty(keyPressEvent, 'defaultPrevented', {
+        get: function() {
+          return this.returnValue === false;
+        },
+        enumerable: true
       });
       
       window.dispatchEvent(keyPressEvent);
