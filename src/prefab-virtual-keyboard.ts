@@ -326,6 +326,127 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     return this.shadowDomEnabled;
   }
 
+  // ====== Modifier Key State Methods ======
+  
+  /**
+   * Get current modifier key states
+   * @returns Modifier key states object containing the four modifier keys
+   */
+  getModifierStates(): {
+    shift: boolean;
+    ctrl: boolean;
+    alt: boolean;
+    meta: boolean;
+  } {
+    const container = this.getContainer();
+    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    
+    if (keyboardElement && keyboardElement.state && keyboardElement.state.getModifierStates) {
+      // If virtual keyboard is loaded and has state management, call its method
+      const states = keyboardElement.state.getModifierStates();
+      return {
+        shift: states.shift || false,
+        ctrl: states.ctrl || false,
+        alt: states.alt || false,
+        meta: states.meta || false
+      };
+    }
+    
+    // If virtual keyboard is not loaded, return default states
+    return {
+      shift: false,
+      ctrl: false,
+      alt: false,
+      meta: false
+    };
+  }
+
+  /**
+   * Get current pressed modifier keys list
+   * @returns Array of currently pressed modifier key codes
+   */
+  getKeyDownModifiers(): string[] {
+    const container = this.getContainer();
+    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    
+    if (keyboardElement && keyboardElement.state && keyboardElement.state.getKeyDownModifiers) {
+      return keyboardElement.state.getKeyDownModifiers();
+    }
+    
+    return [];
+  }
+
+  /**
+   * Check if a specific modifier key is pressed
+   * @param modifier - Modifier key name (Shift, Control, Alt, Meta)
+   * @returns Whether the modifier key is pressed
+   */
+  isModifierKeyDown(modifier: string): boolean {
+    const container = this.getContainer();
+    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    
+    if (keyboardElement && keyboardElement.state && keyboardElement.state.isModifierKeyDown) {
+      return keyboardElement.state.isModifierKeyDown(modifier);
+    }
+    
+    return false;
+  }
+
+  /**
+   * Check if a specific key is pressed
+   * @param code - Key code
+   * @returns Whether the key is pressed
+   */
+  isKeyPressed(code: string): boolean {
+    const container = this.getContainer();
+    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    
+    if (keyboardElement && keyboardElement.state && keyboardElement.state.isKeyPressed) {
+      return keyboardElement.state.isKeyPressed(code);
+    }
+    
+    return false;
+  }
+
+  /**
+   * Get all currently pressed keys
+   * @returns Array of currently pressed key objects
+   */
+  getPressedKeys(): any[] {
+    const container = this.getContainer();
+    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    
+    if (keyboardElement && keyboardElement.state && keyboardElement.state.getPressedKeys) {
+      return keyboardElement.state.getPressedKeys();
+    }
+    
+    return [];
+  }
+
+  /**
+   * Reset all modifier key states
+   */
+  resetModifiers(): void {
+    const container = this.getContainer();
+    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    
+    if (keyboardElement && keyboardElement.state && keyboardElement.state.resetModifiers) {
+      keyboardElement.state.resetModifiers();
+    }
+  }
+
+  /**
+   * Reset all keyboard states
+   */
+  resetAllStates(): void {
+    const container = this.getContainer();
+    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    
+    if (keyboardElement && keyboardElement.state && keyboardElement.state.resetAllStates) {
+      keyboardElement.state.resetAllStates();
+    }
+  }
+
   // Method to check if shadow DOM is actually active (has shadow root and is enabled)
   get hasActiveShadowRoot(): boolean {
     return this.shadowDomEnabled && !!this.shadowRoot;
