@@ -574,21 +574,9 @@
             }
             
             // Add window-level keyboard event listeners for physical keyboard events
-            window.addEventListener('keydown', (event) => {
-                const source = event.isVirtualKeyboard ? 'virtual' : 'physical';
-                const modifiers = [];
-                if (event.ctrlKey) modifiers.push('c');
-                if (event.altKey) modifiers.push('a');
-                if (event.shiftKey) modifiers.push('s');
-                if (event.metaKey) modifiers.push('m');
-                
-                const logMessage = `event=${event.type},key=${event.key},code=${event.code},mod=${modifiers.join('')},source=${source}`;
-                if (window.logContainer) {
-                    window.logContainer.addLog(logMessage);
-                }
-            });
+            const textInput = document.getElementById('text-input');
             
-            window.addEventListener('keyup', (event) => {
+            function handleKeyboardEvent(event) {
                 const source = event.isVirtualKeyboard ? 'virtual' : 'physical';
                 const modifiers = [];
                 if (event.ctrlKey) modifiers.push('c');
@@ -600,21 +588,17 @@
                 if (window.logContainer) {
                     window.logContainer.addLog(logMessage);
                 }
-            });
+            }
             
-            window.addEventListener('keypress', (event) => {
-                const source = event.isVirtualKeyboard ? 'virtual' : 'physical';
-                const modifiers = [];
-                if (event.ctrlKey) modifiers.push('c');
-                if (event.altKey) modifiers.push('a');
-                if (event.shiftKey) modifiers.push('s');
-                if (event.metaKey) modifiers.push('m');
-                
-                const logMessage = `event=${event.type},key=${event.key},code=${event.code},mod=${modifiers.join('')},source=${source}`;
-                if (window.logContainer) {
-                    window.logContainer.addLog(logMessage);
-                }
-            });
+            // Listen for events on the text input element (will receive virtual keyboard events)
+            textInput.addEventListener('keydown', handleKeyboardEvent);
+            textInput.addEventListener('keyup', handleKeyboardEvent);
+            textInput.addEventListener('keypress', handleKeyboardEvent);
+            
+            // Also listen on window for physical keyboard events when no element is focused
+            window.addEventListener('keydown', handleKeyboardEvent);
+            window.addEventListener('keyup', handleKeyboardEvent);
+            window.addEventListener('keypress', handleKeyboardEvent);
             
             // Add welcome log
             setTimeout(() => {

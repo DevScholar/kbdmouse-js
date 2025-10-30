@@ -618,7 +618,7 @@ export class VirtualKeyboard extends HTMLElement {
       
       // Set target to the currently focused element to match physical keyboard behavior
       // Virtual keyboard should not steal focus - events should go to the active element (maintain focus)
-      const activeElement = document.activeElement || document.body;
+      const activeElement = this.editing.activeElement || document.activeElement || document.body;
       Object.defineProperty(keyDownEvent, 'target', {
         value: activeElement,
         writable: false
@@ -642,7 +642,12 @@ export class VirtualKeyboard extends HTMLElement {
         enumerable: true
       });
       
-      window.dispatchEvent(keyDownEvent);
+      // Dispatch to the active element instead of window
+      if (this.editing.activeElement) {
+        this.editing.activeElement.dispatchEvent(keyDownEvent);
+      } else {
+        window.dispatchEvent(keyDownEvent);
+      }
     },
 
     // Dispatch keyup event to window
@@ -785,7 +790,7 @@ export class VirtualKeyboard extends HTMLElement {
       
       // Set target to the currently focused element to match physical keyboard behavior
       // Virtual keyboard should not steal focus - events should go to the active element (maintain focus)
-      const activeElement = document.activeElement || document.body;
+      const activeElement = this.editing.activeElement || document.activeElement || document.body;
       Object.defineProperty(keyUpEvent, 'target', {
         value: activeElement,
         writable: false
@@ -809,7 +814,12 @@ export class VirtualKeyboard extends HTMLElement {
         enumerable: true
       });
       
-      window.dispatchEvent(keyUpEvent);
+      // Dispatch to the active element instead of window
+      if (this.editing.activeElement) {
+        this.editing.activeElement.dispatchEvent(keyUpEvent);
+      } else {
+        window.dispatchEvent(keyUpEvent);
+      }
     },
 
     // Dispatch keypress event to window (for eligible keys)
@@ -949,7 +959,7 @@ export class VirtualKeyboard extends HTMLElement {
       
       // Set target to the currently focused element to match physical keyboard behavior
       // Virtual keyboard should not steal focus - events should go to the active element (maintain focus)
-      const activeElement = document.activeElement || document.body;
+      const activeElement = this.editing.activeElement || document.activeElement || document.body;
       Object.defineProperty(keyPressEvent, 'target', {
         value: activeElement,
         writable: false
@@ -973,7 +983,12 @@ export class VirtualKeyboard extends HTMLElement {
         enumerable: true
       });
       
-      window.dispatchEvent(keyPressEvent);
+      // Dispatch to the active element instead of window
+      if (this.editing.activeElement) {
+        this.editing.activeElement.dispatchEvent(keyPressEvent);
+      } else {
+        window.dispatchEvent(keyPressEvent);
+      }
     },
 
     // Handle key click event (keyboard navigation with Enter/Space)
@@ -1073,6 +1088,7 @@ export class VirtualKeyboard extends HTMLElement {
       const target = event.target as HTMLElement;
       if (this.isEditableElement(target)) {
         this.editing.activeElement = target;
+        this.setupKeyboardListeners(target);
       }
     }, true);
 
@@ -1080,9 +1096,51 @@ export class VirtualKeyboard extends HTMLElement {
     document.addEventListener('blur', (event) => {
       const target = event.target as HTMLElement;
       if (target === this.editing.activeElement) {
+        this.removeKeyboardListeners();
         this.editing.activeElement = null;
       }
     }, true);
+  }
+
+  // Manage keyboard event listeners for the active element
+  private keyboardEventListeners = {
+    keydown: (event: KeyboardEvent) => {
+      if (this.debug.log) {
+        this.debug.log(`[Keyboard] ${event.type} key="${event.key}" code="${event.code}" ${this.getModifierString(event)} source=physical`);
+      }
+    },
+    keyup: (event: KeyboardEvent) => {
+      if (this.debug.log) {
+        this.debug.log(`[Keyboard] ${event.type} key="${event.key}" code="${event.code}" ${this.getModifierString(event)} source=physical`);
+      }
+    },
+    keypress: (event: KeyboardEvent) => {
+      if (this.debug.log) {
+        this.debug.log(`[Keyboard] ${event.type} key="${event.key}" code="${event.code}" ${this.getModifierString(event)} source=physical`);
+      }
+    }
+  };
+
+  // Setup keyboard event listeners on the active element
+  private setupKeyboardListeners(element: HTMLElement) {
+    // Remove listeners from previous element if any
+    this.removeKeyboardListeners();
+    
+    if (element) {
+      element.addEventListener('keydown', this.keyboardEventListeners.keydown);
+      element.addEventListener('keyup', this.keyboardEventListeners.keyup);
+      element.addEventListener('keypress', this.keyboardEventListeners.keypress);
+    }
+  }
+
+  // Remove keyboard event listeners from the current element
+  private removeKeyboardListeners() {
+    const currentElement = this.editing.activeElement;
+    if (currentElement) {
+      currentElement.removeEventListener('keydown', this.keyboardEventListeners.keydown);
+      currentElement.removeEventListener('keyup', this.keyboardEventListeners.keyup);
+      currentElement.removeEventListener('keypress', this.keyboardEventListeners.keypress);
+    }
   }
 
   // Initialize NumLock state to OFF by default
@@ -1113,11 +1171,22 @@ export class VirtualKeyboard extends HTMLElement {
     return this.editing.activeElement;
   }
 
+  // Set the active editing element with proper listener management
+  public set activeElement(element: HTMLElement | null) {
+    this.setActiveElement(element);
+  }
+
   // Manually set the active editing element
   public setActiveElement(element: HTMLElement | null) { 
     if (element === null || this.isEditableElement(element)) {
+      // Remove listeners from previous element
+      this.removeKeyboardListeners();
+      
       this.editing.activeElement = element;
+      
+      // Add listeners to new element
       if (element) {
+        this.setupKeyboardListeners(element);
         element.focus();
       }
     }
