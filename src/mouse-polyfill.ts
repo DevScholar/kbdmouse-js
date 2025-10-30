@@ -173,6 +173,49 @@ class MousePolyfill {
   }
 
   /**
+   * Get current modifier key states from virtual keyboard
+   * @returns Modifier key states object containing the four modifier keys
+   */
+  private getModifierStates(): {
+    ctrl: boolean;
+    alt: boolean;
+    shift: boolean;
+    meta: boolean;
+  } {
+    // Try to get modifier states from the first prefab-virtual-keyboard element
+    const prefabKeyboard = document.querySelector('prefab-virtual-keyboard') as any;
+    if (prefabKeyboard && prefabKeyboard.getModifierStates) {
+      const states = prefabKeyboard.getModifierStates();
+      return {
+        ctrl: states.ctrl || false,
+        alt: states.alt || false,
+        shift: states.shift || false,
+        meta: states.meta || false
+      };
+    }
+
+    // Fallback: try to get from virtual-keyboard element
+    const virtualKeyboard = document.querySelector('virtual-keyboard') as any;
+    if (virtualKeyboard && virtualKeyboard.state && virtualKeyboard.state.getModifierStates) {
+      const states = virtualKeyboard.state.getModifierStates();
+      return {
+        ctrl: states.ctrl || false,
+        alt: states.alt || false,
+        shift: states.shift || false,
+        meta: states.meta || false
+      };
+    }
+
+    // Default to no modifiers pressed
+    return {
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false
+    };
+  }
+
+  /**
    * Enable or disable vibration feedback
    * @param enabled Whether to enable vibration
    */
@@ -386,6 +429,9 @@ class MousePolyfill {
    * @param isSecondClick Whether this is the second click in a double click (adds dblclick)
    */
   private dispatchClickSequence(touch: Touch, targetElement: Element, clickCount: number, isDoubleClick: boolean = false): void {
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+
     // mousedown
     const mouseDownEvent = new MouseEvent('mousedown', {
       bubbles: true,
@@ -399,10 +445,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (mouseDownEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(mouseDownEvent);
@@ -420,10 +466,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (mouseUpEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(mouseUpEvent);
@@ -441,10 +487,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (clickEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(clickEvent);
@@ -463,10 +509,10 @@ class MousePolyfill {
         screenX: touch.screenX,
         screenY: touch.screenY,
         relatedTarget: null,
-        ctrlKey: false,
-        altKey: false,
-        shiftKey: false,
-        metaKey: false
+        ctrlKey: modifiers.ctrl,
+        altKey: modifiers.alt,
+        shiftKey: modifiers.shift,
+        metaKey: modifiers.meta
       });
       (doubleClickEvent as any).isPolyfill = true;
       targetElement.dispatchEvent(doubleClickEvent);
@@ -505,6 +551,9 @@ class MousePolyfill {
       if (timeDiff <= this.DOUBLE_CLICK_WINDOW && distance <= this.DOUBLE_CLICK_DISTANCE_THRESHOLD) {
         console.log(`[${currentTouch.identifier}] Double click detected! Generating additional dblclick event`);
         
+        // Get current modifier states from virtual keyboard
+        const modifiers = this.getModifierStates();
+        
         // Generate additional double click event
         const doubleClickEvent = new MouseEvent('dblclick', {
           bubbles: true,
@@ -518,10 +567,10 @@ class MousePolyfill {
           screenX: currentTouch.screenX,
           screenY: currentTouch.screenY,
           relatedTarget: null,
-          ctrlKey: false,
-          altKey: false,
-          shiftKey: false,
-          metaKey: false
+          ctrlKey: modifiers.ctrl,
+          altKey: modifiers.alt,
+          shiftKey: modifiers.shift,
+          metaKey: modifiers.meta
         });
         (doubleClickEvent as any).isPolyfill = true;
         
@@ -578,6 +627,9 @@ class MousePolyfill {
 
     console.log(`[${touch.identifier}] Dispatching single click sequence`);
 
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+
     // 1. mousedown
     const mouseDownEvent = new MouseEvent('mousedown', {
       bubbles: true,
@@ -591,10 +643,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (mouseDownEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(mouseDownEvent);
@@ -612,10 +664,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (mouseUpEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(mouseUpEvent);
@@ -633,10 +685,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (clickEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(clickEvent);
@@ -657,6 +709,9 @@ class MousePolyfill {
     touchState.currentMode = 'drag';
     touchState.isMouseDown = true;
     
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+    
     const mouseEvent = new MouseEvent('mousedown', {
       bubbles: true,
       cancelable: true,
@@ -669,10 +724,10 @@ class MousePolyfill {
       button: 0,
       buttons: 1,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
 
     (mouseEvent as any).isPolyfill = true;
@@ -689,6 +744,9 @@ class MousePolyfill {
   private rightClick(touch: Touch, targetElement: Element): void {
     console.log(`[${touch.identifier}] Triggering right-click sequence`);
     
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+    
     // mousedown (button=2, buttons=2)
     const mouseDownEvent = new MouseEvent('mousedown', {
       bubbles: true,
@@ -702,10 +760,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (mouseDownEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(mouseDownEvent);
@@ -723,10 +781,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (mouseUpEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(mouseUpEvent);
@@ -744,10 +802,10 @@ class MousePolyfill {
       screenX: touch.screenX,
       screenY: touch.screenY,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
     (contextMenuEvent as any).isPolyfill = true;
     targetElement.dispatchEvent(contextMenuEvent);
@@ -920,6 +978,9 @@ class MousePolyfill {
    * Dispatch mouse move event
    */
   private dispatchMouseMove(touch: Touch, button: number, buttons: number, targetElement: Element | null): void {
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+    
     const mouseEvent = new MouseEvent('mousemove', {
       bubbles: true,
       cancelable: true,
@@ -932,10 +993,10 @@ class MousePolyfill {
       button: button,
       buttons: buttons,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
 
     (mouseEvent as any).isPolyfill = true;
@@ -1014,6 +1075,9 @@ class MousePolyfill {
    * Traditional touch end handler (fallback)
    */
   private handleTraditionalTouchEnd(element: Element, touch: Touch): void {
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+    
     const mouseEvent = new MouseEvent('mouseup', {
       bubbles: true,
       cancelable: true,
@@ -1026,10 +1090,10 @@ class MousePolyfill {
       button: 0,
       buttons: 0,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
 
     (mouseEvent as any).isPolyfill = true;
@@ -1048,10 +1112,10 @@ class MousePolyfill {
       button: 0,
       buttons: 0,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
 
     (clickEvent as any).isPolyfill = true;
@@ -1065,6 +1129,9 @@ class MousePolyfill {
    * Dispatch mouse up event
    */
   private dispatchMouseUp(touch: Touch, button: number, buttons: number, targetElement: Element | null): void {
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+    
     const mouseEvent = new MouseEvent('mouseup', {
       bubbles: true,
       cancelable: true,
@@ -1077,10 +1144,10 @@ class MousePolyfill {
       button: button,
       buttons: buttons,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
 
     (mouseEvent as any).isPolyfill = true;
@@ -1097,6 +1164,9 @@ class MousePolyfill {
    * Dispatch click event
    */
   private dispatchClick(touch: Touch, targetElement: Element | null): void {
+    // Get current modifier states from virtual keyboard
+    const modifiers = this.getModifierStates();
+    
     const clickEvent = new MouseEvent('click', {
       bubbles: true,
       cancelable: true,
@@ -1109,10 +1179,10 @@ class MousePolyfill {
       button: 0,
       buttons: 0,
       relatedTarget: null,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
     });
 
     (clickEvent as any).isPolyfill = true;
@@ -1147,6 +1217,9 @@ class MousePolyfill {
     }
       }
       
+      // Get current modifier states from virtual keyboard
+      const modifiers = this.getModifierStates();
+      
       // Trigger mouseup event as cleanup
       const mouseEvent = new MouseEvent('mouseup', {
         bubbles: true,
@@ -1156,10 +1229,10 @@ class MousePolyfill {
         button: 0,
         buttons: 0,
         relatedTarget: null,
-        ctrlKey: false,
-        altKey: false,
-        shiftKey: false,
-        metaKey: false
+        ctrlKey: modifiers.ctrl,
+        altKey: modifiers.alt,
+        shiftKey: modifiers.shift,
+        metaKey: modifiers.meta
       });
 
       (mouseEvent as any).isPolyfill = true;
