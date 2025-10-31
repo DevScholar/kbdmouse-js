@@ -107,7 +107,8 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       
       // Determine source and target - match demo page format
       const source = (event as any).isVirtualKeyboard ? 'virtual' : 'physical';
-      const targetName = event.target === window ? 'window' : 
+      const targetName = !event.target ? 'unknown' :
+                        event.target === window ? 'window' : 
                         event.target === document.activeElement ? 'textInput' : 
                         (event.target as Element).tagName || 'unknown';
       
@@ -119,7 +120,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
 
   
   // Track current event target for dynamic listener management
-  private currentEventTarget: EventTarget = window;
+
   private focusChangeObserver?: MutationObserver;
 
   constructor() {
@@ -165,16 +166,8 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       this.resizeObserver.disconnect();
     }
     
-    // Remove keyboard event listeners from current target
-    if (this.keydownListener && this.currentEventTarget) {
-      this.currentEventTarget.removeEventListener('keydown', this.keydownListener);
-    }
-    if (this.keyupListener && this.currentEventTarget) {
-      this.currentEventTarget.removeEventListener('keyup', this.keyupListener);
-    }
-    if (this.keypressListener && this.currentEventTarget) {
-      this.currentEventTarget.removeEventListener('keypress', this.keypressListener);
-    }
+    // Cleanup keyboard event listeners (now using document-only approach)
+    this.cleanupEventListeners();
     
     // Remove window resize listener
     if (this.windowResizeListener) {
@@ -781,96 +774,40 @@ export class PrefabVirtualKeyboard extends HTMLElement {
 
   // Setup keyboard event listeners for unified event handling
   private setupKeyboardEventListeners() {
-    // Create event listeners (stored for dynamic target switching)
+    // Create event listeners that act like a third-party library
+    // Only listen to document events to simulate external keyboard monitoring
     this.keydownListener = (event: Event) => {
-      // Log the event using unified format
+      // Log ALL keyboard events from document (both physical and virtual)
       this.logger.logKeyboardEvent('keydown', event as KeyboardEvent);
     };
     
     this.keyupListener = (event: Event) => {
-      // Log the event using unified format
+      // Log ALL keyboard events from document (both physical and virtual)
       this.logger.logKeyboardEvent('keyup', event as KeyboardEvent);
     };
     
     this.keypressListener = (event: Event) => {
-      // Log the event using unified format
+      // Log ALL keyboard events from document (both physical and virtual)
       this.logger.logKeyboardEvent('keypress', event as KeyboardEvent);
     };
     
-    // Setup initial event listeners
-    this.updateEventListeners();
+    // Setup document event listeners (like a third-party library would)
+    // Use bubble phase to catch events after they bubble up from targets
+    document.addEventListener('keydown', this.keydownListener, false);
+    document.addEventListener('keyup', this.keyupListener, false);
+    document.addEventListener('keypress', this.keypressListener, false);
     
-    // Setup focus change monitoring
-    this.setupFocusChangeMonitoring();
-    
-    // Listen for virtual keyboard events (bubbling from shadow DOM or light DOM)
-    // Only mark as virtual keyboard event, no logging to avoid duplication
-    this.addEventListener('keydown', (event: Event) => {
-      (event as any).isVirtualKeyboard = true;
-    });
-    
-    this.addEventListener('keyup', (event: Event) => {
-      (event as any).isVirtualKeyboard = true;
-    });
-    
-    this.addEventListener('keypress', (event: Event) => {
-      (event as any).isVirtualKeyboard = true;
-    });
-    
-    this.logger.info('Keyboard event listeners configured for unified handling');
+    this.logger.info('Keyboard event listeners configured for third-party simulation (document-only)');
   }
 
-  // Update event listeners when document.activeElement changes
-  private updateEventListeners() {
-    // Remove listeners from previous target
-    this.currentEventTarget.removeEventListener('keydown', this.keydownListener);
-    this.currentEventTarget.removeEventListener('keyup', this.keyupListener);
-    this.currentEventTarget.removeEventListener('keypress', this.keypressListener);
+  // Cleanup method for when the element is removed
+  private cleanupEventListeners() {
+    // Remove document event listeners
+    document.removeEventListener('keydown', this.keydownListener);
+    document.removeEventListener('keyup', this.keyupListener);
+    document.removeEventListener('keypress', this.keypressListener);
     
-    // Get new target
-    const newTarget = document.activeElement || window;
-    
-    // Only update if target has changed
-    if (newTarget !== this.currentEventTarget) {
-      const oldTargetName = this.currentEventTarget === window ? 'window' : 
-                           this.currentEventTarget === document.activeElement ? 'textInput' : 
-                           (this.currentEventTarget as Element).tagName || 'element';
-      
-      this.currentEventTarget = newTarget;
-      
-      const newTargetName = newTarget === window ? 'window' : 
-                           newTarget === document.activeElement ? 'textInput' : 
-                           (newTarget as Element).tagName || 'element';
-      
-      this.logger.log('info', `Event listeners moved from ${oldTargetName} to ${newTargetName}`);
-    }
-    
-    // Add listeners to new target (including window as fallback)
-    this.currentEventTarget.addEventListener('keydown', this.keydownListener);
-    this.currentEventTarget.addEventListener('keyup', this.keyupListener);
-    this.currentEventTarget.addEventListener('keypress', this.keypressListener);
-  }
-
-  // Setup focus change monitoring to update event listeners dynamically
-  private setupFocusChangeMonitoring() {
-    // Use focus and blur events to detect active element changes
-    document.addEventListener('focus', () => {
-      this.updateEventListeners();
-    }, true);
-    
-    document.addEventListener('blur', () => {
-      // Delay to let the new element get focus
-      setTimeout(() => {
-        this.updateEventListeners();
-      }, 0);
-    }, true);
-    
-    // Also monitor clicks that might change focus
-    document.addEventListener('click', () => {
-      setTimeout(() => {
-        this.updateEventListeners();
-      }, 0);
-    }, true);
+    this.logger.info('Keyboard event listeners cleaned up');
   }
 
   // Keyboard event listeners (stored for cleanup)

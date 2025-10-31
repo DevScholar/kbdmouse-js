@@ -493,12 +493,9 @@
             }
 
             addLog(message) {
-                // Only add if message contains keyboard event data
-                if (message.includes('event=') && (message.includes('source=virtual') || message.includes('source=physical'))) {
-                    // Display message exactly as received from keyboard logger, no modifications
-                    this.logContainer.textContent += message + '\n';
-                    this.logContainer.scrollTop = this.logContainer.scrollHeight;
-                }
+                // Display message exactly as received from keyboard logger, no modifications or filtering
+                this.logContainer.textContent += message + '\n';
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
             }
 
             setupKeyboardLogFunction() {
@@ -557,12 +554,21 @@
             if (keyboard && keyboard.logger) {
                 // 显式启用调试功能
                 keyboard.logger.enabled = true;
+                keyboard.logger.level = 'debug'; // 设置最低日志级别以显示所有日志
                 console.log('[DEBUG] 键盘调试功能已显式启用');
                 
                 keyboard.logger.setLogFunction((message) => {
                     window.logContainer.addLog(message);
                 });
                 console.log('[DEBUG] 键盘日志函数已重定向到DOM容器');
+                
+                // 测试日志系统
+                keyboard.logger.info('键盘日志系统初始化完成');
+                const testEvent = new KeyboardEvent('keydown', {key: 'Test', code: 'Test'});
+                Object.defineProperty(testEvent, 'target', {value: document.body, writable: false});
+                keyboard.logger.logKeyboardEvent('keydown', testEvent);
+            } else {
+                console.log('[DEBUG] 未找到键盘元素或logger对象');
             }
         });
         

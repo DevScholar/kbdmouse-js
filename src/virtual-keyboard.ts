@@ -592,7 +592,7 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       Object.defineProperty(keyDownEvent, 'eventPhase', {
-        value: Event.AT_TARGET,
+        value: Event.BUBBLING_PHASE,
         writable: false
       });
       
@@ -603,9 +603,9 @@ export class VirtualKeyboard extends HTMLElement {
         enumerable: true
       });
       
-      // Dispatch to the active element instead of window
-      const eventTarget = document.activeElement || window;
-      eventTarget.dispatchEvent(keyDownEvent);
+      // Dispatch from document to allow natural event flow for third-party listeners
+      // This ensures the event goes through the complete capture-target-bubble phases
+      document.dispatchEvent(keyDownEvent);
     },
 
     // Dispatch keyup event to window
@@ -761,7 +761,7 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       Object.defineProperty(keyUpEvent, 'eventPhase', {
-        value: Event.AT_TARGET,
+        value: Event.BUBBLING_PHASE,
         writable: false
       });
       
@@ -772,9 +772,9 @@ export class VirtualKeyboard extends HTMLElement {
         enumerable: true
       });
       
-      // Dispatch to the active element instead of window
-      const eventTarget = document.activeElement || window;
-      eventTarget.dispatchEvent(keyUpEvent);
+      // Dispatch from document to allow natural event flow for third-party listeners
+      // This ensures the event goes through the complete capture-target-bubble phases
+      document.dispatchEvent(keyUpEvent);
     },
 
     // Dispatch keypress event to window (for eligible keys)
@@ -927,7 +927,7 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       Object.defineProperty(keyPressEvent, 'eventPhase', {
-        value: Event.AT_TARGET,
+        value: Event.BUBBLING_PHASE,
         writable: false
       });
       
@@ -938,9 +938,9 @@ export class VirtualKeyboard extends HTMLElement {
         enumerable: true
       });
       
-      // Dispatch to the active element instead of window
-      const eventTarget = document.activeElement || window;
-      eventTarget.dispatchEvent(keyPressEvent);
+      // Dispatch from document to allow natural event flow for third-party listeners
+      // This ensures the event goes through the complete capture-target-bubble phases
+      document.dispatchEvent(keyPressEvent);
     },
 
     // Handle key click event (keyboard navigation with Enter/Space)
