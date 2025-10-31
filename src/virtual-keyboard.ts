@@ -604,11 +604,8 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       // Dispatch to the active element instead of window
-      if (this.editing.activeElement) {
-        this.editing.activeElement.dispatchEvent(keyDownEvent);
-      } else {
-        window.dispatchEvent(keyDownEvent);
-      }
+      const eventTarget = document.activeElement || document;
+      eventTarget.dispatchEvent(keyDownEvent);
     },
 
     // Dispatch keyup event to window
@@ -776,11 +773,8 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       // Dispatch to the active element instead of window
-      if (this.editing.activeElement) {
-        this.editing.activeElement.dispatchEvent(keyUpEvent);
-      } else {
-        window.dispatchEvent(keyUpEvent);
-      }
+      const eventTarget = document.activeElement || document;
+      eventTarget.dispatchEvent(keyUpEvent);
     },
 
     // Dispatch keypress event to window (for eligible keys)
@@ -945,11 +939,8 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       // Dispatch to the active element instead of window
-      if (this.editing.activeElement) {
-        this.editing.activeElement.dispatchEvent(keyPressEvent);
-      } else {
-        window.dispatchEvent(keyPressEvent);
-      }
+      const eventTarget = document.activeElement || document;
+      eventTarget.dispatchEvent(keyPressEvent);
     },
 
     // Handle key click event (keyboard navigation with Enter/Space)
