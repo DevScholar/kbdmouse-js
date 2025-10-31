@@ -555,9 +555,14 @@
             // Set up keyboard log function after DOM is loaded
             const keyboard = document.getElementById('demo-keyboard');
             if (keyboard && keyboard.logger) {
+                // 显式启用调试功能
+                keyboard.logger.enabled = true;
+                console.log('[DEBUG] 键盘调试功能已显式启用');
+                
                 keyboard.logger.setLogFunction((message) => {
                     window.logContainer.addLog(message);
                 });
+                console.log('[DEBUG] 键盘日志函数已重定向到DOM容器');
             }
         });
         
