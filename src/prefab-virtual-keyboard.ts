@@ -34,11 +34,17 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     enabled: debug.enabled,
     level: debug.level,
     showTimestamp: debug.showTimestamp,
+    logFunction: (message: string) => console.log(message), // Default log function
     
     // Set log level
     setLevel: (level: 'error' | 'warn' | 'info' | 'debug') => {
       this.logger.level = level;
       this.logger.enabled = level !== 'error' || debug.enabled;
+    },
+    
+    // Set custom log function
+    setLogFunction: (fn: (message: string) => void) => {
+      this.logger.logFunction = fn;
     },
     
     // Format timestamp
@@ -65,11 +71,14 @@ export class PrefabVirtualKeyboard extends HTMLElement {
         const logMessage = timestamp ? `${timestamp} ${message}` : message;
         
         if (level === 'error') {
-          console.error(logMessage, data || '');
+          this.logger.logFunction(logMessage);
+          if (data) console.error(data);
         } else if (level === 'warn') {
-          console.warn(logMessage, data || '');
+          this.logger.logFunction(logMessage);
+          if (data) console.warn(data);
         } else {
-          console.log(logMessage, data || '');
+          this.logger.logFunction(logMessage);
+          if (data) console.log(data);
         }
       }
     },
@@ -80,19 +89,9 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     info: (message: string, data?: any) => this.logger.log('info', message, data),
     debug: (message: string, data?: any) => this.logger.log('debug', message, data),
     
-    // Log keyboard event with deduplication
+    // Log keyboard event - unified format matching demo page
     logKeyboardEvent: (eventType: string, event: KeyboardEvent) => {
       if (!this.logger.enabled || this.logger.level === 'error') return;
-      
-      // Skip if this is a duplicate event (same key, same type, within 10ms)
-      const now = Date.now();
-      const eventKey = `${eventType}-${event.code || event.key}-${event.target === document.activeElement ? 'active' : 'window'}`;
-      
-      if (this.lastLoggedEvent?.key === eventKey && (now - this.lastLoggedEvent.time) < 10) {
-        return; // Skip duplicate
-      }
-      
-      this.lastLoggedEvent = { key: eventKey, time: now };
       
       const timestamp = this.logger.formatTimestamp();
       const key = event.key || 'Unknown';
@@ -106,17 +105,18 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       if (event.metaKey) mods.push('m');
       const modStr = mods.join('');
       
-      // Determine source and target
+      // Determine source and target - match demo page format
       const source = (event as any).isVirtualKeyboard ? 'virtual' : 'physical';
-      const target = event.target === document.activeElement ? 'activeElement' : 'window';
+      const targetName = event.target === window ? 'window' : 
+                        event.target === document.activeElement ? 'textInput' : 
+                        (event.target as Element).tagName || 'unknown';
       
-      const logMessage = `${timestamp}event=${eventType},key=${key},code=${code},mod=${modStr},source=${source},target=${target}`;
-      console.log(logMessage);
+      const logMessage = `${timestamp} event=${eventType},key=${key},code=${code},mod=${modStr},source=${source},target=${targetName}`;
+      this.logger.logFunction(logMessage);
     }
   };
   
-  // Event deduplication cache
-  private lastLoggedEvent?: { key: string; time: number };
+
   
   // Track current event target for dynamic listener management
   private currentEventTarget: EventTarget = window;
@@ -126,6 +126,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     super();
     // Don't initialize shadow DOM here - wait for connectedCallback
     // This prevents issues with attribute changes during element creation
+    this.logger.enabled = true; // Enable logging by default
   }
 
   private initializeShadowDom() {
@@ -773,18 +774,21 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     });
   }
 
-  // Setup keyboard event listeners for logging
+  // Setup keyboard event listeners for unified event handling
   private setupKeyboardEventListeners() {
-    // Add event listeners for physical keyboard events
+    // Create event listeners (stored for dynamic target switching)
     this.keydownListener = (event: Event) => {
+      // Log the event using unified format
       this.logger.logKeyboardEvent('keydown', event as KeyboardEvent);
     };
     
     this.keyupListener = (event: Event) => {
+      // Log the event using unified format
       this.logger.logKeyboardEvent('keyup', event as KeyboardEvent);
     };
     
     this.keypressListener = (event: Event) => {
+      // Log the event using unified format
       this.logger.logKeyboardEvent('keypress', event as KeyboardEvent);
     };
     
@@ -795,51 +799,51 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     this.setupFocusChangeMonitoring();
     
     // Listen for virtual keyboard events (bubbling from shadow DOM or light DOM)
+    // Only mark as virtual keyboard event, no logging to avoid duplication
     this.addEventListener('keydown', (event: Event) => {
-      // Mark event as virtual keyboard event
       (event as any).isVirtualKeyboard = true;
-      this.logger.logKeyboardEvent('keydown', event as KeyboardEvent);
     });
     
     this.addEventListener('keyup', (event: Event) => {
-      // Mark event as virtual keyboard event
       (event as any).isVirtualKeyboard = true;
-      this.logger.logKeyboardEvent('keyup', event as KeyboardEvent);
     });
     
     this.addEventListener('keypress', (event: Event) => {
-      // Mark event as virtual keyboard event
       (event as any).isVirtualKeyboard = true;
-      this.logger.logKeyboardEvent('keypress', event as KeyboardEvent);
     });
     
-    this.logger.info('Keyboard event listeners added for logging');
+    this.logger.info('Keyboard event listeners configured for unified handling');
   }
 
   // Update event listeners when document.activeElement changes
   private updateEventListeners() {
     // Remove listeners from previous target
-    if (this.currentEventTarget !== window) {
-      this.currentEventTarget.removeEventListener('keydown', this.keydownListener);
-      this.currentEventTarget.removeEventListener('keyup', this.keyupListener);
-      this.currentEventTarget.removeEventListener('keypress', this.keypressListener);
-    }
+    this.currentEventTarget.removeEventListener('keydown', this.keydownListener);
+    this.currentEventTarget.removeEventListener('keyup', this.keyupListener);
+    this.currentEventTarget.removeEventListener('keypress', this.keypressListener);
     
     // Get new target
     const newTarget = document.activeElement || window;
     
     // Only update if target has changed
     if (newTarget !== this.currentEventTarget) {
+      const oldTargetName = this.currentEventTarget === window ? 'window' : 
+                           this.currentEventTarget === document.activeElement ? 'textInput' : 
+                           (this.currentEventTarget as Element).tagName || 'element';
+      
       this.currentEventTarget = newTarget;
-      this.logger.debug(`Event target changed to: ${newTarget === window ? 'window' : (newTarget as Element).tagName}`);
+      
+      const newTargetName = newTarget === window ? 'window' : 
+                           newTarget === document.activeElement ? 'textInput' : 
+                           (newTarget as Element).tagName || 'element';
+      
+      this.logger.log('info', `Event listeners moved from ${oldTargetName} to ${newTargetName}`);
     }
     
-    // Add listeners to new target (skip if it's window, we'll handle that separately)
-    if (this.currentEventTarget !== window) {
-      this.currentEventTarget.addEventListener('keydown', this.keydownListener);
-      this.currentEventTarget.addEventListener('keyup', this.keyupListener);
-      this.currentEventTarget.addEventListener('keypress', this.keypressListener);
-    }
+    // Add listeners to new target (including window as fallback)
+    this.currentEventTarget.addEventListener('keydown', this.keydownListener);
+    this.currentEventTarget.addEventListener('keyup', this.keyupListener);
+    this.currentEventTarget.addEventListener('keypress', this.keypressListener);
   }
 
   // Setup focus change monitoring to update event listeners dynamically

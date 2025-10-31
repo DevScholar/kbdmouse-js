@@ -604,7 +604,7 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       // Dispatch to the active element instead of window
-      const eventTarget = document.activeElement || document;
+      const eventTarget = document.activeElement || window;
       eventTarget.dispatchEvent(keyDownEvent);
     },
 
@@ -773,7 +773,7 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       // Dispatch to the active element instead of window
-      const eventTarget = document.activeElement || document;
+      const eventTarget = document.activeElement || window;
       eventTarget.dispatchEvent(keyUpEvent);
     },
 
@@ -939,7 +939,7 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       // Dispatch to the active element instead of window
-      const eventTarget = document.activeElement || document;
+      const eventTarget = document.activeElement || window;
       eventTarget.dispatchEvent(keyPressEvent);
     },
 

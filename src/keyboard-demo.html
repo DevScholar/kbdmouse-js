@@ -473,12 +473,13 @@
             });
         };
 
-        // Simple log container management
+        // Log container that uses keyboard's setLogFunction
         class LogContainer {
             constructor() {
                 this.logContainer = document.getElementById('event-log');
                 this.clearButton = document.getElementById('clear-log');
                 this.bindClearButton();
+                this.setupKeyboardLogFunction();
             }
 
             bindClearButton() {
@@ -492,16 +493,21 @@
             }
 
             addLog(message) {
-                const timestamp = new Date().toLocaleTimeString('en-US', { 
-                    hour12: false, 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    second: '2-digit' 
-                }) + '.' + new Date().getMilliseconds().toString().padStart(3, '0');
-                
-                const logEntry = `[${timestamp}] ${message}`;
-                this.logContainer.textContent += logEntry + '\n';
-                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+                // Only add if message contains keyboard event data
+                if (message.includes('event=') && (message.includes('source=virtual') || message.includes('source=physical'))) {
+                    // Display message exactly as received from keyboard logger, no modifications
+                    this.logContainer.textContent += message + '\n';
+                    this.logContainer.scrollTop = this.logContainer.scrollHeight;
+                }
+            }
+
+            setupKeyboardLogFunction() {
+                const keyboard = document.getElementById('demo-keyboard');
+                if (keyboard && keyboard.logger) {
+                    keyboard.logger.setLogFunction((message) => {
+                        this.addLog(message);
+                    });
+                }
             }
         }
 
@@ -544,57 +550,15 @@
 
         // Initialize keyboard demo
         document.addEventListener('DOMContentLoaded', () => {
-            window.logContainer = new LogContainer(); // Make log container globally accessible
-            const inputManager = new InputActivationManager();
+            window.logContainer = new LogContainer();
             
-            // Setup custom demo keyboard scaling after keyboard is loaded
+            // Set up keyboard log function after DOM is loaded
             const keyboard = document.getElementById('demo-keyboard');
-            if (keyboard) {
-                // Wait for keyboard content to load
-                if (keyboard.isContentLoaded) {
-                    setupDemoKeyboardScaling();
-                } else {
-                    keyboard.addEventListener('content-loaded', () => {
-                        setupDemoKeyboardScaling();
-                    });
-                }
-                
-                // Removed double logging wrapper - let prefab keyboard handle its own logging
+            if (keyboard && keyboard.logger) {
+                keyboard.logger.setLogFunction((message) => {
+                    window.logContainer.addLog(message);
+                });
             }
-            
-            // Add window-level keyboard event listeners for physical keyboard events
-            const textInput = document.getElementById('text-input');
-            
-            function handleKeyboardEvent(event) {
-                const source = event.isVirtualKeyboard ? 'virtual' : 'physical';
-                const modifiers = [];
-                if (event.ctrlKey) modifiers.push('c');
-                if (event.altKey) modifiers.push('a');
-                if (event.shiftKey) modifiers.push('s');
-                if (event.metaKey) modifiers.push('m');
-                
-                const logMessage = `event=${event.type},key=${event.key},code=${event.code},mod=${modifiers.join('')},source=${source}`;
-                if (window.logContainer) {
-                    window.logContainer.addLog(logMessage);
-                }
-            }
-            
-            // Listen for events on the text input element (will receive virtual keyboard events)
-            textInput.addEventListener('keydown', handleKeyboardEvent);
-            textInput.addEventListener('keyup', handleKeyboardEvent);
-            textInput.addEventListener('keypress', handleKeyboardEvent);
-            
-            // Also listen on window for physical keyboard events when no element is focused
-            window.addEventListener('keydown', handleKeyboardEvent);
-            window.addEventListener('keyup', handleKeyboardEvent);
-            window.addEventListener('keypress', handleKeyboardEvent);
-            
-            // Add welcome log
-            setTimeout(() => {
-                if (window.logContainer) {
-                    window.logContainer.addLog('Keyboard demo initialized');
-                }
-            }, 100);
         });
         
         // Debug function to check current mobile state
