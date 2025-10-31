@@ -65,8 +65,8 @@ After building, the `dist/` directory will contain:
 dist/
 ├── kbdmouse-js.mjs             # Main ES module entry point
 ├── kbdmouse-js.js              # CommonJS entry point
-├── qwerty-104-key-keyboard.css # Keyboard layout styles
-├── qwerty-104-key-keyboard.html # Keyboard layout HTML
+├── layouts/qwerty/qwerty.css # Keyboard layout styles
+├── layouts/qwerty/qwerty.html  # Keyboard layout HTML
 └── *.js.map                    # Source map files
 ```
 
@@ -92,8 +92,8 @@ import { PrefabVirtualKeyboard } from './dist/kbdmouse-js.mjs';
 <!-- Hardware-accurate keyboard for PC emulators -->
 <prefab-virtual-keyboard
   id="emulator-keyboard"
-  keyboard-css-src="/qwerty-104-key-keyboard.css" 
-  keyboard-html-src="/qwerty-104-key-keyboard.html"
+  layout-css-src="/layouts/qwerty/qwerty.css" 
+  layout-html-src="/layouts/qwerty/qwerty.html"
 >
 </prefab-virtual-keyboard>
 ```
@@ -170,8 +170,10 @@ src/
 └── typescript.svg              # TypeScript logo
 
 public/
-├── qwerty-104-key-keyboard.css # 104-key hardware layout styles
-├── qwerty-104-key-keyboard.html # 104-key hardware layout HTML
+├── layouts/
+│   └── qwerty/
+│       ├── qwerty.css          # QWERTY layout styles
+│       └── qwerty.html       # QWERTY layout HTML
 └── vite.svg                    # Vite logo
 ```
 

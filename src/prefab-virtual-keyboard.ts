@@ -176,7 +176,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['keyboard-css-src', 'keyboard-html-src', 'width', 'height', 'shadow-dom'];
+    return ['layout-css-src', 'layout-html-src', 'width', 'height', 'shadow-dom'];
   }
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
@@ -198,15 +198,15 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     }
 
     this.isLoading = true;
-    const cssSrc = this.getAttribute('keyboard-css-src') || '';
-    const htmlSrc = this.getAttribute('keyboard-html-src') || '';
+    const cssSrc = this.getAttribute('layout-css-src') || '';
+    const htmlSrc = this.getAttribute('layout-html-src') || '';
 
     if (!htmlSrc) {
       const container = this.getContainer();
       if (container) {
-        (container as HTMLElement).innerHTML = '<div style="color: red;">Error: keyboard-html-src attribute must be provided</div>';
+        (container as HTMLElement).innerHTML = '<div style="color: red;">Error: layout-html-src attribute must be provided</div>';
       } else {
-        this.innerHTML = '<div style="color: red;">Error: keyboard-html-src attribute must be provided</div>';
+        this.innerHTML = '<div style="color: red;">Error: layout-html-src attribute must be provided</div>';
       }
       this.isLoading = false;
       return;
