@@ -393,6 +393,36 @@ export class VirtualKeyboard extends HTMLElement {
       return code === "NumLock";
     },
 
+    // Check if a key is located on the main keyboard area (excluding numpad, function keys, navigation keys)
+    isMainKeyboardKey: (virtualKey: VirtualKey): boolean => {
+      const code = virtualKey.getAttribute('code') || '';
+      
+      // Exclude numpad keys
+      if (code.startsWith('Numpad')) {
+        return false;
+      }
+      
+      // Exclude function keys F1-F12
+      if (code.match(/^F[1-9]|F1[0-2]$/)) {
+        return false;
+      }
+      
+      // Exclude navigation and editing keys
+      const nonMainKeys = [
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'Home', 'End', 'PageUp', 'PageDown',
+        'Insert', 'Delete',
+        'Escape'
+      ];
+      
+      if (nonMainKeys.includes(code)) {
+        return false;
+      }
+      
+      // All other keys are considered main keyboard keys
+      return true;
+    },
+
     // Find virtual key element by code attribute
     findByCode: (code: string): VirtualKey | null => {
       return this.querySelector(`virtual-key[code="${code}"]`) as VirtualKey | null;
@@ -874,7 +904,15 @@ export class VirtualKeyboard extends HTMLElement {
       
       // Add legacy properties for backward compatibility (deprecated but still used)
       const keyCode = this.event.getLegacyKeyCode(key, code);
-      const charCode = key.length === 1 ? key.charCodeAt(0) : 0;
+      
+      // Implement charCode rule: only in keypress events, when key is printable AND on main keyboard, charCode=keyCode
+      // Otherwise charCode should be 0
+      let charCode = 0;
+      if (key.length === 1 && this.keys.isMainKeyboardKey(virtualKey)) {
+        // Only for printable characters on main keyboard: charCode = keyCode
+        charCode = keyCode;
+      }
+      
       Object.defineProperty(keyPressEvent, 'keyCode', {
         value: keyCode,
         writable: false,
@@ -882,7 +920,7 @@ export class VirtualKeyboard extends HTMLElement {
       });
       
       Object.defineProperty(keyPressEvent, 'charCode', {
-        value: charCode, // keypress events have charCode for character keys
+        value: charCode, // keypress events: charCode=keyCode only for printable main keyboard keys
         writable: false,
         configurable: false
       });
