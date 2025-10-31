@@ -126,7 +126,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     super();
     // Don't initialize shadow DOM here - wait for connectedCallback
     // This prevents issues with attribute changes during element creation
-    this.logger.enabled = true; // Enable logging by default
+    this.logger.enabled = false; // Disable logging by default - must be explicitly enabled
   }
 
   private initializeShadowDom() {

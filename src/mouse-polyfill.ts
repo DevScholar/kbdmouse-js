@@ -90,9 +90,9 @@ class MousePolyfill {
   // Track if mouse log listener is enabled
   private mouseLogListenerEnabled = false;
 
-  // Debug sub-object with configurable log function - always active for DOM logging
+  // Debug sub-object with configurable log function - disabled by default
   debug = {
-    enabled: true,
+    enabled: false,
     logFunction: (message: string) => console.log(message),
     
     // Set custom log function
