@@ -35,7 +35,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     // Set custom log function
     setLogFunction: (fn: (message: string) => void) => {
       this.debug.logFunction = fn;
-      this.debug.enabled = false;
+      this.debug.enabled = true;
     },
     
     // Log method that uses the configured log function
@@ -109,11 +109,28 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     
     this.loadContent();
     this.setupResizeObserver();
+    this.setupKeyboardEventListeners();
   }
 
   disconnectedCallback() {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
+    }
+    
+    // Remove keyboard event listeners
+    if (this.keydownListener) {
+      window.removeEventListener('keydown', this.keydownListener);
+    }
+    if (this.keyupListener) {
+      window.removeEventListener('keyup', this.keyupListener);
+    }
+    if (this.keypressListener) {
+      window.removeEventListener('keypress', this.keypressListener);
+    }
+    
+    // Remove window resize listener
+    if (this.windowResizeListener) {
+      window.removeEventListener('resize', this.windowResizeListener);
     }
   }
 
@@ -714,6 +731,53 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       internalKeyboardUnmodified: true
     });
   }
+
+  // Setup keyboard event listeners for logging
+  private setupKeyboardEventListeners() {
+    // Add event listeners for physical keyboard events
+    this.keydownListener = (event: KeyboardEvent) => {
+      this.debug.logKeyboardEvent('keydown', event);
+    };
+    
+    this.keyupListener = (event: KeyboardEvent) => {
+      this.debug.logKeyboardEvent('keyup', event);
+    };
+    
+    this.keypressListener = (event: KeyboardEvent) => {
+      this.debug.logKeyboardEvent('keypress', event);
+    };
+    
+    // Add listeners to window for global keyboard events
+    window.addEventListener('keydown', this.keydownListener);
+    window.addEventListener('keyup', this.keyupListener);
+    window.addEventListener('keypress', this.keypressListener);
+    
+    // Listen for virtual keyboard events (bubbling from shadow DOM or light DOM)
+    this.addEventListener('keydown', (event: KeyboardEvent) => {
+      // Mark event as virtual keyboard event
+      (event as any).isVirtualKeyboard = true;
+      this.debug.logKeyboardEvent('keydown', event);
+    });
+    
+    this.addEventListener('keyup', (event: KeyboardEvent) => {
+      // Mark event as virtual keyboard event
+      (event as any).isVirtualKeyboard = true;
+      this.debug.logKeyboardEvent('keyup', event);
+    });
+    
+    this.addEventListener('keypress', (event: KeyboardEvent) => {
+      // Mark event as virtual keyboard event
+      (event as any).isVirtualKeyboard = true;
+      this.debug.logKeyboardEvent('keypress', event);
+    });
+    
+    console.log('PrefabVirtualKeyboard: Keyboard event listeners added for logging');
+  }
+
+  // Keyboard event listeners (stored for cleanup)
+  private keydownListener!: (event: KeyboardEvent) => void;
+  private keyupListener!: (event: KeyboardEvent) => void;
+  private keypressListener!: (event: KeyboardEvent) => void;
 }
 
 // Register custom element

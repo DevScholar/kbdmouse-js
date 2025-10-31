@@ -1,30 +1,6 @@
 import type { VirtualKey } from './virtual-key.js';
 
 export class VirtualKeyboard extends HTMLElement {
-  // Configuration options
-  private config = {
-    debug: true
-  };
-  
-  // Debug sub-object with configurable log function - always active for DOM logging
-  debug = {
-    enabled: true,
-    logFunction: (message: string) => console.log(message),
-    
-    // Set custom log function
-    setLogFunction: (fn: (message: string) => void) => {
-      this.debug.logFunction = fn;
-      this.debug.enabled = false;
-      this.config.debug = true;
-    },
-    
-    // Log method that uses the configured log function
-    log: (message: string) => {
-      if (this.debug.enabled) {
-        this.debug.logFunction(message);
-      }
-    }
-  };
 
   constructor() {
     super();
@@ -35,23 +11,10 @@ export class VirtualKeyboard extends HTMLElement {
 
   // Static property to observe attributes
   static get observedAttributes(): string[] {
-    return ['debug'];
+    return [];
   }
 
-  // Sub-object categories for better organization
-
-  // Static method to control console output (deprecated - use debug sub-object instead)
-  static setConsoleOutput(enabled: boolean): void {
-    // This method is kept for backward compatibility but is deprecated
-    // Use the debug sub-object instead: keyboard.debug.setLogFunction(fn)
-  }
-
-  // Make setConsoleOutput available globally
   connectedCallback() {
-    // Expose static method to global scope for demo page
-    (window as any).VirtualKeyboard = VirtualKeyboard;
-    
-    // Call original connectedCallback
     this.render();
     this.setupFocusListeners();
   }
@@ -340,7 +303,6 @@ export class VirtualKeyboard extends HTMLElement {
         return;
       }
 
-      // Log key repeat start at debug level
       // Stop any existing repeat
       this.state.stopRepeat();
 
@@ -370,7 +332,6 @@ export class VirtualKeyboard extends HTMLElement {
         this.state.repeatTimer = null;
       }
       if (this.state.repeatKey) {
-        // Key repeat stopped
       }
       this.state.isRepeating = false;
       this.state.repeatKey = null;
@@ -1041,24 +1002,6 @@ export class VirtualKeyboard extends HTMLElement {
     }
   };
 
-  // Public API: Enable or disable debug logging
-  public setDebug(enabled: boolean): void {
-    this.config.debug = enabled;
-  }
-
-  // Public API: Get current debug state
-  public isDebugEnabled(): boolean {
-    return this.config.debug;
-  }
-
-  // Handle attribute changes
-  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-    // Debug functionality is managed by prefab keyboard element
-    // No debug attributes should be handled here
-  }
-
-
-
   disconnectedCallback() {
     // Clean up key repeat timers when keyboard is removed from DOM
     this.state.stopRepeat();
@@ -1105,19 +1048,13 @@ export class VirtualKeyboard extends HTMLElement {
   // Manage keyboard event listeners for the active element
   private keyboardEventListeners = {
     keydown: (event: KeyboardEvent) => {
-      if (this.debug.log) {
-        this.debug.log(`[Keyboard] ${event.type} key="${event.key}" code="${event.code}" ${this.getModifierString(event)} source=physical`);
-      }
+      // Keyboard event handling (logging removed)
     },
     keyup: (event: KeyboardEvent) => {
-      if (this.debug.log) {
-        this.debug.log(`[Keyboard] ${event.type} key="${event.key}" code="${event.code}" ${this.getModifierString(event)} source=physical`);
-      }
+      // Keyboard event handling (logging removed)
     },
     keypress: (event: KeyboardEvent) => {
-      if (this.debug.log) {
-        this.debug.log(`[Keyboard] ${event.type} key="${event.key}" code="${event.code}" ${this.getModifierString(event)} source=physical`);
-      }
+      // Keyboard event handling (logging removed)
     }
   };
 
@@ -2265,30 +2202,15 @@ export class VirtualKeyboard extends HTMLElement {
 
   // Event management methods
   triggerKeyUpEvent(virtualKey: VirtualKey) {
-    const code = virtualKey.getAttribute('code') || '';
-    const key = virtualKey.getAttribute('key') || '';
-    const modifiers = this.state.getModifierStates();
-    const modStr = this.getModifierString(modifiers);
-    const timestamp = new Date();
-    const timeStr = timestamp.toTimeString().split(' ')[0] + '.' + timestamp.getMilliseconds().toString().padStart(3, '0');
-    
-    this.debug.log(`[${timeStr}]event=keyup,key=${key},code=${code},mod=${modStr},source=virtual`);
     this.event.dispatchKeyUp(virtualKey);
   }
 
   // Event dispatch methods
   triggerKeyDownEvent(virtualKey: VirtualKey) {
-    const code = virtualKey.getAttribute('code') || '';
-    const key = virtualKey.getAttribute('key') || '';
-    const modifiers = this.state.getModifierStates();
-    const modStr = this.getModifierString(modifiers);
-    const timestamp = new Date();
-    const timeStr = timestamp.toTimeString().split(' ')[0] + '.' + timestamp.getMilliseconds().toString().padStart(3, '0');
-    
-    this.debug.log(`[${timeStr}]event=keydown,key=${key},code=${code},mod=${modStr},source=virtual`);
     this.event.dispatchKeyDown(virtualKey);
     
     // Also trigger keypress for character-producing keys
+    const code = virtualKey.getAttribute('code') || '';
     if (this.shouldTriggerKeypress(code)) {
       this.triggerKeyPressEvent(virtualKey);
     }
@@ -2317,16 +2239,8 @@ export class VirtualKeyboard extends HTMLElement {
     return modStr || 'none';
   }
   
-  // Trigger keypress event with proper logging
+  // Trigger keypress event
   triggerKeyPressEvent(virtualKey: VirtualKey) {
-    const code = virtualKey.getAttribute('code') || '';
-    const key = virtualKey.getAttribute('key') || '';
-    const modifiers = this.state.getModifierStates();
-    const modStr = this.getModifierString(modifiers);
-    const timestamp = new Date();
-    const timeStr = timestamp.toTimeString().split(' ')[0] + '.' + timestamp.getMilliseconds().toString().padStart(3, '0');
-    
-    this.debug.log(`[${timeStr}]event=keypress,key=${key},code=${code},mod=${modStr},source=virtual`);
     this.event.dispatchKeyPress(virtualKey);
   }
 

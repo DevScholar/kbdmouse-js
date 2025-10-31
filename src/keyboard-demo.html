@@ -559,18 +559,7 @@
                     });
                 }
                 
-                // Setup custom log function for virtual keyboard debug logging
-                // This connects the prefab keyboard debug to our visual log container
-                if (keyboard.debug && keyboard.debug.setLogFunction) {
-                    keyboard.debug.setLogFunction((message) => {
-                        // Add to visual log container
-                        if (window.logContainer) {
-                            window.logContainer.addLog(message);
-                        }
-                    });
-                    // Enable debug logging for demo
-                    keyboard.debug.enabled = true;
-                }
+                // Removed double logging wrapper - let prefab keyboard handle its own logging
             }
             
             // Add window-level keyboard event listeners for physical keyboard events
