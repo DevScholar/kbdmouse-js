@@ -30,6 +30,8 @@ interface TouchState {
   clickCount: number;
   lastClickTime: number;
   hasVibrated: boolean;
+  previousPosition?: { x: number; y: number; time: number };
+  lastDispatchTime?: number;
 }
 
 interface PolyfillElement {
@@ -213,6 +215,140 @@ class MousePolyfill {
       shift: false,
       meta: false
     };
+  }
+
+  /**
+   * Create enhanced mouse event with all missing properties
+   */
+  private createEnhancedMouseEvent(
+    type: string,
+    touch: Touch,
+    button: number,
+    buttons: number,
+    targetElement: Element | null,
+    touchState: TouchState,
+    options: {
+      bubbles?: boolean;
+      cancelable?: boolean;
+      detail?: number;
+      relatedTarget?: Element | null;
+    } = {}
+  ): MouseEvent {
+    const modifiers = this.getModifierStates();
+    const currentTime = performance.now();
+    
+    // Calculate enhanced properties
+    const pageX = touch.clientX + window.scrollX;
+    const pageY = touch.clientY + window.scrollY;
+    const screenX = touch.screenX;
+    const screenY = touch.screenY;
+    const clientX = touch.clientX;
+    const clientY = touch.clientY;
+    const x = clientX;
+    const y = clientY;
+    
+    // Calculate movement (if we have previous position)
+    let movementX = 0;
+    let movementY = 0;
+    if (touchState.previousPosition && touchState.lastDispatchTime) {
+      const timeDelta = currentTime - touchState.lastDispatchTime;
+      if (timeDelta > 0 && timeDelta < 1000) { // 合理的移动时间窗口
+        movementX = clientX - touchState.previousPosition.x;
+        movementY = clientY - touchState.previousPosition.y;
+      }
+    }
+    
+    // Calculate offset if we have target element
+    let offsetX = 0;
+    let offsetY = 0;
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      offsetX = clientX - rect.left;
+      offsetY = clientY - rect.top;
+    }
+    
+    // Calculate layerX/layerY - similar to offsetX/Y but consider element positioning
+    let layerX = offsetX;
+    let layerY = offsetY;
+    if (targetElement) {
+      const computedStyle = window.getComputedStyle(targetElement);
+      const isPositioned = computedStyle.position === 'relative' || 
+                          computedStyle.position === 'absolute' || 
+                          computedStyle.position === 'fixed';
+      
+      if (!isPositioned) {
+        // If element is not positioned, layerX/Y should be relative to document
+        layerX = pageX;
+        layerY = pageY;
+      }
+      // If positioned, layerX/Y is same as offsetX/Y (relative to element's border box)
+    }
+    
+    // Pointer properties
+    const pointerId = touch.identifier + 1000; // 避免与真实指针ID冲突
+    const pointerType = 'mouse';
+    const width = 1;  // 鼠标接触面小
+    const height = 1;
+    const pressure = buttons > 0 ? 1 : 0;
+    const tiltX = 0;
+    const tiltY = 0;
+    const twist = 0;
+    
+    // Create base mouse event
+    const mouseEvent = new MouseEvent(type, {
+      bubbles: options.bubbles !== false,
+      cancelable: options.cancelable !== false,
+      composed: true,
+      view: window,
+      detail: options.detail ?? (type === 'click' || type === 'dblclick' ? 1 : 0),
+      screenX,
+      screenY,
+      clientX,
+      clientY,
+      button,
+      buttons,
+      relatedTarget: options.relatedTarget ?? null,
+      ctrlKey: modifiers.ctrl,
+      altKey: modifiers.alt,
+      shiftKey: modifiers.shift,
+      metaKey: modifiers.meta
+    });
+    
+    // Add enhanced properties using Object.defineProperty for better兼容性
+    const enhancedEvent = mouseEvent as any;
+    
+    // Enhanced coordinate properties
+    Object.defineProperty(enhancedEvent, 'pageX', { value: pageX, writable: false });
+    Object.defineProperty(enhancedEvent, 'pageY', { value: pageY, writable: false });
+    Object.defineProperty(enhancedEvent, 'x', { value: x, writable: false });
+    Object.defineProperty(enhancedEvent, 'y', { value: y, writable: false });
+    Object.defineProperty(enhancedEvent, 'offsetX', { value: offsetX, writable: false });
+    Object.defineProperty(enhancedEvent, 'offsetY', { value: offsetY, writable: false });
+    Object.defineProperty(enhancedEvent, 'layerX', { value: layerX, writable: false });
+    Object.defineProperty(enhancedEvent, 'layerY', { value: layerY, writable: false });
+    
+    // Movement properties
+    Object.defineProperty(enhancedEvent, 'movementX', { value: movementX, writable: false });
+    Object.defineProperty(enhancedEvent, 'movementY', { value: movementY, writable: false });
+    
+    // Pointer properties
+    Object.defineProperty(enhancedEvent, 'pointerId', { value: pointerId, writable: false });
+    Object.defineProperty(enhancedEvent, 'pointerType', { value: pointerType, writable: false });
+    Object.defineProperty(enhancedEvent, 'width', { value: width, writable: false });
+    Object.defineProperty(enhancedEvent, 'height', { value: height, writable: false });
+    Object.defineProperty(enhancedEvent, 'pressure', { value: pressure, writable: false });
+    Object.defineProperty(enhancedEvent, 'tiltX', { value: tiltX, writable: false });
+    Object.defineProperty(enhancedEvent, 'tiltY', { value: tiltY, writable: false });
+    Object.defineProperty(enhancedEvent, 'twist', { value: twist, writable: false });
+    
+    // Polyfill identifier
+    enhancedEvent.isPolyfill = true;
+    
+    // Update touch state tracking
+    touchState.previousPosition = { x: clientX, y: clientY, time: currentTime };
+    touchState.lastDispatchTime = currentTime;
+    
+    return enhancedEvent;
   }
 
   /**
@@ -551,30 +687,28 @@ class MousePolyfill {
       if (timeDiff <= this.DOUBLE_CLICK_WINDOW && distance <= this.DOUBLE_CLICK_DISTANCE_THRESHOLD) {
         console.log(`[${currentTouch.identifier}] Double click detected! Generating additional dblclick event`);
         
-        // Get current modifier states from virtual keyboard
-        const modifiers = this.getModifierStates();
+        // Get touch state for this touch
+        const touchState = this.touchStates.get(currentTouch.identifier);
+        if (!touchState) return;
         
-        // Generate additional double click event
-        const doubleClickEvent = new MouseEvent('dblclick', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          detail: 2,
-          button: 0,
-          buttons: 0,
-          clientX: currentTouch.clientX,
-          clientY: currentTouch.clientY,
-          screenX: currentTouch.screenX,
-          screenY: currentTouch.screenY,
-          relatedTarget: null,
-          ctrlKey: modifiers.ctrl,
-          altKey: modifiers.alt,
-          shiftKey: modifiers.shift,
-          metaKey: modifiers.meta
-        });
-        (doubleClickEvent as any).isPolyfill = true;
-        
+        // Get target element
         const targetElement = document.elementFromPoint(currentTouch.clientX, currentTouch.clientY);
+        
+        // Use enhanced mouse event creation for double click
+        const doubleClickEvent = this.createEnhancedMouseEvent(
+          'dblclick',
+          currentTouch,
+          0,
+          0,
+          targetElement,
+          touchState,
+          {
+            bubbles: true,
+            cancelable: true,
+            detail: 2
+          }
+        );
+        
         if (targetElement) {
           targetElement.dispatchEvent(doubleClickEvent);
         }
@@ -627,70 +761,56 @@ class MousePolyfill {
 
     console.log(`[${touch.identifier}] Dispatching single click sequence`);
 
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get touch state for this touch
+    const touchState = this.touchStates.get(touch.identifier);
+    if (!touchState) return;
 
     // 1. mousedown
-    const mouseDownEvent = new MouseEvent('mousedown', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      button: 0,
-      buttons: 1,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (mouseDownEvent as any).isPolyfill = true;
+    const mouseDownEvent = this.createEnhancedMouseEvent(
+      'mousedown',
+      touch,
+      0,
+      1,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     targetElement.dispatchEvent(mouseDownEvent);
 
     // 2. mouseup
-    const mouseUpEvent = new MouseEvent('mouseup', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      button: 0,
-      buttons: 0,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (mouseUpEvent as any).isPolyfill = true;
+    const mouseUpEvent = this.createEnhancedMouseEvent(
+      'mouseup',
+      touch,
+      0,
+      0,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     targetElement.dispatchEvent(mouseUpEvent);
 
     // 3. click
-    const clickEvent = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      button: 0,
-      buttons: 0,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (clickEvent as any).isPolyfill = true;
+    const clickEvent = this.createEnhancedMouseEvent(
+      'click',
+      touch,
+      0,
+      0,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     targetElement.dispatchEvent(clickEvent);
 
     // Update global click tracking
@@ -709,26 +829,23 @@ class MousePolyfill {
     touchState.currentMode = 'drag';
     touchState.isMouseDown = true;
     
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get target element
+    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
     
-    const mouseEvent = new MouseEvent('mousedown', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      button: 0,
-      buttons: 1,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
+    // Use enhanced mouse event creation for drag start
+    const mouseEvent = this.createEnhancedMouseEvent(
+      'mousedown',
+      touch,
+      0,
+      1,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
 
     (mouseEvent as any).isPolyfill = true;
     
@@ -744,70 +861,56 @@ class MousePolyfill {
   private rightClick(touch: Touch, targetElement: Element): void {
     console.log(`[${touch.identifier}] Triggering right-click sequence`);
     
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get touch state for this touch
+    const touchState = this.touchStates.get(touch.identifier);
+    if (!touchState) return;
     
     // mousedown (button=2, buttons=2)
-    const mouseDownEvent = new MouseEvent('mousedown', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      button: 2,
-      buttons: 2,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (mouseDownEvent as any).isPolyfill = true;
+    const mouseDownEvent = this.createEnhancedMouseEvent(
+      'mousedown',
+      touch,
+      2,
+      2,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     targetElement.dispatchEvent(mouseDownEvent);
 
     // mouseup (button=2, buttons=0)
-    const mouseUpEvent = new MouseEvent('mouseup', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      button: 2,
-      buttons: 0,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (mouseUpEvent as any).isPolyfill = true;
+    const mouseUpEvent = this.createEnhancedMouseEvent(
+      'mouseup',
+      touch,
+      2,
+      0,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     targetElement.dispatchEvent(mouseUpEvent);
 
     // contextmenu (button=2, buttons=0)
-    const contextMenuEvent = new MouseEvent('contextmenu', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 0,
-      button: 2,
-      buttons: 0,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (contextMenuEvent as any).isPolyfill = true;
+    const contextMenuEvent = this.createEnhancedMouseEvent(
+      'contextmenu',
+      touch,
+      2,
+      0,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 0
+      }
+    );
     targetElement.dispatchEvent(contextMenuEvent);
   }
 
@@ -857,7 +960,9 @@ class MousePolyfill {
         hasMoved: false,
         clickCount: 0,
         lastClickTime: 0,
-        hasVibrated: false
+        hasVibrated: false,
+        previousPosition: { x: startX, y: startY, time: startTime },
+        lastDispatchTime: startTime
       };
 
       // Set drag timer (400ms) - mark entry into drag time window
@@ -978,28 +1083,24 @@ class MousePolyfill {
    * Dispatch mouse move event
    */
   private dispatchMouseMove(touch: Touch, button: number, buttons: number, targetElement: Element | null): void {
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get touch state for this touch
+    const touchState = this.touchStates.get(touch.identifier);
+    if (!touchState) return;
     
-    const mouseEvent = new MouseEvent('mousemove', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 0,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      button: button,
-      buttons: buttons,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-
-    (mouseEvent as any).isPolyfill = true;
+    // Use enhanced mouse event creation
+    const mouseEvent = this.createEnhancedMouseEvent(
+      'mousemove',
+      touch,
+      button,
+      buttons,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 0
+      }
+    );
     
     // Get element at current touch position
     const currentTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -1075,50 +1176,54 @@ class MousePolyfill {
    * Traditional touch end handler (fallback)
    */
   private handleTraditionalTouchEnd(element: Element, touch: Touch): void {
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get touch state for this touch (create a temporary one if not exists)
+    let touchState = this.touchStates.get(touch.identifier);
+    if (!touchState) {
+      touchState = {
+        startTime: Date.now(),
+        startX: touch.clientX,
+        startY: touch.clientY,
+        currentMode: 'pending',
+        timers: {},
+        isMouseDown: false,
+        targetElement: element,
+        hasMoved: false,
+        clickCount: 0,
+        lastClickTime: 0,
+        hasVibrated: false
+      };
+    }
     
-    const mouseEvent = new MouseEvent('mouseup', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      button: 0,
-      buttons: 0,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-
-    (mouseEvent as any).isPolyfill = true;
+    // Use enhanced mouse event creation for mouseup
+    const mouseEvent = this.createEnhancedMouseEvent(
+      'mouseup',
+      touch,
+      0,
+      0,
+      element,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     element.dispatchEvent(mouseEvent);
 
-    // Also dispatch click event
-    const clickEvent = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      button: 0,
-      buttons: 0,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-
-    (clickEvent as any).isPolyfill = true;
+    // Use enhanced mouse event creation for click
+    const clickEvent = this.createEnhancedMouseEvent(
+      'click',
+      touch,
+      0,
+      0,
+      element,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     element.dispatchEvent(clickEvent);
     
     // Check if we need to generate additional double click event
@@ -1129,28 +1234,24 @@ class MousePolyfill {
    * Dispatch mouse up event
    */
   private dispatchMouseUp(touch: Touch, button: number, buttons: number, targetElement: Element | null): void {
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get touch state for this touch
+    const touchState = this.touchStates.get(touch.identifier);
+    if (!touchState) return;
     
-    const mouseEvent = new MouseEvent('mouseup', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      button: button,
-      buttons: buttons,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-
-    (mouseEvent as any).isPolyfill = true;
+    // Use enhanced mouse event creation
+    const mouseEvent = this.createEnhancedMouseEvent(
+      'mouseup',
+      touch,
+      button,
+      buttons,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     
     const currentTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
     const dispatchElement = currentTargetElement || targetElement;
@@ -1164,28 +1265,24 @@ class MousePolyfill {
    * Dispatch click event
    */
   private dispatchClick(touch: Touch, targetElement: Element | null): void {
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get touch state for this touch
+    const touchState = this.touchStates.get(touch.identifier);
+    if (!touchState) return;
     
-    const clickEvent = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: 1,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      button: 0,
-      buttons: 0,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-
-    (clickEvent as any).isPolyfill = true;
+    // Use enhanced mouse event creation
+    const clickEvent = this.createEnhancedMouseEvent(
+      'click',
+      touch,
+      0,
+      0,
+      targetElement,
+      touchState,
+      {
+        bubbles: true,
+        cancelable: true,
+        detail: 1
+      }
+    );
     
     const currentTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
     const dispatchElement = currentTargetElement || targetElement;
@@ -1217,25 +1314,39 @@ class MousePolyfill {
     }
       }
       
-      // Get current modifier states from virtual keyboard
-      const modifiers = this.getModifierStates();
+      // Get touch state for this touch (create a temporary one if not exists)
+      let tempTouchState = touchState;
+      if (!tempTouchState) {
+        tempTouchState = {
+          startTime: Date.now(),
+          startX: touch.clientX,
+          startY: touch.clientY,
+          currentMode: 'pending',
+          timers: {},
+          isMouseDown: false,
+          targetElement: element,
+          hasMoved: false,
+          clickCount: 0,
+          lastClickTime: 0,
+          hasVibrated: false
+        };
+      }
       
-      // Trigger mouseup event as cleanup
-      const mouseEvent = new MouseEvent('mouseup', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        detail: 0,
-        button: 0,
-        buttons: 0,
-        relatedTarget: null,
-        ctrlKey: modifiers.ctrl,
-        altKey: modifiers.alt,
-        shiftKey: modifiers.shift,
-        metaKey: modifiers.meta
-      });
-
-      (mouseEvent as any).isPolyfill = true;
+      // Use enhanced mouse event creation for cleanup mouseup
+      const mouseEvent = this.createEnhancedMouseEvent(
+        'mouseup',
+        touch,
+        0,
+        0,
+        element,
+        tempTouchState,
+        {
+          bubbles: true,
+          cancelable: true,
+          detail: 0
+        }
+      );
+      
       element.dispatchEvent(mouseEvent);
     };
   }
