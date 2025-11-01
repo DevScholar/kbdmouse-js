@@ -216,6 +216,14 @@
             </div>
             
             <div class="control-group">
+                <label>Log Event Types:</label>
+                <label><input type="checkbox" id="logMouseEvents" checked> Mouse Events</label>
+                <label><input type="checkbox" id="logTouchEvents" checked> Touch Events</label>
+                <label><input type="checkbox" id="logPointerEvents" checked> Pointer Events</label>
+                <button id="updateLogTypes" class="btn-secondary">Update Types</button>
+            </div>
+            
+            <div class="control-group">
                 <label>Demo Controls:</label>
                 <button id="addDraggable" class="btn-success">Add Draggable</button>
                 <button id="clearDraggables" class="btn-danger">Clear All</button>
@@ -317,11 +325,15 @@
             initializeElements() {
                 this.demoArea = document.getElementById('demoArea');
                 this.togglePolyfillBtn = document.getElementById('togglePolyfill');
-                this.addDraggableBtn = document.getElementById('addDraggable');
-                this.clearDraggablesBtn = document.getElementById('clearDraggables');
-                this.testVibrationBtn = document.getElementById('testVibration');
-                this.clearLogBtn = document.getElementById('clearLog');
-                this.toggleVibrateBtn = document.getElementById('toggleVibrate');
+            this.clearLogBtn = document.getElementById('clearLog');
+            this.addDraggableBtn = document.getElementById('addDraggable');
+            this.clearDraggablesBtn = document.getElementById('clearDraggables');
+            this.testVibrationBtn = document.getElementById('testVibration');
+            this.toggleVibrateBtn = document.getElementById('toggleVibrate');
+            this.updateLogTypesBtn = document.getElementById('updateLogTypes');
+            this.logMouseEventsCheckbox = document.getElementById('logMouseEvents');
+            this.logTouchEventsCheckbox = document.getElementById('logTouchEvents');
+            this.logPointerEventsCheckbox = document.getElementById('logPointerEvents');
                 this.contextMenu = document.getElementById('contextMenu');
                 this.menuAddDraggable = document.getElementById('menuAddDraggable');
                 this.menuClearDraggables = document.getElementById('menuClearDraggables');
@@ -360,6 +372,7 @@
                 
                 // Log controls
                 this.clearLogBtn.addEventListener('click', this.clearLog.bind(this));
+                this.updateLogTypesBtn.addEventListener('click', this.updateLogEventTypes.bind(this));
                 
                 // Context menu events
                 document.addEventListener('click', this.hideContextMenu.bind(this));
@@ -496,6 +509,30 @@
                 }
             }
             
+            // Update log event types
+            updateLogEventTypes() {
+                if (!this.mousePolyfill) return;
+                
+                const eventTypes = [];
+                
+                if (document.getElementById('logMouseEvents').checked) {
+                    eventTypes.push('mousedown', 'mouseup', 'mousemove', 'mouseenter', 'mouseleave', 'click');
+                }
+                
+                if (document.getElementById('logTouchEvents').checked) {
+                    eventTypes.push('touchstart', 'touchend', 'touchmove', 'touchcancel');
+                }
+                
+                if (document.getElementById('logPointerEvents').checked) {
+                    eventTypes.push('pointerdown', 'pointerup', 'pointermove', 'pointerenter', 'pointerleave', 'pointercancel');
+                }
+                
+                if (this.mousePolyfill.setLogEventTypes) {
+                    this.mousePolyfill.setLogEventTypes(eventTypes);
+                    this.addLogEntry('system', `Event types updated: ${eventTypes.join(', ')}`);
+                }
+            }
+            
 
             
             // Polyfill functionality
@@ -504,6 +541,7 @@
                 
                 if (this.polyfillEnabled) {
                     this.mousePolyfill.addPolyfillFor(this.demoArea);
+                    this.updateLogEventTypes(); // Set initial event types
                     this.mousePolyfill.enableMouseLogListener(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Disable Polyfill';
                 } else {

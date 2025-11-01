@@ -58,16 +58,32 @@ class MousePolyfill {
   private _debugEnabled = false;
   private _vibrateEnabled = true;
 
-  // Low-coupling mouse log listener - always active for DOM logging
-  private mouseLogListener = (event: MouseEvent | TouchEvent) => {
+  // Unified event log listener - handles MouseEvent, TouchEvent, and PointerEvent
+  private unifiedLogListener = (event: Event) => {
+    // Only log if event type is in our configuration
+    if (!this.logEventTypes.has(event.type)) {
+      return;
+    }
+
     let eventType = '';
     let x = 0;
     let y = 0;
     let button: number | undefined;
     let buttons: number | undefined;
     let source: 'physical' | 'virtual' = 'physical';
+    let pointerType: string | undefined;
+    let pointerId: number | undefined;
     
-    if (event instanceof MouseEvent) {
+    if (event instanceof PointerEvent) {
+      eventType = event.type;
+      x = event.clientX;
+      y = event.clientY;
+      button = event.button;
+      buttons = event.buttons;
+      pointerType = event.pointerType;
+      pointerId = event.pointerId;
+      source = (event as any).isVirtualMouse ? 'virtual' : 'physical';
+    } else if (event instanceof MouseEvent) {
       eventType = event.type;
       x = event.clientX;
       y = event.clientY;
@@ -86,12 +102,22 @@ class MousePolyfill {
       source = 'physical'; // Touch events are always physical
     }
     
-    // Log the mouse event using the debug format
-    this.debug.logMouseEvent(eventType, x, y, button, buttons, source);
+    // Log the event using the debug format
+    this.debug.logMouseEvent(eventType, x, y, button, buttons, source, pointerType, pointerId);
   };
 
   // Track if mouse log listener is enabled
   private mouseLogListenerEnabled = false;
+  
+  // Configuration for which event types to log
+  private logEventTypes = new Set<string>([
+    // Mouse events
+    'mousedown', 'mouseup', 'mousemove', 'click', 'dblclick', 'contextmenu',
+    // Touch events  
+    'touchstart', 'touchend', 'touchmove',
+    // Pointer events
+    'pointerdown', 'pointerup', 'pointermove', 'pointerenter', 'pointerleave', 'pointercancel'
+  ]);
 
   // Debug sub-object with configurable log function - disabled by default
   debug = {
@@ -124,7 +150,7 @@ class MousePolyfill {
     },
     
     // Log mouse/touch event in specified format
-    logMouseEvent: (eventType: string, x: number, y: number, button?: number, buttons?: number, source: 'physical' | 'virtual' = 'virtual') => {
+    logMouseEvent: (eventType: string, x: number, y: number, button?: number, buttons?: number, source: 'physical' | 'virtual' = 'virtual', pointerType?: string, pointerId?: number) => {
       const timestamp = this.debug.formatTimestamp();
       let logMessage = `${timestamp}event=${eventType},x=${x},y=${y}`;
       
@@ -134,6 +160,14 @@ class MousePolyfill {
       }
       if (buttons !== undefined) {
         logMessage += `,buttons=${buttons}`;
+      }
+      
+      // Add pointer-specific information
+      if (pointerType !== undefined) {
+        logMessage += `,pointerType=${pointerType}`;
+      }
+      if (pointerId !== undefined) {
+        logMessage += `,pointerId=${pointerId}`;
       }
       
       logMessage += `,source=${source}`;
@@ -392,22 +426,26 @@ class MousePolyfill {
   /**
    * Enable mouse log listener for the given element
    * @param element The element to attach listeners to
+   * @param eventTypes Optional array of specific event types to log. If not provided, logs all configured types
    */
-  enableMouseLogListener(element: Element): void {
+  enableMouseLogListener(element: Element, eventTypes?: string[]): void {
     if (this.mouseLogListenerEnabled) return;
     
-    element.addEventListener('mousedown', this.mouseLogListener as EventListener);
-    element.addEventListener('mouseup', this.mouseLogListener as EventListener);
-    element.addEventListener('mousemove', this.mouseLogListener as EventListener);
-    element.addEventListener('click', this.mouseLogListener as EventListener);
-    element.addEventListener('dblclick', this.mouseLogListener as EventListener);
-    element.addEventListener('contextmenu', this.mouseLogListener as EventListener);
-    element.addEventListener('touchstart', this.mouseLogListener as EventListener);
-    element.addEventListener('touchend', this.mouseLogListener as EventListener);
-    element.addEventListener('touchmove', this.mouseLogListener as EventListener);
+    // If specific event types are provided, use them instead of the default set
+    if (eventTypes && eventTypes.length > 0) {
+      this.logEventTypes.clear();
+      eventTypes.forEach(type => this.logEventTypes.add(type));
+    }
+    
+    // Add single unified listener for all event types
+    // Use capture phase to ensure we get all events
+    this.logEventTypes.forEach(eventType => {
+      element.addEventListener(eventType, this.unifiedLogListener, { capture: true });
+    });
     
     this.mouseLogListenerEnabled = true;
-    this.log('Mouse log listener enabled');
+    const enabledTypes = Array.from(this.logEventTypes).join(', ');
+    this.log(`Mouse log listener enabled for events: ${enabledTypes}`);
   }
 
   /**
@@ -417,18 +455,33 @@ class MousePolyfill {
   disableMouseLogListener(element: Element): void {
     if (!this.mouseLogListenerEnabled) return;
     
-    element.removeEventListener('mousedown', this.mouseLogListener as EventListener);
-    element.removeEventListener('mouseup', this.mouseLogListener as EventListener);
-    element.removeEventListener('mousemove', this.mouseLogListener as EventListener);
-    element.removeEventListener('click', this.mouseLogListener as EventListener);
-    element.removeEventListener('dblclick', this.mouseLogListener as EventListener);
-    element.removeEventListener('contextmenu', this.mouseLogListener as EventListener);
-    element.removeEventListener('touchstart', this.mouseLogListener as EventListener);
-    element.removeEventListener('touchend', this.mouseLogListener as EventListener);
-    element.removeEventListener('touchmove', this.mouseLogListener as EventListener);
+    // Remove the unified listener for all event types
+    this.logEventTypes.forEach(eventType => {
+      element.removeEventListener(eventType, this.unifiedLogListener, { capture: true });
+    });
     
     this.mouseLogListenerEnabled = false;
     this.log('Mouse log listener disabled');
+  }
+
+  /**
+   * Configure which event types to log
+   * @param eventTypes Array of event types to log
+   */
+  setLogEventTypes(eventTypes: string[]): void {
+    this.logEventTypes.clear();
+    eventTypes.forEach(type => this.logEventTypes.add(type));
+    
+    if (this._debugEnabled) {
+      this.debug.log(`[MousePolyfill] Configured to log events: ${eventTypes.join(', ')}`);
+    }
+  }
+
+  /**
+   * Get currently configured event types for logging
+   */
+  getLogEventTypes(): string[] {
+    return Array.from(this.logEventTypes);
   }
 
   /**
