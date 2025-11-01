@@ -1069,22 +1069,18 @@ class MousePolyfill {
           }
       }
 
-      // Handle movement based on current mode with timing consistency
+      // Handle movement based on current mode - removed frequency limit for smooth tracking
       switch (touchState.currentMode) {
         case 'move':
           // Normal mouse movement mode (no button pressed)
-          if (timeSinceLastEvent >= 16) { // ~60fps max frequency
-            this.dispatchMouseMove(touch, 0, 0, touchState.targetElement);
-            touchState.lastEventType = 'mousemove';
-          }
+          this.dispatchMouseMove(touch, 0, 0, touchState.targetElement);
+          touchState.lastEventType = 'mousemove';
           break;
           
         case 'drag':
           // Drag mode (mouse button pressed state)
-          if (timeSinceLastEvent >= 16) { // ~60fps max frequency
-            this.dispatchMouseMove(touch, 0, 1, touchState.targetElement);
-            touchState.lastEventType = 'mousemove';
-          }
+          this.dispatchMouseMove(touch, 0, 1, touchState.targetElement);
+          touchState.lastEventType = 'mousemove';
           break;
           
         case 'rightclick':
