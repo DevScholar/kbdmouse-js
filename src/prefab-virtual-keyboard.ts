@@ -112,7 +112,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
                         event.target === document.activeElement ? 'textInput' : 
                         (event.target as Element).tagName || 'unknown';
       
-      const logMessage = `${timestamp} event=${eventType},key=${key},code=${code},mod=${modStr},source=${source},target=${targetName}`;
+      const logMessage = `${timestamp} event=${eventType},key=${key},code=${code},mod=${modStr},source=${source}`;
       this.logger.logFunction(logMessage);
     }
   };
