@@ -32,6 +32,7 @@ interface TouchState {
   hasVibrated: boolean;
   previousPosition?: { x: number; y: number; time: number };
   lastDispatchTime?: number;
+  lastEventType?: string;
 }
 
 interface PolyfillElement {
@@ -232,6 +233,8 @@ class MousePolyfill {
       cancelable?: boolean;
       detail?: number;
       relatedTarget?: Element | null;
+      composed?: boolean;
+      view?: Window;
     } = {}
   ): MouseEvent {
     const modifiers = this.getModifierStates();
@@ -298,8 +301,8 @@ class MousePolyfill {
     const mouseEvent = new MouseEvent(type, {
       bubbles: options.bubbles !== false,
       cancelable: options.cancelable !== false,
-      composed: true,
-      view: window,
+      composed: options.composed ?? true,
+      view: options.view ?? window,
       detail: options.detail ?? (type === 'click' || type === 'dblclick' ? 1 : 0),
       screenX,
       screenY,
@@ -349,6 +352,22 @@ class MousePolyfill {
     touchState.lastDispatchTime = currentTime;
     
     return enhancedEvent;
+  }
+
+  /**
+   * Dispatch event with proper target element and enhanced properties
+   * This method ensures event consistency with native mouse events
+   */
+  private dispatchEventEnhanced(event: Event, targetElement: Element): void {
+    // Set proper event properties for consistency
+    Object.defineProperty(event, 'target', {
+      value: targetElement,
+      writable: false,
+      configurable: true
+    });
+    
+    // Use native dispatchEvent which handles capture/bubble phases automatically
+    targetElement.dispatchEvent(event);
   }
 
   /**
@@ -565,94 +584,81 @@ class MousePolyfill {
    * @param isSecondClick Whether this is the second click in a double click (adds dblclick)
    */
   private dispatchClickSequence(touch: Touch, targetElement: Element, clickCount: number, isDoubleClick: boolean = false): void {
-    // Get current modifier states from virtual keyboard
-    const modifiers = this.getModifierStates();
+    // Get touch state for this touch
+    const touchState = this.touchStates.get(touch.identifier);
+    if (!touchState) return;
 
     // mousedown
-    const mouseDownEvent = new MouseEvent('mousedown', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: clickCount,
-      button: 0,
-      buttons: 1,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (mouseDownEvent as any).isPolyfill = true;
-    targetElement.dispatchEvent(mouseDownEvent);
-
-    // mouseup
-    const mouseUpEvent = new MouseEvent('mouseup', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: clickCount,
-      button: 0,
-      buttons: 0,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (mouseUpEvent as any).isPolyfill = true;
-    targetElement.dispatchEvent(mouseUpEvent);
-
-    // click
-    const clickEvent = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      detail: clickCount,
-      button: 0,
-      buttons: 0,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      relatedTarget: null,
-      ctrlKey: modifiers.ctrl,
-      altKey: modifiers.alt,
-      shiftKey: modifiers.shift,
-      metaKey: modifiers.meta
-    });
-    (clickEvent as any).isPolyfill = true;
-    targetElement.dispatchEvent(clickEvent);
-
-    // dblclick (only on second click)
-    if (isDoubleClick) {
-      const doubleClickEvent = new MouseEvent('dblclick', {
+    const mouseDownEvent = this.createEnhancedMouseEvent(
+      'mousedown',
+      touch,
+      0,
+      1,
+      targetElement,
+      touchState,
+      {
         bubbles: true,
         cancelable: true,
-        view: window,
-        detail: 2,
-        button: 0,
-        buttons: 0,
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-        screenX: touch.screenX,
-        screenY: touch.screenY,
-        relatedTarget: null,
-        ctrlKey: modifiers.ctrl,
-        altKey: modifiers.alt,
-        shiftKey: modifiers.shift,
-        metaKey: modifiers.meta
-      });
-      (doubleClickEvent as any).isPolyfill = true;
-      targetElement.dispatchEvent(doubleClickEvent);
-    }
+        detail: clickCount
+      }
+    );
+    this.dispatchEventEnhanced(mouseDownEvent, targetElement);
+
+    // Add small delay between mousedown and mouseup to simulate real timing
+    setTimeout(() => {
+      // mouseup
+      const mouseUpEvent = this.createEnhancedMouseEvent(
+        'mouseup',
+        touch,
+        0,
+        0,
+        targetElement,
+        touchState,
+        {
+          bubbles: true,
+          cancelable: true,
+          detail: clickCount
+        }
+      );
+      this.dispatchEventEnhanced(mouseUpEvent, targetElement);
+      
+      // Add small delay between mouseup and click
+      setTimeout(() => {
+        // click
+        const clickEvent = this.createEnhancedMouseEvent(
+          'click',
+          touch,
+          0,
+          0,
+          targetElement,
+          touchState,
+          {
+            bubbles: true,
+            cancelable: true,
+            detail: clickCount
+          }
+        );
+        this.dispatchEventEnhanced(clickEvent, targetElement);
+
+        // dblclick (only on second click)
+        if (isDoubleClick) {
+          const doubleClickEvent = this.createEnhancedMouseEvent(
+            'dblclick',
+            touch,
+            0,
+            0,
+            targetElement,
+            touchState,
+            {
+              bubbles: true,
+              cancelable: true,
+              detail: 2
+            }
+          );
+          this.dispatchEventEnhanced(doubleClickEvent, targetElement);
+        }
+      }, 10);
+    }, 10);
   }
 
   /**
@@ -691,8 +697,9 @@ class MousePolyfill {
         const touchState = this.touchStates.get(currentTouch.identifier);
         if (!touchState) return;
         
-        // Get target element
-        const targetElement = document.elementFromPoint(currentTouch.clientX, currentTouch.clientY);
+        // Use the original target element from touch state
+        const targetElement = touchState.targetElement;
+        if (!targetElement) return;
         
         // Use enhanced mouse event creation for double click
         const doubleClickEvent = this.createEnhancedMouseEvent(
@@ -709,9 +716,7 @@ class MousePolyfill {
           }
         );
         
-        if (targetElement) {
-          targetElement.dispatchEvent(doubleClickEvent);
-        }
+        this.dispatchEventEnhanced(doubleClickEvent, targetElement);
       }
     }
     
@@ -829,8 +834,9 @@ class MousePolyfill {
     touchState.currentMode = 'drag';
     touchState.isMouseDown = true;
     
-    // Get target element
-    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    // Use the original target element from touch state
+    const targetElement = touchState.targetElement;
+    if (!targetElement) return;
     
     // Use enhanced mouse event creation for drag start
     const mouseEvent = this.createEnhancedMouseEvent(
@@ -847,11 +853,7 @@ class MousePolyfill {
       }
     );
 
-    (mouseEvent as any).isPolyfill = true;
-    
-    if (touchState.targetElement) {
-      touchState.targetElement.dispatchEvent(mouseEvent);
-    }
+    this.dispatchEventEnhanced(mouseEvent, targetElement);
   }
 
   /**
@@ -879,39 +881,45 @@ class MousePolyfill {
         detail: 1
       }
     );
-    targetElement.dispatchEvent(mouseDownEvent);
-
-    // mouseup (button=2, buttons=0)
-    const mouseUpEvent = this.createEnhancedMouseEvent(
-      'mouseup',
-      touch,
-      2,
-      0,
-      targetElement,
-      touchState,
-      {
-        bubbles: true,
-        cancelable: true,
-        detail: 1
-      }
-    );
-    targetElement.dispatchEvent(mouseUpEvent);
-
-    // contextmenu (button=2, buttons=0)
-    const contextMenuEvent = this.createEnhancedMouseEvent(
-      'contextmenu',
-      touch,
-      2,
-      0,
-      targetElement,
-      touchState,
-      {
-        bubbles: true,
-        cancelable: true,
-        detail: 0
-      }
-    );
-    targetElement.dispatchEvent(contextMenuEvent);
+    this.dispatchEventEnhanced(mouseDownEvent, targetElement);
+    
+    // Add small delay between mousedown and mouseup to simulate real timing
+    setTimeout(() => {
+      // mouseup (button=2, buttons=0)
+      const mouseUpEvent = this.createEnhancedMouseEvent(
+        'mouseup',
+        touch,
+        2,
+        0,
+        targetElement,
+        touchState,
+        {
+          bubbles: true,
+          cancelable: true,
+          detail: 1
+        }
+      );
+      this.dispatchEventEnhanced(mouseUpEvent, targetElement);
+      
+      // Add small delay between mouseup and contextmenu
+      setTimeout(() => {
+        // contextmenu (button=2, buttons=0)
+        const contextMenuEvent = this.createEnhancedMouseEvent(
+          'contextmenu',
+          touch,
+          2,
+          0,
+          targetElement,
+          touchState,
+          {
+            bubbles: true,
+            cancelable: true,
+            detail: 0
+          }
+        );
+        this.dispatchEventEnhanced(contextMenuEvent, targetElement);
+      }, 10);
+    }, 10);
   }
 
   /**
@@ -962,7 +970,8 @@ class MousePolyfill {
         lastClickTime: 0,
         hasVibrated: false,
         previousPosition: { x: startX, y: startY, time: startTime },
-        lastDispatchTime: startTime
+        lastDispatchTime: startTime,
+        lastEventType: 'touchstart'
       };
 
       // Set drag timer (400ms) - mark entry into drag time window
@@ -1018,6 +1027,10 @@ class MousePolyfill {
       const currentX = touch.clientX;
       const currentY = touch.clientY;
       const distance = this.getDistance(touchState.startX, touchState.startY, currentX, currentY);
+      const currentTime = Date.now();
+      
+      // Add event timing consistency check
+      const timeSinceLastEvent = currentTime - (touchState.lastDispatchTime || 0);
       
       // Check if movement exceeds threshold
       if (distance > this.MOVE_THRESHOLD_DISTANCE) {
@@ -1034,7 +1047,7 @@ class MousePolyfill {
         
         // Determine mode based on time and current state
           if (touchState.currentMode === 'pending') {
-            const elapsedTime = Date.now() - touchState.startTime;
+            const elapsedTime = currentTime - touchState.startTime;
             
             if (debug.enabled) {
       console.log(`[${touchId}] Movement detected`, { elapsedTime, distance });
@@ -1056,16 +1069,22 @@ class MousePolyfill {
           }
       }
 
-      // Handle movement based on current mode
+      // Handle movement based on current mode with timing consistency
       switch (touchState.currentMode) {
         case 'move':
           // Normal mouse movement mode (no button pressed)
-          this.dispatchMouseMove(touch, 0, 0, touchState.targetElement);
+          if (timeSinceLastEvent >= 16) { // ~60fps max frequency
+            this.dispatchMouseMove(touch, 0, 0, touchState.targetElement);
+            touchState.lastEventType = 'mousemove';
+          }
           break;
           
         case 'drag':
           // Drag mode (mouse button pressed state)
-          this.dispatchMouseMove(touch, 0, 1, touchState.targetElement);
+          if (timeSinceLastEvent >= 16) { // ~60fps max frequency
+            this.dispatchMouseMove(touch, 0, 1, touchState.targetElement);
+            touchState.lastEventType = 'mousemove';
+          }
           break;
           
         case 'rightclick':
@@ -1087,13 +1106,17 @@ class MousePolyfill {
     const touchState = this.touchStates.get(touch.identifier);
     if (!touchState) return;
     
+    // Use the original target element from touch state, not the current element under finger
+    const originalTargetElement = touchState.targetElement || targetElement;
+    if (!originalTargetElement) return;
+    
     // Use enhanced mouse event creation
     const mouseEvent = this.createEnhancedMouseEvent(
       'mousemove',
       touch,
       button,
       buttons,
-      targetElement,
+      originalTargetElement,
       touchState,
       {
         bubbles: true,
@@ -1102,13 +1125,16 @@ class MousePolyfill {
       }
     );
     
-    // Get element at current touch position
-    const currentTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-    const dispatchElement = currentTargetElement || targetElement;
+    // Dispatch event with proper target
+    this.dispatchEventEnhanced(mouseEvent, originalTargetElement);
     
-    if (dispatchElement) {
-      dispatchElement.dispatchEvent(mouseEvent);
-    }
+    // Update touch state position tracking
+    touchState.previousPosition = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    };
+    touchState.lastDispatchTime = Date.now();
   }
 
   /**
@@ -1208,7 +1234,7 @@ class MousePolyfill {
         detail: 1
       }
     );
-    element.dispatchEvent(mouseEvent);
+    this.dispatchEventEnhanced(mouseEvent, element);
 
     // Use enhanced mouse event creation for click
     const clickEvent = this.createEnhancedMouseEvent(
@@ -1224,7 +1250,7 @@ class MousePolyfill {
         detail: 1
       }
     );
-    element.dispatchEvent(clickEvent);
+    this.dispatchEventEnhanced(clickEvent, element);
     
     // Check if we need to generate additional double click event
     this.checkAndGenerateDoubleClick(touch);
@@ -1238,27 +1264,31 @@ class MousePolyfill {
     const touchState = this.touchStates.get(touch.identifier);
     if (!touchState) return;
     
+    // Use the original target element from touch state, not the current element under finger
+    const originalTargetElement = touchState.targetElement || targetElement;
+    if (!originalTargetElement) return;
+    
     // Use enhanced mouse event creation
     const mouseEvent = this.createEnhancedMouseEvent(
       'mouseup',
       touch,
       button,
       buttons,
-      targetElement,
+      originalTargetElement,
       touchState,
       {
         bubbles: true,
         cancelable: true,
-        detail: 1
+        detail: 0
       }
     );
     
-    const currentTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-    const dispatchElement = currentTargetElement || targetElement;
+    // Dispatch event with proper target
+    this.dispatchEventEnhanced(mouseEvent, originalTargetElement);
     
-    if (dispatchElement) {
-      dispatchElement.dispatchEvent(mouseEvent);
-    }
+    // Update touch state
+    touchState.lastEventType = 'mouseup';
+    touchState.lastDispatchTime = Date.now();
   }
 
   /**
@@ -1269,13 +1299,17 @@ class MousePolyfill {
     const touchState = this.touchStates.get(touch.identifier);
     if (!touchState) return;
     
+    // Use the original target element from touch state, not the current element under finger
+    const originalTargetElement = touchState.targetElement || targetElement;
+    if (!originalTargetElement) return;
+    
     // Use enhanced mouse event creation
     const clickEvent = this.createEnhancedMouseEvent(
       'click',
       touch,
       0,
       0,
-      targetElement,
+      originalTargetElement,
       touchState,
       {
         bubbles: true,
@@ -1284,12 +1318,12 @@ class MousePolyfill {
       }
     );
     
-    const currentTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-    const dispatchElement = currentTargetElement || targetElement;
+    // Dispatch event with proper target
+    this.dispatchEventEnhanced(clickEvent, originalTargetElement);
     
-    if (dispatchElement) {
-      dispatchElement.dispatchEvent(clickEvent);
-    }
+    // Update touch state
+    touchState.lastEventType = 'click';
+    touchState.lastDispatchTime = Date.now();
   }
 
   /**
@@ -1347,7 +1381,7 @@ class MousePolyfill {
         }
       );
       
-      element.dispatchEvent(mouseEvent);
+      this.dispatchEventEnhanced(mouseEvent, element);
     };
   }
 
