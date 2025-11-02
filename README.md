@@ -1,4 +1,4 @@
-# kbdmouse-js
+# KBDMouseJS
 
 **PC Input Event Emulator for Legacy Web Compatibility**
 
@@ -63,8 +63,8 @@ The project builds modern ES modules:
 After building, the `dist/` directory will contain:
 ```
 dist/
-├── kbdmouse-js.mjs             # Main ES module entry point
-├── kbdmouse-js.js              # CommonJS entry point
+├── KBDMouseJS.mjs             # Main ES module entry point
+├── KBDMouseJS.js              # CommonJS entry point
 ├── layouts/qwerty/qwerty.css # Keyboard layout styles
 ├── layouts/qwerty/qwerty.html  # Keyboard layout HTML
 └── *.js.map                    # Source map files
@@ -79,7 +79,7 @@ Suitable for PC emulators requiring accurate hardware keyboard behavior:
 
 ```javascript
 // Import the prefab virtual keyboard (ES module)
-import { PrefabVirtualKeyboard } from './dist/kbdmouse-js.mjs';
+import { PrefabVirtualKeyboard } from './dist/KBDMouseJS.mjs';
 
 // The custom element is automatically registered when the module is imported
 // You can now use <prefab-virtual-keyboard> in your HTML
