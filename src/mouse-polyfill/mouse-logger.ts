@@ -8,7 +8,7 @@ export interface LoggerConfig {
   logFunction?: (message: string) => void;
 }
 
-export class Logger {
+export class MouseLogger {
   private _enabled: boolean = false;
   private _currentLoggingElement: HTMLElement | null = null;
   private _loggerFunction: (message: string) => void;
@@ -197,4 +197,4 @@ export class Logger {
 /**
  * Global logger instance
  */
-export const globalLogger = new Logger();
+export const globalLogger = new MouseLogger();

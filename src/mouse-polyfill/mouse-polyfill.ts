@@ -3,7 +3,7 @@
  * Converts touch events to mouse events for specific elements
  */
 
-import { Logger, globalLogger } from '../logger';
+import { MouseLogger, globalLogger } from './mouse-logger';
 
 // Debug configuration for console logging
 interface DebugConfig {
@@ -54,7 +54,7 @@ class MousePolyfill {
   private readonly VIBRATE_DURATION = 30; // ms - vibration duration
   private _debugEnabled = false;
   private _vibrateEnabled = true;
-  private logger: Logger;
+  private logger: MouseLogger;
 
   // Unified event log listener - handles MouseEvent, TouchEvent, and PointerEvent
   private unifiedLogListener = (event: Event) => {
@@ -169,7 +169,7 @@ class MousePolyfill {
     this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
     // Initialize logger
-    this.logger = new Logger({ enabled: false });
+    this.logger = new MouseLogger({ enabled: false });
     
     // Sync debug object with logger
     this.debug.enabled = this.logger.enabled;
@@ -218,7 +218,7 @@ class MousePolyfill {
   /**
    * Get logger instance (for advanced usage)
    */
-  getLogger(): Logger {
+  getLogger(): MouseLogger {
     return this.logger;
   }
 
