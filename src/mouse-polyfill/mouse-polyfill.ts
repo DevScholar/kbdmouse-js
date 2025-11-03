@@ -266,9 +266,9 @@ class MousePolyfill {
   }
 
   /**
-   * Create enhanced mouse event with all missing properties
+   * Create mouse event with all missing properties
    */
-  private createEnhancedMouseEvent(
+  private createMouseEvent(
     type: string,
     touch: Touch,
     button: number,
@@ -655,7 +655,7 @@ class MousePolyfill {
     if (!touchState) return;
 
     // mousedown
-    const mouseDownEvent = this.createEnhancedMouseEvent(
+    const mouseDownEvent = this.createMouseEvent(
       'mousedown',
       touch,
       0,
@@ -673,7 +673,7 @@ class MousePolyfill {
     // Add small delay between mousedown and mouseup to simulate real timing
     setTimeout(() => {
       // mouseup
-      const mouseUpEvent = this.createEnhancedMouseEvent(
+      const mouseUpEvent = this.createMouseEvent(
         'mouseup',
         touch,
         0,
@@ -691,7 +691,7 @@ class MousePolyfill {
       // Add small delay between mouseup and click
       setTimeout(() => {
         // click
-        const clickEvent = this.createEnhancedMouseEvent(
+        const clickEvent = this.createMouseEvent(
           'click',
           touch,
           0,
@@ -708,7 +708,7 @@ class MousePolyfill {
 
         // dblclick (only on second click)
         if (isDoubleClick) {
-          const doubleClickEvent = this.createEnhancedMouseEvent(
+          const doubleClickEvent = this.createMouseEvent(
             'dblclick',
             touch,
             0,
@@ -767,8 +767,8 @@ class MousePolyfill {
         const targetElement = touchState.targetElement;
         if (!targetElement) return;
         
-        // Use enhanced mouse event creation for double click
-        const doubleClickEvent = this.createEnhancedMouseEvent(
+        // Use mouse event creation for double click
+        const doubleClickEvent = this.createMouseEvent(
           'dblclick',
           currentTouch,
           0,
@@ -837,7 +837,7 @@ class MousePolyfill {
     if (!touchState) return;
 
     // 1. mousedown
-    const mouseDownEvent = this.createEnhancedMouseEvent(
+    const mouseDownEvent = this.createMouseEvent(
       'mousedown',
       touch,
       0,
@@ -853,7 +853,7 @@ class MousePolyfill {
     targetElement.dispatchEvent(mouseDownEvent);
 
     // 2. mouseup
-    const mouseUpEvent = this.createEnhancedMouseEvent(
+    const mouseUpEvent = this.createMouseEvent(
       'mouseup',
       touch,
       0,
@@ -869,7 +869,7 @@ class MousePolyfill {
     targetElement.dispatchEvent(mouseUpEvent);
 
     // 3. click
-    const clickEvent = this.createEnhancedMouseEvent(
+    const clickEvent = this.createMouseEvent(
       'click',
       touch,
       0,
@@ -904,8 +904,8 @@ class MousePolyfill {
     const targetElement = touchState.targetElement;
     if (!targetElement) return;
     
-    // Use enhanced mouse event creation for drag start
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation for drag start
+    const mouseEvent = this.createMouseEvent(
       'mousedown',
       touch,
       0,
@@ -934,7 +934,7 @@ class MousePolyfill {
     if (!touchState) return;
     
     // mousedown (button=2, buttons=2)
-    const mouseDownEvent = this.createEnhancedMouseEvent(
+    const mouseDownEvent = this.createMouseEvent(
       'mousedown',
       touch,
       2,
@@ -952,7 +952,7 @@ class MousePolyfill {
     // Add small delay between mousedown and mouseup to simulate real timing
     setTimeout(() => {
       // mouseup (button=2, buttons=0)
-      const mouseUpEvent = this.createEnhancedMouseEvent(
+      const mouseUpEvent = this.createMouseEvent(
         'mouseup',
         touch,
         2,
@@ -970,7 +970,7 @@ class MousePolyfill {
       // Add small delay between mouseup and contextmenu
       setTimeout(() => {
         // contextmenu (button=2, buttons=0)
-        const contextMenuEvent = this.createEnhancedMouseEvent(
+        const contextMenuEvent = this.createMouseEvent(
           'contextmenu',
           touch,
           2,
@@ -1172,8 +1172,8 @@ class MousePolyfill {
     const originalTargetElement = touchState.targetElement || targetElement;
     if (!originalTargetElement) return;
     
-    // Use enhanced mouse event creation
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation
+    const mouseEvent = this.createMouseEvent(
       'mousemove',
       touch,
       button,
@@ -1282,8 +1282,8 @@ class MousePolyfill {
       };
     }
     
-    // Use enhanced mouse event creation for mouseup
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation for mouseup
+    const mouseEvent = this.createMouseEvent(
       'mouseup',
       touch,
       0,
@@ -1298,8 +1298,8 @@ class MousePolyfill {
     );
     this.dispatchEventEnhanced(mouseEvent, element);
 
-    // Use enhanced mouse event creation for click
-    const clickEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation for click
+    const clickEvent = this.createMouseEvent(
       'click',
       touch,
       0,
@@ -1330,8 +1330,8 @@ class MousePolyfill {
     const originalTargetElement = touchState.targetElement || targetElement;
     if (!originalTargetElement) return;
     
-    // Use enhanced mouse event creation
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation
+    const mouseEvent = this.createMouseEvent(
       'mouseup',
       touch,
       button,
@@ -1365,8 +1365,8 @@ class MousePolyfill {
     const originalTargetElement = touchState.targetElement || targetElement;
     if (!originalTargetElement) return;
     
-    // Use enhanced mouse event creation
-    const clickEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation
+    const clickEvent = this.createMouseEvent(
       'click',
       touch,
       0,
@@ -1428,8 +1428,8 @@ class MousePolyfill {
         };
       }
       
-      // Use enhanced mouse event creation for cleanup mouseup
-      const mouseEvent = this.createEnhancedMouseEvent(
+      // Use mouse event creation for cleanup mouseup
+      const mouseEvent = this.createMouseEvent(
         'mouseup',
         touch,
         0,
