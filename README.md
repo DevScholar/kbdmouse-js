@@ -79,7 +79,7 @@ Suitable for PC emulators requiring accurate hardware keyboard behavior:
 
 ```javascript
 // Import the prefab virtual keyboard (ES module)
-import { PrefabVirtualKeyboard } from './dist/KBDMouseJS.mjs';
+import { PrefabVirtualKeyboard } from './dist/kbdmouse-js.mjs';
 
 // The custom element is automatically registered when the module is imported
 // You can now use <prefab-virtual-keyboard> in your HTML
