@@ -552,23 +552,23 @@
             // Set up keyboard log function after DOM is loaded
             const keyboard = document.getElementById('demo-keyboard');
             if (keyboard && keyboard.logger) {
-                // 显式启用调试功能
+                // Explicitly enable debug functionality
                 keyboard.logger.enabled = true;
-                keyboard.logger.level = 'debug'; // 设置最低日志级别以显示所有日志
-                console.log('[DEBUG] 键盘调试功能已显式启用');
+                keyboard.logger.level = 'debug'; // Set minimum log level to show all logs
+                console.log('[DEBUG] Keyboard debug functionality explicitly enabled');
                 
                 keyboard.logger.setLogFunction((message) => {
                     window.logContainer.addLog(message);
                 });
-                console.log('[DEBUG] 键盘日志函数已重定向到DOM容器');
+                console.log('[DEBUG] Keyboard log function redirected to DOM container');
                 
-                // 测试日志系统
-                keyboard.logger.info('键盘日志系统初始化完成');
+                // Test log system
+                keyboard.logger.info('Keyboard logging system initialization completed');
                 const testEvent = new KeyboardEvent('keydown', {key: 'Test', code: 'Test'});
                 Object.defineProperty(testEvent, 'target', {value: document.body, writable: false});
                 keyboard.logger.logKeyboardEvent('keydown', testEvent);
             } else {
-                console.log('[DEBUG] 未找到键盘元素或logger对象');
+                console.log('[DEBUG] Keyboard element or logger object not found');
             }
         });
         

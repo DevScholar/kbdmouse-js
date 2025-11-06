@@ -685,12 +685,12 @@
             console.log('MouseDemo initialized');
             
             // Setup custom log function for the demo's mouse polyfill instance
-            // 默认情况下，日志会输出到控制台 (console.log)
-            // 你可以重写日志函数来自定义输出行为，例如：
+            // By default, logs are output to console (console.log)
+            // You can override the log function to customize output behavior, for example:
             // demo.mousePolyfill.debug.setLogFunction((message) => {
-            //     // 自定义日志处理逻辑
-            //     console.log('自定义日志: ' + message);
-            //     // 或者输出到DOM元素
+            //     // Custom log processing logic
+            //     console.log('Custom log: ' + message);
+            //     // Or output to DOM element
             //     // document.getElementById('myLog').innerHTML += message + '<br>';
             // });
             if (demo.mousePolyfill.debug && demo.mousePolyfill.debug.setLogFunction) {

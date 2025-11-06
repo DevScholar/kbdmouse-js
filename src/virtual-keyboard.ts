@@ -2105,6 +2105,9 @@ export class VirtualKeyboard extends HTMLElement {
         } else if (numpadValue === 'Insert') {
           // Numpad Insert key: no operation (meaningless in input box)
           // Do nothing to avoid inserting "Insert" text
+        } else if (numpadValue === 'Clear') {
+          // Numpad Clear key (NumPad 5 when NumLock is off): no operation
+          // Do nothing to avoid inserting "Clear" text
         } else if (numpadValue === 'Delete') {
           // Numpad Delete key: perform delete operation (reuse main keyboard logic)
           this.editing.delete();

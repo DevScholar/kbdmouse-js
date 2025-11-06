@@ -289,7 +289,7 @@ class MousePolyfill {
     let movementY = 0;
     if (touchState.previousPosition && touchState.lastDispatchTime) {
       const timeDelta = currentTime - touchState.lastDispatchTime;
-      if (timeDelta > 0 && timeDelta < 1000) { // 合理的移动时间窗口
+      if (timeDelta > 0 && timeDelta < 1000) { // Reasonable movement time window
         movementX = clientX - touchState.previousPosition.x;
         movementY = clientY - touchState.previousPosition.y;
       }
@@ -322,9 +322,9 @@ class MousePolyfill {
     }
     
     // Pointer properties
-    const pointerId = touch.identifier + 1000; // 避免与真实指针ID冲突
+    const pointerId = touch.identifier + 1000; // Avoid conflicts with real pointer IDs
     const pointerType = 'mouse';
-    const width = 1;  // 鼠标接触面小
+    const width = 1;  // Small mouse contact surface
     const height = 1;
     const pressure = buttons > 0 ? 1 : 0;
     const tiltX = 0;
@@ -351,7 +351,7 @@ class MousePolyfill {
       metaKey: modifiers.meta
     });
     
-    // Add enhanced properties using Object.defineProperty for better兼容性
+    // Add enhanced properties using Object.defineProperty for better compatibility
     const enhancedEvent = mouseEvent as any;
     
     // Enhanced coordinate properties
