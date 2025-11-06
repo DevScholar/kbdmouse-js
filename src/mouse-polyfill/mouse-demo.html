@@ -212,15 +212,13 @@
             <div class="control-group">
                 <label>Mouse Polyfill:</label>
                 <button id="togglePolyfill" class="btn-primary">Enable Polyfill</button>
-                <button id="clearLog" class="btn-secondary">Clear Log</button>
             </div>
             
             <div class="control-group">
                 <label>Log Event Types:</label>
                 <label><input type="checkbox" id="logMouseEvents" checked> Mouse Events</label>
-                <label><input type="checkbox" id="logTouchEvents" checked> Touch Events</label>
-                <label><input type="checkbox" id="logPointerEvents" checked> Pointer Events</label>
-                <button id="updateLogTypes" class="btn-secondary">Update Types</button>
+                <label><input type="checkbox" id="logTouchEvents"> Touch Events</label>
+                <label><input type="checkbox" id="logPointerEvents"> Pointer Events</label>
             </div>
             
             <div class="control-group">
@@ -234,6 +232,11 @@
                 <button id="testVibration" class="btn-secondary">Test Vibration</button>
                 <button id="toggleVibrate" class="btn-secondary">Disable Vibration</button>
             </div>
+            
+            <div class="control-group">
+                <label>Logger Features:</label>
+                <button id="demonstrateLogger" class="btn-secondary">Demo Logger</button>
+            </div>
         </div>
         
         <div class="demo-area" id="demoArea">
@@ -243,7 +246,10 @@
         <div class="log-container">
             <div class="log-header">
                 <h3>Event Log (Max 100 entries)</h3>
-                <span id="logCount">0/100</span>
+                <div>
+                    <button id="clearLog" class="btn-secondary" style="margin-right: 10px; padding: 4px 8px; font-size: 12px;">Clear Log</button>
+                    <span id="logCount">0/100</span>
+                </div>
             </div>
             <div class="log-content" id="logContent"></div>
         </div>
@@ -320,6 +326,7 @@
                 this.setupEventListeners();
                 this.updatePolyfillButtonState();
                 this.updateVibrateButtonState();
+                this.updateCheckboxStates(); // Initialize checkbox states
             }
             
             initializeElements() {
@@ -330,7 +337,7 @@
             this.clearDraggablesBtn = document.getElementById('clearDraggables');
             this.testVibrationBtn = document.getElementById('testVibration');
             this.toggleVibrateBtn = document.getElementById('toggleVibrate');
-            this.updateLogTypesBtn = document.getElementById('updateLogTypes');
+            this.demonstrateLoggerBtn = document.getElementById('demonstrateLogger');
             this.logMouseEventsCheckbox = document.getElementById('logMouseEvents');
             this.logTouchEventsCheckbox = document.getElementById('logTouchEvents');
             this.logPointerEventsCheckbox = document.getElementById('logPointerEvents');
@@ -369,10 +376,15 @@
                 
                 // Test controls
                 this.testVibrationBtn.addEventListener('click', this.testVibration.bind(this));
+                this.demonstrateLoggerBtn.addEventListener('click', this.demonstrateLoggerFeatures.bind(this));
                 
                 // Log controls
                 this.clearLogBtn.addEventListener('click', this.clearLog.bind(this));
-                this.updateLogTypesBtn.addEventListener('click', this.updateLogEventTypes.bind(this));
+                
+                // Auto-update log event types when checkboxes change
+                this.logMouseEventsCheckbox.addEventListener('change', this.updateLogEventTypes.bind(this));
+                this.logTouchEventsCheckbox.addEventListener('change', this.updateLogEventTypes.bind(this));
+                this.logPointerEventsCheckbox.addEventListener('change', this.updateLogEventTypes.bind(this));
                 
                 // Context menu events
                 document.addEventListener('click', this.hideContextMenu.bind(this));
@@ -549,6 +561,8 @@
                     this.mousePolyfill.disableMouseLogListener(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Enable Polyfill';
                 }
+                
+                this.updateCheckboxStates(); // Update checkbox enabled/disabled state
             }
             
             // Update polyfill button state
@@ -557,6 +571,20 @@
                 this.togglePolyfillBtn.disabled = false;
                 this.togglePolyfillBtn.title = '';
                 this.togglePolyfillBtn.style.cursor = 'pointer';
+            }
+            
+            // Update checkbox states based on polyfill status
+            updateCheckboxStates() {
+                const disabled = !this.polyfillEnabled;
+                this.logMouseEventsCheckbox.disabled = disabled;
+                this.logTouchEventsCheckbox.disabled = disabled;
+                this.logPointerEventsCheckbox.disabled = disabled;
+                
+                // Add visual indication when disabled
+                const checkboxes = [this.logMouseEventsCheckbox, this.logTouchEventsCheckbox, this.logPointerEventsCheckbox];
+                checkboxes.forEach(checkbox => {
+                    checkbox.parentElement.style.opacity = disabled ? '0.5' : '1';
+                });
             }
 
 
@@ -673,6 +701,85 @@
                     // Removed system log - vibration test is a system event, not a mouse/touch event
                         // this.logEvent('vibration-test', { error: 'Vibration not supported', success: false });
                 }
+            }
+            
+            // Logger functionality demonstration
+            demonstrateLoggerFeatures() {
+                // Get the logger instance
+                const logger = this.mousePolyfill.getLogger();
+                
+                // Demonstrate start/stop functionality
+                logger.start();
+                this.addLogEntry('system', 'Logger started');
+                
+                // Demonstrate event type filtering
+                logger.eventTypeFilter = 'click,mousemove';
+                this.addLogEntry('system', 'Event type filter set to: click,mousemove');
+                
+                // Demonstrate custom logging element
+                const customLogElement = document.createElement('div');
+                customLogElement.id = 'custom-logger-output';
+                customLogElement.style.cssText = `
+                    position: fixed;
+                    top: 10px;
+                    right: 10px;
+                    width: 300px;
+                    height: 200px;
+                    background: #f0f0f0;
+                    border: 2px solid #007acc;
+                    border-radius: 8px;
+                    padding: 10px;
+                    overflow-y: auto;
+                    font-family: monospace;
+                    font-size: 12px;
+                    z-index: 10000;
+                `;
+                document.body.appendChild(customLogElement);
+                
+                // Set custom logger function using decorator pattern
+                const customLoggerFunction = (message) => {
+                    const timestamp = new Date().toLocaleTimeString();
+                    customLogElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+                    customLogElement.scrollTop = customLogElement.scrollHeight;
+                };
+                
+                logger.loggerFunction = customLoggerFunction;
+                this.addLogEntry('system', 'Custom logger function set - logs will appear in custom window');
+                
+                // Demonstrate logging with different event types
+                setTimeout(() => {
+                    // These should be logged (click and mousemove are in filter)
+                    logger.logMouseEvent('click', 100, 200, 0, 1, 'virtual', 'mouse', 1001);
+                    logger.logMouseEvent('mousemove', 150, 250, undefined, 0, 'physical', 'touch', 1002);
+                    
+                    // These should NOT be logged (not in filter)
+                    logger.logMouseEvent('mousedown', 200, 300, 0, 1, 'virtual', 'mouse', 1003);
+                    logger.logMouseEvent('mouseup', 250, 350, undefined, 0, 'physical', 'touch', 1004);
+                    
+                    // Test general log method with event filtering
+                    logger.log('event=click: This should be logged');
+                    logger.log('event=scroll: This should NOT be logged');
+                    logger.log('event=mousemove: This should be logged');
+                    
+                }, 1000);
+                
+                // Demonstrate clearing the filter
+                setTimeout(() => {
+                    logger.eventTypeFilter = '';
+                    this.addLogEntry('system', 'Event type filter cleared - all events will be logged');
+                    
+                    // These should now be logged
+                    logger.logMouseEvent('mousedown', 300, 400, 0, 1, 'virtual', 'mouse', 1005);
+                    logger.log('event=scroll: This should now be logged');
+                    
+                }, 3000);
+                
+                // Clean up after demonstration
+                setTimeout(() => {
+                    logger.stop();
+                    document.body.removeChild(customLogElement);
+                    this.addLogEntry('system', 'Logger demonstration completed');
+                }, 5000);
             }
         }
         

@@ -3,16 +3,13 @@
  * Converts touch events to mouse events for specific elements
  */
 
+import { MouseLogger, globalLogger } from './mouse-logger';
+
 // Debug configuration for console logging
 interface DebugConfig {
   enabled: boolean;
   logFunction: (message: string) => void;
 }
-
-const debug: DebugConfig = {
-  enabled: false,
-  logFunction: (message: string) => console.log(message)
-};
 
 interface TouchState {
   startTime: number;
@@ -57,6 +54,7 @@ class MousePolyfill {
   private readonly VIBRATE_DURATION = 30; // ms - vibration duration
   private _debugEnabled = false;
   private _vibrateEnabled = true;
+  private logger: MouseLogger;
 
   // Unified event log listener - handles MouseEvent, TouchEvent, and PointerEvent
   private unifiedLogListener = (event: Event) => {
@@ -119,68 +117,41 @@ class MousePolyfill {
     'pointerdown', 'pointerup', 'pointermove', 'pointerenter', 'pointerleave', 'pointercancel'
   ]);
 
-  // Debug sub-object with configurable log function - disabled by default
+  // Debug sub-object - provides interface to logger while maintaining backward compatibility
   debug = {
     enabled: false,
-    logFunction: (message: string) => console.log(message),
+    logFunction: (message: string) => this.logger.log(message),
     
-    // Set custom log function
+    // Set custom log function - delegates to logger
     setLogFunction: (fn: (message: string) => void) => {
-      this.debug.logFunction = fn;
+      this.logger.setLogFunction(fn);
       // Keep debug enabled when setting custom log function
       this.debug.enabled = true;
       this._debugEnabled = true;
     },
     
-    // Log method that uses the configured log function
+    // Log method that delegates to logger
     log: (message: string) => {
-      if (this.debug.enabled) {
-        this.debug.logFunction(message);
-      }
+      this.logger.log(message);
     },
     
-    // Format timestamp as [HH:mm:ss.SSS]
+    // Format timestamp - delegates to logger
     formatTimestamp: (): string => {
-      const now = new Date();
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const seconds = now.getSeconds().toString().padStart(2, '0');
-      const milliseconds = now.getMilliseconds().toString().padStart(3, '0');
-      return `[${hours}:${minutes}:${seconds}.${milliseconds}]`;
+      return this.logger.formatTimestamp();
     },
     
-    // Log mouse/touch event in specified format
+    // Log mouse/touch event - delegates to logger
     logMouseEvent: (eventType: string, x: number, y: number, button?: number, buttons?: number, source: 'physical' | 'virtual' = 'virtual', pointerType?: string, pointerId?: number) => {
-      const timestamp = this.debug.formatTimestamp();
-      let logMessage = `${timestamp}event=${eventType},x=${x},y=${y}`;
-      
-      // Add button and buttons for mouse events
-      if (button !== undefined) {
-        logMessage += `,button=${button}`;
-      }
-      if (buttons !== undefined) {
-        logMessage += `,buttons=${buttons}`;
-      }
-      
-      // Add pointer-specific information
-      if (pointerType !== undefined) {
-        logMessage += `,pointerType=${pointerType}`;
-      }
-      if (pointerId !== undefined) {
-        logMessage += `,pointerId=${pointerId}`;
-      }
-      
-      logMessage += `,source=${source}`;
-      this.debug.log(logMessage);
+      this.logger.logMouseEvent(eventType, x, y, button, buttons, source, pointerType, pointerId);
     }
   };
 
   private log(message: string, ...args: any[]): void {
     const formattedMessage = `[MousePolyfill] ${message}`;
     if (args.length > 0) {
-      this.debug.log(`${formattedMessage} ${args.map(arg => JSON.stringify(arg)).join(' ')}`);
+      this.logger.log(`${formattedMessage} ${args.map(arg => JSON.stringify(arg)).join(' ')}`);
     } else {
-      this.debug.log(formattedMessage);
+      this.logger.log(formattedMessage);
     }
   }
 
@@ -196,6 +167,13 @@ class MousePolyfill {
 
   constructor() {
     this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // Initialize logger
+    this.logger = new MouseLogger({ enabled: false });
+    
+    // Sync debug object with logger
+    this.debug.enabled = this.logger.enabled;
+    
     // Expose static method to global scope for demo page
     (window as any).MousePolyfill = MousePolyfill;
   }
@@ -207,6 +185,41 @@ class MousePolyfill {
    */
   isDebugEnabled(): boolean {
     return this._debugEnabled;
+  }
+
+  /**
+   * Get current logging element
+   */
+  get currentLoggingElement(): HTMLElement | null {
+    return this.logger.currentLoggingElement;
+  }
+
+  /**
+   * Set current logging element
+   */
+  set currentLoggingElement(element: HTMLElement | null) {
+    this.logger.currentLoggingElement = element;
+  }
+
+  /**
+   * Start logging
+   */
+  startLogging(): void {
+    this.logger.start();
+  }
+
+  /**
+   * Stop logging
+   */
+  stopLogging(): void {
+    this.logger.stop();
+  }
+
+  /**
+   * Get logger instance (for advanced usage)
+   */
+  getLogger(): MouseLogger {
+    return this.logger;
   }
 
   /**
@@ -253,9 +266,9 @@ class MousePolyfill {
   }
 
   /**
-   * Create enhanced mouse event with all missing properties
+   * Create mouse event with all missing properties
    */
-  private createEnhancedMouseEvent(
+  private createMouseEvent(
     type: string,
     touch: Touch,
     button: number,
@@ -642,7 +655,7 @@ class MousePolyfill {
     if (!touchState) return;
 
     // mousedown
-    const mouseDownEvent = this.createEnhancedMouseEvent(
+    const mouseDownEvent = this.createMouseEvent(
       'mousedown',
       touch,
       0,
@@ -660,7 +673,7 @@ class MousePolyfill {
     // Add small delay between mousedown and mouseup to simulate real timing
     setTimeout(() => {
       // mouseup
-      const mouseUpEvent = this.createEnhancedMouseEvent(
+      const mouseUpEvent = this.createMouseEvent(
         'mouseup',
         touch,
         0,
@@ -678,7 +691,7 @@ class MousePolyfill {
       // Add small delay between mouseup and click
       setTimeout(() => {
         // click
-        const clickEvent = this.createEnhancedMouseEvent(
+        const clickEvent = this.createMouseEvent(
           'click',
           touch,
           0,
@@ -695,7 +708,7 @@ class MousePolyfill {
 
         // dblclick (only on second click)
         if (isDoubleClick) {
-          const doubleClickEvent = this.createEnhancedMouseEvent(
+          const doubleClickEvent = this.createMouseEvent(
             'dblclick',
             touch,
             0,
@@ -754,8 +767,8 @@ class MousePolyfill {
         const targetElement = touchState.targetElement;
         if (!targetElement) return;
         
-        // Use enhanced mouse event creation for double click
-        const doubleClickEvent = this.createEnhancedMouseEvent(
+        // Use mouse event creation for double click
+        const doubleClickEvent = this.createMouseEvent(
           'dblclick',
           currentTouch,
           0,
@@ -824,7 +837,7 @@ class MousePolyfill {
     if (!touchState) return;
 
     // 1. mousedown
-    const mouseDownEvent = this.createEnhancedMouseEvent(
+    const mouseDownEvent = this.createMouseEvent(
       'mousedown',
       touch,
       0,
@@ -840,7 +853,7 @@ class MousePolyfill {
     targetElement.dispatchEvent(mouseDownEvent);
 
     // 2. mouseup
-    const mouseUpEvent = this.createEnhancedMouseEvent(
+    const mouseUpEvent = this.createMouseEvent(
       'mouseup',
       touch,
       0,
@@ -856,7 +869,7 @@ class MousePolyfill {
     targetElement.dispatchEvent(mouseUpEvent);
 
     // 3. click
-    const clickEvent = this.createEnhancedMouseEvent(
+    const clickEvent = this.createMouseEvent(
       'click',
       touch,
       0,
@@ -891,8 +904,8 @@ class MousePolyfill {
     const targetElement = touchState.targetElement;
     if (!targetElement) return;
     
-    // Use enhanced mouse event creation for drag start
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation for drag start
+    const mouseEvent = this.createMouseEvent(
       'mousedown',
       touch,
       0,
@@ -921,7 +934,7 @@ class MousePolyfill {
     if (!touchState) return;
     
     // mousedown (button=2, buttons=2)
-    const mouseDownEvent = this.createEnhancedMouseEvent(
+    const mouseDownEvent = this.createMouseEvent(
       'mousedown',
       touch,
       2,
@@ -939,7 +952,7 @@ class MousePolyfill {
     // Add small delay between mousedown and mouseup to simulate real timing
     setTimeout(() => {
       // mouseup (button=2, buttons=0)
-      const mouseUpEvent = this.createEnhancedMouseEvent(
+      const mouseUpEvent = this.createMouseEvent(
         'mouseup',
         touch,
         2,
@@ -957,7 +970,7 @@ class MousePolyfill {
       // Add small delay between mouseup and contextmenu
       setTimeout(() => {
         // contextmenu (button=2, buttons=0)
-        const contextMenuEvent = this.createEnhancedMouseEvent(
+        const contextMenuEvent = this.createMouseEvent(
           'contextmenu',
           touch,
           2,
@@ -1093,7 +1106,7 @@ class MousePolyfill {
         if (touchState.timers.vibrateTimer) {
           clearTimeout(touchState.timers.vibrateTimer);
           touchState.timers.vibrateTimer = undefined;
-          if (debug.enabled) {
+          if (this.debug.enabled) {
       console.log(`[${touchId}] Vibration cancelled due to movement`);
     }
         }
@@ -1102,7 +1115,7 @@ class MousePolyfill {
           if (touchState.currentMode === 'pending') {
             const elapsedTime = currentTime - touchState.startTime;
             
-            if (debug.enabled) {
+            if (this.debug.enabled) {
       console.log(`[${touchId}] Movement detected`, { elapsedTime, distance });
     }
             
@@ -1159,8 +1172,8 @@ class MousePolyfill {
     const originalTargetElement = touchState.targetElement || targetElement;
     if (!originalTargetElement) return;
     
-    // Use enhanced mouse event creation
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation
+    const mouseEvent = this.createMouseEvent(
       'mousemove',
       touch,
       button,
@@ -1216,7 +1229,7 @@ class MousePolyfill {
       if (touchState.timers.vibrateTimer) {
         clearTimeout(touchState.timers.vibrateTimer);
         touchState.timers.vibrateTimer = undefined;
-        if (debug.enabled) {
+        if (this.debug.enabled) {
       console.log(`[${touchId}] Vibration timer cancelled due to touch end`);
     }
       }
@@ -1269,8 +1282,8 @@ class MousePolyfill {
       };
     }
     
-    // Use enhanced mouse event creation for mouseup
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation for mouseup
+    const mouseEvent = this.createMouseEvent(
       'mouseup',
       touch,
       0,
@@ -1285,8 +1298,8 @@ class MousePolyfill {
     );
     this.dispatchEventEnhanced(mouseEvent, element);
 
-    // Use enhanced mouse event creation for click
-    const clickEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation for click
+    const clickEvent = this.createMouseEvent(
       'click',
       touch,
       0,
@@ -1317,8 +1330,8 @@ class MousePolyfill {
     const originalTargetElement = touchState.targetElement || targetElement;
     if (!originalTargetElement) return;
     
-    // Use enhanced mouse event creation
-    const mouseEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation
+    const mouseEvent = this.createMouseEvent(
       'mouseup',
       touch,
       button,
@@ -1352,8 +1365,8 @@ class MousePolyfill {
     const originalTargetElement = touchState.targetElement || targetElement;
     if (!originalTargetElement) return;
     
-    // Use enhanced mouse event creation
-    const clickEvent = this.createEnhancedMouseEvent(
+    // Use mouse event creation
+    const clickEvent = this.createMouseEvent(
       'click',
       touch,
       0,
@@ -1392,7 +1405,7 @@ class MousePolyfill {
         // Clear timers and state (if composing, don't clear state)
         this.clearTouchTimers(touchState);
         this.touchStates.delete(touchId);
-        if (debug.enabled) {
+        if (this.debug.enabled) {
       console.log(`[${touchId}] Touch cancelled, vibration timer cleaned up`);
     }
       }
@@ -1415,8 +1428,8 @@ class MousePolyfill {
         };
       }
       
-      // Use enhanced mouse event creation for cleanup mouseup
-      const mouseEvent = this.createEnhancedMouseEvent(
+      // Use mouse event creation for cleanup mouseup
+      const mouseEvent = this.createMouseEvent(
         'mouseup',
         touch,
         0,
