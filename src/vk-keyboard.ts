@@ -1,11 +1,11 @@
 /**
- * HTML Transporter - PrefabVirtualKeyboard with auto-scaling functionality
+ * HTML Transporter - VkKeyboard with auto-scaling functionality
  * Can calculate natural size and CSS-specified size, using scaleX and scaleY for automatic scaling
  */
 
 // Import virtual keyboard modules directly
-import { VirtualKeyboard } from './virtual-keyboard.js';
-import { VirtualKey } from './virtual-key.js';
+import { VkContainer } from './vk-container.js';
+import { VkKey } from './vk-key.js';
 
 // Unified debug configuration
 interface DebugConfig {
@@ -20,7 +20,7 @@ const debug: DebugConfig = {
   showTimestamp: true
 };
 
-export class PrefabVirtualKeyboard extends HTMLElement {
+export class VkKeyboard extends HTMLElement {
   private isContentLoaded = false;
   private isLoading = false;
   private naturalWidth = 0;
@@ -106,7 +106,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       const modStr = mods.join('');
       
       // Determine source and target - match demo page format
-      const source = (event as any).isVirtualKeyboard ? 'virtual' : 'physical';
+      const source = (event as any).isVkContainer ? 'virtual' : 'physical';
       const targetName = !event.target ? 'unknown' :
                         event.target === window ? 'window' : 
                         event.target === document.activeElement ? 'textInput' : 
@@ -129,7 +129,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     // This prevents issues with attribute changes during element creation
     this.logger.enabled = false; // Disable logging by default - must be explicitly enabled
     
-    // Expose logger to DOM for direct access: document.querySelector('prefab-virtual-keyboard').log = function() {}
+    // Expose logger to DOM for direct access: document.querySelector('vk-keyboard').log = function() {}
     (this as any).log = (message: string) => {
       this.logger.logFunction(message);
     };
@@ -300,11 +300,11 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     // Define custom elements in the shadow DOM context
     if (this.shadowRootInstance) {
       // Check if elements are already defined to avoid re-definition errors
-      if (!customElements.get('virtual-keyboard')) {
-        customElements.define('virtual-keyboard', VirtualKeyboard);
+      if (!customElements.get('vk-container')) {
+        customElements.define('vk-container', VkContainer);
       }
-      if (!customElements.get('virtual-key')) {
-        customElements.define('virtual-key', VirtualKey);
+      if (!customElements.get('vk-key')) {
+        customElements.define('vk-key', VkKey);
       }
     }
   }
@@ -397,7 +397,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     meta: boolean;
   } {
     const container = this.getContainer();
-    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    const keyboardElement = container.querySelector('vk-container') as any;
     
     if (keyboardElement && keyboardElement.state && keyboardElement.state.getModifierStates) {
       // If virtual keyboard is loaded and has state management, call its method
@@ -425,7 +425,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
    */
   getKeyDownModifiers(): string[] {
     const container = this.getContainer();
-    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    const keyboardElement = container.querySelector('vk-container') as any;
     
     if (keyboardElement && keyboardElement.state && keyboardElement.state.getKeyDownModifiers) {
       return keyboardElement.state.getKeyDownModifiers();
@@ -441,7 +441,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
    */
   isModifierKeyDown(modifier: string): boolean {
     const container = this.getContainer();
-    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    const keyboardElement = container.querySelector('vk-container') as any;
     
     if (keyboardElement && keyboardElement.state && keyboardElement.state.isModifierKeyDown) {
       return keyboardElement.state.isModifierKeyDown(modifier);
@@ -457,7 +457,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
    */
   isKeyPressed(code: string): boolean {
     const container = this.getContainer();
-    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    const keyboardElement = container.querySelector('vk-container') as any;
     
     if (keyboardElement && keyboardElement.state && keyboardElement.state.isKeyPressed) {
       return keyboardElement.state.isKeyPressed(code);
@@ -472,7 +472,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
    */
   getPressedKeys(): any[] {
     const container = this.getContainer();
-    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    const keyboardElement = container.querySelector('vk-container') as any;
     
     if (keyboardElement && keyboardElement.state && keyboardElement.state.getPressedKeys) {
       return keyboardElement.state.getPressedKeys();
@@ -486,7 +486,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
    */
   resetModifiers(): void {
     const container = this.getContainer();
-    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    const keyboardElement = container.querySelector('vk-container') as any;
     
     if (keyboardElement && keyboardElement.state && keyboardElement.state.resetModifiers) {
       keyboardElement.state.resetModifiers();
@@ -498,7 +498,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
    */
   resetAllStates(): void {
     const container = this.getContainer();
-    const keyboardElement = container.querySelector('virtual-keyboard') as any;
+    const keyboardElement = container.querySelector('vk-container') as any;
     
     if (keyboardElement && keyboardElement.state && keyboardElement.state.resetAllStates) {
       keyboardElement.state.resetAllStates();
@@ -519,7 +519,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     const container = this.getContainer();
     if (!container || !this.isContentLoaded) return;
 
-    const keyboardElement = container.querySelector('virtual-keyboard') as HTMLElement;
+    const keyboardElement = container.querySelector('vk-container') as HTMLElement;
     if (!keyboardElement) return;
 
     try {
@@ -661,7 +661,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     const container = this.getContainer();
     if (!container || !this.isContentLoaded || this.naturalWidth === 0 || this.naturalHeight === 0) return;
 
-    const keyboardElement = container.querySelector('virtual-keyboard') as HTMLElement;
+    const keyboardElement = container.querySelector('vk-container') as HTMLElement;
     if (!keyboardElement) return;
 
     // Clear current units tracking before parsing new values
@@ -702,7 +702,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       // This allows the keyboard to maintain its natural size without stretching
       // BUT: Don't clear existing zoom/transform if they were set by mobile scaling
       if (targetWidth === 0 && targetHeight === 0) {
-        // ARCHITECTURAL PRINCIPLE: Never modify the internal virtual-keyboard element
+        // ARCHITECTURAL PRINCIPLE: Never modify the internal vk-container element
         // Only scale the container itself - but preserve mobile scaling
         const currentZoom = this.style.zoom;
         const currentTransform = this.style.transform;
@@ -720,7 +720,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
 
     // If no target dimensions are specified or needed, use natural dimensions
     if (targetWidth === 0 && targetHeight === 0) {
-      // ARCHITECTURAL PRINCIPLE: Never modify the internal virtual-keyboard element
+      // ARCHITECTURAL PRINCIPLE: Never modify the internal vk-container element
       // Only scale the container itself
       this.style.transform = '';
       return;
@@ -744,7 +744,7 @@ export class PrefabVirtualKeyboard extends HTMLElement {
       scaleX = scaleY;
     }
 
-    // ARCHITECTURAL PRINCIPLE: Apply scaling to the prefab container, NOT the internal virtual-keyboard
+    // ARCHITECTURAL PRINCIPLE: Apply scaling to the prefab container, NOT the internal vk-container
     // Use transform instead of zoom for better control and to avoid affecting internal elements
     const scaleValue = Math.min(scaleX, scaleY); // Use uniform scale to maintain aspect ratio
     
@@ -752,8 +752,8 @@ export class PrefabVirtualKeyboard extends HTMLElement {
     this.style.transform = `scale(${scaleValue})`;
     this.style.transformOrigin = 'top left';
     
-    // ARCHITECTURAL PRINCIPLE: Never modify the internal virtual-keyboard element
-    // The virtual-keyboard maintains its natural size, only the container scales
+    // ARCHITECTURAL PRINCIPLE: Never modify the internal vk-container element
+    // The vk-container maintains its natural size, only the container scales
 
     this.logger.debug('Agnostic scaling applied to container', {
       naturalWidth: this.naturalWidth,
@@ -817,4 +817,4 @@ export class PrefabVirtualKeyboard extends HTMLElement {
 }
 
 // Register custom element
-customElements.define('prefab-virtual-keyboard', PrefabVirtualKeyboard);
+customElements.define('vk-keyboard', VkKeyboard);

@@ -79,10 +79,10 @@ Suitable for PC emulators requiring accurate hardware keyboard behavior:
 
 ```javascript
 // Import the prefab virtual keyboard (ES module)
-import { PrefabVirtualKeyboard } from './dist/kbdmouse-js.mjs';
+import { VkKeyboard } from './dist/kbdmouse-js.mjs';
 
 // The custom element is automatically registered when the module is imported
-// You can now use <prefab-virtual-keyboard> in your HTML
+// You can now use <vk-keyboard> in your HTML
 ```
 
 ```html
@@ -90,12 +90,12 @@ import { PrefabVirtualKeyboard } from './dist/kbdmouse-js.mjs';
 <textarea id="text-input" placeholder="Click here to use virtual keyboard"></textarea>
 
 <!-- Hardware-accurate keyboard for PC emulators -->
-<prefab-virtual-keyboard
+<vk-keyboard
   id="emulator-keyboard"
   layout-css-src="/layouts/qwerty/qwerty.css" 
   layout-html-src="/layouts/qwerty/qwerty.html"
 >
-</prefab-virtual-keyboard>
+</vk-keyboard>
 ```
 
 #### Mouse Demo
@@ -107,7 +107,7 @@ import { MousePolyfill } from './dist/kbdmouse-js.mjs';
 const mousePolyfill = new MousePolyfill();
 
 // Enable polyfill for specific element
-mousePolyfill.addPolyfillFor(document.getElementById('demo-area'));
+mousePolyfill.enableFor(document.getElementById('demo-area'));
 
 // Optional: Enable debug logging
 mousePolyfill.debug.setLogFunction((message) => console.log('[Mouse]', message));
@@ -162,9 +162,9 @@ The system supports intelligent touch gestures that translate to mouse events:
 src/
 ├── keyboard-demo.html          # Hardware keyboard demo
 ├── mouse-demo.html             # Mouse event demonstration
-├── virtual-key.ts              # Virtual key component
-├── virtual-keyboard.ts         # Keyboard behavior emulation
-├── prefab-virtual-keyboard.ts  # Ready-to-use emulator keyboard
+├── vk-key.ts              # Virtual key component
+├── vk-container.ts         # Keyboard behavior emulation
+├── vk-keyboard.ts  # Ready-to-use emulator keyboard
 ├── mouse-polyfill.ts           # Mouse event polyfill for touch devices
 ├── main.ts                     # Main entry point - exports all modules
 └── typescript.svg              # TypeScript logo

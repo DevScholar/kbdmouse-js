@@ -552,12 +552,12 @@
                 this.polyfillEnabled = !this.polyfillEnabled;
                 
                 if (this.polyfillEnabled) {
-                    this.mousePolyfill.addPolyfillFor(this.demoArea);
+                    this.mousePolyfill.enableFor(this.demoArea);
                     this.updateLogEventTypes(); // Set initial event types
                     this.mousePolyfill.enableMouseLogListener(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Disable Polyfill';
                 } else {
-                    this.mousePolyfill.removePolyfillFor(this.demoArea);
+                    this.mousePolyfill.disableFor(this.demoArea);
                     this.mousePolyfill.disableMouseLogListener(this.demoArea);
                     this.togglePolyfillBtn.textContent = 'Enable Polyfill';
                 }

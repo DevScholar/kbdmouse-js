@@ -13,7 +13,7 @@
   }
 }
 
-virtual-keyboard {
+vk-container {
   display: inline-block;
   border-collapse: separate;
   border-spacing: 0;
@@ -21,11 +21,11 @@ virtual-keyboard {
   padding: .25em;
 }
 
-virtual-keyboard .table-row {
+vk-container .table-row {
   display: table-row;
 }
 
-virtual-keyboard .table-cell {
+vk-container .table-cell {
   display: table-cell;
   vertical-align: top;
 }
@@ -80,7 +80,7 @@ virtual-keyboard .table-cell {
 }
 
 
-virtual-key {
+vk-key {
   background-color: #1e1e1e;
   color: white;
   display: flex;
@@ -197,56 +197,56 @@ virtual-key {
 
 
 /* Special key width adjustments */
-virtual-key[code="Space"] {
+vk-key[code="Space"] {
   min-width: 200px;
   flex-grow: 2;
 }
 
-virtual-key[code="Backspace"] {
+vk-key[code="Backspace"] {
   min-width: 80px;
 }
 
-virtual-key[code="Tab"] {
+vk-key[code="Tab"] {
   min-width: 60px;
 }
 
-virtual-key[code="CapsLock"] {
+vk-key[code="CapsLock"] {
   min-width: 80px;
 }
 
-virtual-key[code="Enter"] {
+vk-key[code="Enter"] {
   min-width: 80px;
 }
 
-virtual-key[code="ShiftLeft"],
-virtual-key[code="ShiftRight"] {
+vk-key[code="ShiftLeft"],
+vk-key[code="ShiftRight"] {
   min-width: 100px;
 }
 
-virtual-key[code="ControlLeft"],
-virtual-key[code="ControlRight"] {
+vk-key[code="ControlLeft"],
+vk-key[code="ControlRight"] {
   min-width: 60px;
 }
 
-virtual-key[code="AltLeft"],
-virtual-key[code="AltRight"] {
+vk-key[code="AltLeft"],
+vk-key[code="AltRight"] {
   min-width: 60px;
 }
 
-virtual-key[code="MetaLeft"],
-virtual-key[code="MetaRight"] {
+vk-key[code="MetaLeft"],
+vk-key[code="MetaRight"] {
   min-width: 60px;
 }
 
-virtual-key[code="ContextMenu"] {
+vk-key[code="ContextMenu"] {
   min-width: 60px;
 }
 
 /* Numeric keypad keys */
-virtual-key[code="NumpadEnter"] {
+vk-key[code="NumpadEnter"] {
   min-height: 100px;
 }
 
-virtual-key[code="Numpad0"] {
+vk-key[code="Numpad0"] {
   min-width: 84px;
 }

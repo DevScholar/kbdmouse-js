@@ -1,6 +1,6 @@
-import type { VirtualKey } from './virtual-key.js';
+import type { VkKey } from './vk-key.js';
 
-export class VirtualKeyboard extends HTMLElement {
+export class VkContainer extends HTMLElement {
 
   constructor() {
     super();
@@ -21,13 +21,13 @@ export class VirtualKeyboard extends HTMLElement {
 
   visual = {
     // Apply visual press effect to a key
-    applyKeyDownEffect: (virtualKey: VirtualKey) => {
-      if (virtualKey) {
-        virtualKey.classList.add('key-down');
-        virtualKey.setAttribute('aria-pressed', 'true');
+    applyKeyDownEffect: (vkKey: VkKey) => {
+      if (vkKey) {
+        vkKey.classList.add('key-down');
+        vkKey.setAttribute('aria-pressed', 'true');
         
         // Handle Shift key down - add shift class to letter and number keys
-        if (this.keys.isModifierKey(virtualKey) && virtualKey.getAttribute('code')?.startsWith('Shift')) {
+        if (this.keys.isModifierKey(vkKey) && vkKey.getAttribute('code')?.startsWith('Shift')) {
           this.visual.applyShiftVisualEffect(true);
         }
         
@@ -37,41 +37,41 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Remove visual press effect from a key
-    applyKeyUpEffect: (virtualKey: VirtualKey) => {
-      if (virtualKey) {
+    applyKeyUpEffect: (vkKey: VkKey) => {
+      if (vkKey) {
         // Physical toggle keys (Caps Lock, Num Lock) maintain toggle state display
-        if (this.keys.isPhysicalToggleKey(virtualKey)) {
-          const code = virtualKey.getAttribute('code') || '';
+        if (this.keys.isPhysicalToggleKey(vkKey)) {
+          const code = vkKey.getAttribute('code') || '';
           const toggleState = this.state.getToggleState(code);
           
           // Update aria-pressed state to toggle state
-          virtualKey.setAttribute('aria-pressed', toggleState ? 'true' : 'false');
+          vkKey.setAttribute('aria-pressed', toggleState ? 'true' : 'false');
           
           // Keep key-down class if toggle state is active
           if (!toggleState) {
-            virtualKey.classList.remove('key-down');
+            vkKey.classList.remove('key-down');
           }
         }
         // Modifier keys (Shift, Ctrl, Alt, Meta) maintain toggle state
-        else if (this.keys.isModifierKey(virtualKey)) {
+        else if (this.keys.isModifierKey(vkKey)) {
           // Check if modifier key is still pressed (toggle state)
-          const isToggleActive = this.state.isKeyDown(virtualKey);
+          const isToggleActive = this.state.isKeyDown(vkKey);
           
           // Update aria-pressed state
-          virtualKey.setAttribute('aria-pressed', isToggleActive ? 'true' : 'false');
+          vkKey.setAttribute('aria-pressed', isToggleActive ? 'true' : 'false');
           
           // Remove key-down class if modifier key is no longer pressed
           if (!isToggleActive) {
-            virtualKey.classList.remove('key-down');
+            vkKey.classList.remove('key-down');
           }
         } else {
           // For regular keys, always remove key-down and set aria-pressed to false
-          virtualKey.classList.remove('key-down');
-          virtualKey.setAttribute('aria-pressed', 'false');
+          vkKey.classList.remove('key-down');
+          vkKey.setAttribute('aria-pressed', 'false');
         }
         
         // Handle Shift key up - remove shift class from letter and number keys
-        if (this.keys.isModifierKey(virtualKey) && virtualKey.getAttribute('code')?.startsWith('Shift')) {
+        if (this.keys.isModifierKey(vkKey) && vkKey.getAttribute('code')?.startsWith('Shift')) {
           // Only remove shift class if no other Shift keys are pressed
           const modifiers = this.state.getModifierStates();
           if (!modifiers.shift) {
@@ -80,7 +80,7 @@ export class VirtualKeyboard extends HTMLElement {
         }
         
         // Handle Caps Lock key up - remove caps-lock class from letter keys
-        if (this.keys.isCapsLockKey(virtualKey)) {
+        if (this.keys.isCapsLockKey(vkKey)) {
           // Only remove caps-lock class if Caps Lock is not active
           const modifiers = this.state.getModifierStates();
           if (!modifiers.capsLock) {
@@ -89,7 +89,7 @@ export class VirtualKeyboard extends HTMLElement {
         }
         
         // Handle Num Lock key up - remove num-lock class from numpad keys
-        if (this.keys.isNumLockKey(virtualKey)) {
+        if (this.keys.isNumLockKey(vkKey)) {
           // Only remove num-lock class if Num Lock is not active
           const modifiers = this.state.getModifierStates();
           if (!modifiers.numLock) {
@@ -101,8 +101,8 @@ export class VirtualKeyboard extends HTMLElement {
     
     // Apply or remove shift visual effect to letter and number keys
     applyShiftVisualEffect: (apply: boolean) => {
-      const letterKeys = this.querySelectorAll('virtual-key[code^="Key"]') as NodeListOf<VirtualKey>;
-      const numberKeys = this.querySelectorAll('virtual-key[code^="Digit"]') as NodeListOf<VirtualKey>;
+      const letterKeys = this.querySelectorAll('vk-key[code^="Key"]') as NodeListOf<VkKey>;
+      const numberKeys = this.querySelectorAll('vk-key[code^="Digit"]') as NodeListOf<VkKey>;
       
       [...letterKeys, ...numberKeys].forEach(key => {
         if (apply) {
@@ -115,7 +115,7 @@ export class VirtualKeyboard extends HTMLElement {
     
     // Apply or remove caps-lock visual effect to letter keys
     applyCapsLockVisualEffect: (apply: boolean) => {
-      const letterKeys = this.querySelectorAll('virtual-key[code^="Key"]') as NodeListOf<VirtualKey>;
+      const letterKeys = this.querySelectorAll('vk-key[code^="Key"]') as NodeListOf<VkKey>;
       
       letterKeys.forEach(key => {
         if (apply) {
@@ -128,7 +128,7 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Apply or remove num-lock visual effect to numpad keys
     applyNumLockVisualEffect: (apply: boolean) => {
-      const numpadKeys = this.querySelectorAll('virtual-key[code^="Numpad"]') as NodeListOf<VirtualKey>;
+      const numpadKeys = this.querySelectorAll('vk-key[code^="Numpad"]') as NodeListOf<VkKey>;
       
       numpadKeys.forEach(key => {
         if (apply) {
@@ -140,48 +140,48 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Apply visual effect when a key is pressed down
-    applyKeyDownVisualEffect: (virtualKey: VirtualKey) => {
-      if (virtualKey) {
-        virtualKey.classList.add('key-down');
+    applyKeyDownVisualEffect: (vkKey: VkKey) => {
+      if (vkKey) {
+        vkKey.classList.add('key-down');
       }
     },
 
     // Remove visual effect when a key is released
-    applyKeyUpVisualEffect: (virtualKey: VirtualKey) => {
-      if (virtualKey) {
-        virtualKey.classList.remove('key-down');
+    applyKeyUpVisualEffect: (vkKey: VkKey) => {
+      if (vkKey) {
+        vkKey.classList.remove('key-down');
       }
     },
 
     // Toggle the visual state of a key (for toggle keys like Caps Lock)
-    toggleKeyState: (virtualKey: VirtualKey, state: boolean) => {
-      if (virtualKey) {
+    toggleKeyState: (vkKey: VkKey, state: boolean) => {
+      if (vkKey) {
         if (state) {
-          virtualKey.classList.add('key-active');
+          vkKey.classList.add('key-active');
         } else {
-          virtualKey.classList.remove('key-active');
+          vkKey.classList.remove('key-active');
         }
       }
     },
 
     // Apply a custom CSS class to a key
-    addKeyClass: (virtualKey: VirtualKey, className: string) => {
-      if (virtualKey) {
-        virtualKey.classList.add(className);
+    addKeyClass: (vkKey: VkKey, className: string) => {
+      if (vkKey) {
+        vkKey.classList.add(className);
       }
     },
 
     // Remove a custom CSS class from a key
-    removeKeyClass: (virtualKey: VirtualKey, className: string) => {
-      if (virtualKey) {
-        virtualKey.classList.remove(className);
+    removeKeyClass: (vkKey: VkKey, className: string) => {
+      if (vkKey) {
+        vkKey.classList.remove(className);
       }
     }
   };
 
   state = {
     // Track currently keyDown keys
-    keyDownKeys: [] as VirtualKey[],
+    keyDownKeys: [] as VkKey[],
     
     // Set of currently keyDown modifier keys
     keyDownModifiers: new Set<string>(),
@@ -194,23 +194,23 @@ export class VirtualKeyboard extends HTMLElement {
     repeatInterval: 50, // ms between repeats
     repeatDelay: 500, // ms before starting repeat
     isRepeating: false,
-    repeatKey: null as VirtualKey | null,
+    repeatKey: null as VkKey | null,
 
     // Check if a key is currently keyDown
-    isKeyDown: (virtualKey: VirtualKey): boolean => {
-      return this.state.keyDownKeys.includes(virtualKey);
+    isKeyDown: (vkKey: VkKey): boolean => {
+      return this.state.keyDownKeys.includes(vkKey);
     },
 
     // Add key to keyDown state
-    addKeyDownKey: (virtualKey: VirtualKey) => {
-      if (!this.state.keyDownKeys.includes(virtualKey)) {
-        this.state.keyDownKeys.push(virtualKey);
+    addKeyDownKey: (vkKey: VkKey) => {
+      if (!this.state.keyDownKeys.includes(vkKey)) {
+        this.state.keyDownKeys.push(vkKey);
       }
     },
 
     // Remove key from keyDown state
-    removeKeyDownKey: (virtualKey: VirtualKey) => {
-      const index = this.state.keyDownKeys.indexOf(virtualKey);
+    removeKeyDownKey: (vkKey: VkKey) => {
+      const index = this.state.keyDownKeys.indexOf(vkKey);
       if (index !== -1) {
         this.state.keyDownKeys.splice(index, 1);
       }
@@ -222,7 +222,7 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Get list of currently pressed keys
-    getPressedKeys: (): VirtualKey[] => {
+    getPressedKeys: (): VkKey[] => {
       return [...this.state.keyDownKeys];
     },
 
@@ -297,9 +297,9 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Key repeat control methods
-    startRepeat: (virtualKey: VirtualKey) => {
+    startRepeat: (vkKey: VkKey) => {
       // Don't repeat toggle keys or modifier keys
-      if (this.keys.isPhysicalToggleKey(virtualKey) || this.keys.isModifierKey(virtualKey)) {
+      if (this.keys.isPhysicalToggleKey(vkKey) || this.keys.isModifierKey(vkKey)) {
         return;
       }
 
@@ -307,7 +307,7 @@ export class VirtualKeyboard extends HTMLElement {
       this.state.stopRepeat();
 
       // Set up repeat state
-      this.state.repeatKey = virtualKey;
+      this.state.repeatKey = vkKey;
       this.state.isRepeating = false;
 
       // Start delay timer
@@ -355,14 +355,14 @@ export class VirtualKeyboard extends HTMLElement {
     // ====== Independent key categorization system - mutually exclusive ======
     
     // 1. Physical toggle keys: Caps Lock, Num Lock - each key press sends complete keydown/keyup event pair
-    isPhysicalToggleKey: (virtualKey: VirtualKey): boolean => {
-      const code = virtualKey.getAttribute("code");
+    isPhysicalToggleKey: (vkKey: VkKey): boolean => {
+      const code = vkKey.getAttribute("code");
       return code === "CapsLock" || code === "NumLock";
     },
 
     // 2. Modifier keys: Shift, Ctrl, Alt, Meta - active while held, can be combined
-    isModifierKey: (virtualKey: VirtualKey): boolean => {
-      const code = virtualKey.getAttribute("code");
+    isModifierKey: (vkKey: VkKey): boolean => {
+      const code = vkKey.getAttribute("code");
       return !!(code && (
         code.startsWith("Shift") || 
         code.startsWith("Control") || 
@@ -372,30 +372,30 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // 3. Normal keys: support key repeat, regular behavior
-    isNormalKey: (virtualKey: VirtualKey): boolean => {
-      return !this.keys.isPhysicalToggleKey(virtualKey) && !this.keys.isModifierKey(virtualKey);
+    isNormalKey: (vkKey: VkKey): boolean => {
+      return !this.keys.isPhysicalToggleKey(vkKey) && !this.keys.isModifierKey(vkKey);
     },
 
     // 4. Old toggle key concept - now clearly divided into physical toggle keys and modifier keys
     // This method is kept for compatibility with existing code, but should gradually be replaced with more explicit categorization
-    isToggleKey: (virtualKey: VirtualKey): boolean => {
-      return this.keys.isPhysicalToggleKey(virtualKey) || this.keys.isModifierKey(virtualKey);
+    isToggleKey: (vkKey: VkKey): boolean => {
+      return this.keys.isPhysicalToggleKey(vkKey) || this.keys.isModifierKey(vkKey);
     },
 
     // Helper methods
-    isCapsLockKey: (virtualKey: VirtualKey): boolean => {
-      const code = virtualKey.getAttribute("code");
+    isCapsLockKey: (vkKey: VkKey): boolean => {
+      const code = vkKey.getAttribute("code");
       return code === "CapsLock";
     },
 
-    isNumLockKey: (virtualKey: VirtualKey): boolean => {
-      const code = virtualKey.getAttribute("code");
+    isNumLockKey: (vkKey: VkKey): boolean => {
+      const code = vkKey.getAttribute("code");
       return code === "NumLock";
     },
 
     // Check if a key is located on the main keyboard area (excluding numpad, function keys, navigation keys)
-    isMainKeyboardKey: (virtualKey: VirtualKey): boolean => {
-      const code = virtualKey.getAttribute('code') || '';
+    isMainKeyboardKey: (vkKey: VkKey): boolean => {
+      const code = vkKey.getAttribute('code') || '';
       
       // Exclude numpad keys
       if (code.startsWith('Numpad')) {
@@ -424,8 +424,8 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Find virtual key element by code attribute
-    findByCode: (code: string): VirtualKey | null => {
-      return this.querySelector(`virtual-key[code="${code}"]`) as VirtualKey | null;
+    findByCode: (code: string): VkKey | null => {
+      return this.querySelector(`vk-key[code="${code}"]`) as VkKey | null;
     }
   };
 
@@ -470,14 +470,14 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Dispatch keydown event to window
-    dispatchKeyDown: (virtualKey: VirtualKey) => {
-      const code = virtualKey.getAttribute('code') || '';
+    dispatchKeyDown: (vkKey: VkKey) => {
+      const code = vkKey.getAttribute('code') || '';
       
       // Collect current modifier states before creating the event
       const modifiers = this.state.getModifierStates();
       
       // Determine the correct key value based on modifier state
-      let key = virtualKey.getAttribute('key') || virtualKey.getAttribute('label') || '';
+      let key = vkKey.getAttribute('key') || vkKey.getAttribute('label') || '';
       
       // Handle NumLock state for numpad keys
       if (code.startsWith('Numpad')) {
@@ -500,7 +500,7 @@ export class VirtualKeyboard extends HTMLElement {
         // When NumLock is ON, use the number keys as normal
         // But still handle Shift for numpad keys (e.g., Shift+Numpad7 = Home)
         else if (modifiers.shift) {
-          const shiftKey = virtualKey.getAttribute('shift-key') || '';
+          const shiftKey = vkKey.getAttribute('shift-key') || '';
           if (shiftKey) {
             key = shiftKey;
           }
@@ -512,8 +512,8 @@ export class VirtualKeyboard extends HTMLElement {
       }
       // Handle other cases with Shift (number keys and other keys with shift-text)
       else if (modifiers.shift) {
-        const shiftKey = virtualKey.getAttribute('shift-key') || '';
-        const shiftCode = virtualKey.getAttribute('shift-code') || '';
+        const shiftKey = vkKey.getAttribute('shift-key') || '';
+        const shiftCode = vkKey.getAttribute('shift-code') || '';
         if (shiftKey || shiftCode) {
           key = shiftKey || shiftCode;
         }
@@ -588,8 +588,8 @@ export class VirtualKeyboard extends HTMLElement {
         configurable: false
       });
 
-      (keyDownEvent as any).isVirtualKeyboard = true;
-      (keyDownEvent as any).virtualKeyElement = virtualKey;
+      (keyDownEvent as any).isVkContainer = true;
+      (keyDownEvent as any).vkKeyElement = vkKey;
       
       // Add timeStamp if not present (isTrusted is read-only and managed by browser)
       if (!keyDownEvent.timeStamp) {
@@ -639,14 +639,14 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Dispatch keyup event to window
-    dispatchKeyUp: (virtualKey: VirtualKey) => {
-      const code = virtualKey.getAttribute('code') || '';
+    dispatchKeyUp: (vkKey: VkKey) => {
+      const code = vkKey.getAttribute('code') || '';
       
       // Collect current modifier states before creating the event
       const modifiers = this.state.getModifierStates();
       
       // Determine the correct key value based on modifier state
-      let key = virtualKey.getAttribute('key') || virtualKey.getAttribute('label') || '';
+      let key = vkKey.getAttribute('key') || vkKey.getAttribute('label') || '';
       
       // Handle NumLock state for numpad keys
       if (code.startsWith('Numpad')) {
@@ -669,7 +669,7 @@ export class VirtualKeyboard extends HTMLElement {
         // When NumLock is ON, use the number keys as normal
         // But still handle Shift for numpad keys (e.g., Shift+Numpad7 = Home)
         else if (modifiers.shift) {
-          const shiftKey = virtualKey.getAttribute('shift-key') || '';
+          const shiftKey = vkKey.getAttribute('shift-key') || '';
           if (shiftKey) {
             key = shiftKey;
           }
@@ -681,8 +681,8 @@ export class VirtualKeyboard extends HTMLElement {
       }
       // Handle other cases with Shift (number keys and other keys with shift-text)
       else if (modifiers.shift) {
-        const shiftKey = virtualKey.getAttribute('shift-key') || '';
-        const shiftCode = virtualKey.getAttribute('shift-code') || '';
+        const shiftKey = vkKey.getAttribute('shift-key') || '';
+        const shiftCode = vkKey.getAttribute('shift-code') || '';
         if (shiftKey || shiftCode) {
           key = shiftKey || shiftCode;
         }
@@ -757,8 +757,8 @@ export class VirtualKeyboard extends HTMLElement {
         configurable: false
       });
 
-      (keyUpEvent as any).isVirtualKeyboard = true;
-      (keyUpEvent as any).virtualKeyElement = virtualKey;
+      (keyUpEvent as any).isVkContainer = true;
+      (keyUpEvent as any).vkKeyElement = vkKey;
       
       // Add timeStamp if not present (isTrusted is read-only and managed by browser)
       if (!keyUpEvent.timeStamp) {
@@ -808,12 +808,12 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Dispatch keypress event to window (for eligible keys)
-    dispatchKeyPress: (virtualKey: VirtualKey) => {
-      const code = virtualKey.getAttribute('code') || '';
+    dispatchKeyPress: (vkKey: VkKey) => {
+      const code = vkKey.getAttribute('code') || '';
       
       // Only dispatch keypress for keys that produce character input
       // Skip modifier keys, navigation keys, and function keys
-      if (this.keys.isModifierKey(virtualKey) || 
+      if (this.keys.isModifierKey(vkKey) || 
           ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 
            'Insert', 'Delete', 'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 
            'F10', 'F11', 'F12'].includes(code)) {
@@ -824,7 +824,7 @@ export class VirtualKeyboard extends HTMLElement {
       const modifiers = this.state.getModifierStates();
       
       // Determine the correct key value based on modifier state
-      let key = virtualKey.getAttribute('key') || virtualKey.getAttribute('label') || '';
+      let key = vkKey.getAttribute('key') || vkKey.getAttribute('label') || '';
       
       // Handle NumLock state for numpad keys
       if (code.startsWith('Numpad')) {
@@ -834,7 +834,7 @@ export class VirtualKeyboard extends HTMLElement {
         }
         // When NumLock is ON, use the number keys as normal
         else if (modifiers.shift) {
-          const shiftKey = virtualKey.getAttribute('shift-key') || '';
+          const shiftKey = vkKey.getAttribute('shift-key') || '';
           if (shiftKey) {
             key = shiftKey;
           }
@@ -846,8 +846,8 @@ export class VirtualKeyboard extends HTMLElement {
       }
       // Handle other cases with Shift (number keys and other keys with shift-text)
       else if (modifiers.shift) {
-        const shiftKey = virtualKey.getAttribute('shift-key') || '';
-        const shiftCode = virtualKey.getAttribute('shift-code') || '';
+        const shiftKey = vkKey.getAttribute('shift-key') || '';
+        const shiftCode = vkKey.getAttribute('shift-code') || '';
         if (shiftKey || shiftCode) {
           key = shiftKey || shiftCode;
         }
@@ -908,7 +908,7 @@ export class VirtualKeyboard extends HTMLElement {
       // Implement charCode rule: only in keypress events, when key is printable AND on main keyboard, charCode=keyCode
       // Otherwise charCode should be 0
       let charCode = 0;
-      if (key.length === 1 && this.keys.isMainKeyboardKey(virtualKey)) {
+      if (key.length === 1 && this.keys.isMainKeyboardKey(vkKey)) {
         // Only for printable characters on main keyboard: charCode = keyCode
         charCode = keyCode;
       }
@@ -931,8 +931,8 @@ export class VirtualKeyboard extends HTMLElement {
         configurable: false
       });
 
-      (keyPressEvent as any).isVirtualKeyboard = true;
-      (keyPressEvent as any).virtualKeyElement = virtualKey;
+      (keyPressEvent as any).isVkContainer = true;
+      (keyPressEvent as any).vkKeyElement = vkKey;
       
       // Add timeStamp if not present (isTrusted is read-only and managed by browser)
       if (!keyPressEvent.timeStamp) {
@@ -982,35 +982,35 @@ export class VirtualKeyboard extends HTMLElement {
     },
 
     // Handle key click event (keyboard navigation with Enter/Space)
-    handleKeyClick: (virtualKey: VirtualKey) => {
+    handleKeyClick: (vkKey: VkKey) => {
       // ====== Keyboard navigation mode - complete key sequence for all keys ======
       // This method is only called from keyboard navigation (Enter/Space), not mouse/touch events
       
-      if (this.keys.isPhysicalToggleKey(virtualKey)) {
+      if (this.keys.isPhysicalToggleKey(vkKey)) {
         // Physical toggle keys (Caps Lock, Num Lock): complete sequence
-        this.keyDown(virtualKey);
-        this.keyUp(virtualKey);
+        this.keyDown(vkKey);
+        this.keyUp(vkKey);
         
-      } else if (this.keys.isModifierKey(virtualKey)) {
+      } else if (this.keys.isModifierKey(vkKey)) {
         // Modifier keys: toggle behavior for keyboard navigation
-        const isCurrentlyPressed = this.state.isKeyDown(virtualKey);
+        const isCurrentlyPressed = this.state.isKeyDown(vkKey);
         
         if (isCurrentlyPressed) {
-          this.keyUp(virtualKey);
+          this.keyUp(vkKey);
         } else {
-          this.keyDown(virtualKey);
+          this.keyDown(vkKey);
         }
         
       } else {
         // Regular keys: complete sequence for keyboard navigation
-        this.keyDown(virtualKey);
-        this.keyUp(virtualKey);
+        this.keyDown(vkKey);
+        this.keyUp(vkKey);
       }
     },
 
     // Dispatch a custom keyboard event
     dispatchCustomEvent: (type: string, data: any, target: EventTarget = window) => {
-      const event = new CustomEvent(`virtual-keyboard-${type}`, {
+      const event = new CustomEvent(`vk-container-${type}`, {
         detail: data,
         bubbles: true,
         cancelable: true,
@@ -1022,12 +1022,12 @@ export class VirtualKeyboard extends HTMLElement {
 
     // Add event listener for virtual keyboard events
     addEventListener: (type: string, listener: EventListener, target: EventTarget = window) => {
-      target.addEventListener(`virtual-keyboard-${type}`, listener);
+      target.addEventListener(`vk-container-${type}`, listener);
     },
 
     // Remove event listener for virtual keyboard events
     removeEventListener: (type: string, listener: EventListener, target: EventTarget = window) => {
-      target.removeEventListener(`virtual-keyboard-${type}`, listener);
+      target.removeEventListener(`vk-container-${type}`, listener);
     }
   };
 
@@ -1039,7 +1039,7 @@ export class VirtualKeyboard extends HTMLElement {
   private render() {
     // Render basic keyboard structure without event listeners
     this.innerHTML = `
-      <div class="virtual-keyboard-container">
+      <div class="vk-container-container">
         <div class="keyboard-layout">
           ${this.innerHTML}
         </div>
@@ -1629,26 +1629,26 @@ export class VirtualKeyboard extends HTMLElement {
   };
 
   // Key management methods
-  isToggleKey(virtualKey: VirtualKey): boolean {
-    return this.keys.isToggleKey(virtualKey);
+  isToggleKey(vkKey: VkKey): boolean {
+    return this.keys.isToggleKey(vkKey);
   }
 
   // Key state management methods
-  isModifierKey(virtualKey: VirtualKey): boolean {
-    return this.keys.isModifierKey(virtualKey);
+  isModifierKey(vkKey: VkKey): boolean {
+    return this.keys.isModifierKey(vkKey);
   }
 
   // Handle key click event (both down and up)
-  handleKeyClick(virtualKey: VirtualKey) {
-    this.event.handleKeyClick(virtualKey);
+  handleKeyClick(vkKey: VkKey) {
+    this.event.handleKeyClick(vkKey);
   }
 
   /**
-   * Find virtual-key element by code attribute
+   * Find vk-key element by code attribute
    * @param code - The code attribute value to search for
-   * @returns Matching virtual-key element, or null if not found
+   * @returns Matching vk-key element, or null if not found
    */
-  getVirtualKeyByCode(code: string): VirtualKey | null {
+  getVkKeyByCode(code: string): VkKey | null {
     return this.keys.findByCode(code);
   }
 
@@ -1659,82 +1659,82 @@ export class VirtualKeyboard extends HTMLElement {
   // New key state management system for better key repeat support
   keyState = {
     // Initial key down - handles state setup and initial event
-    initialKeyDown: (virtualKey: VirtualKey) => {
+    initialKeyDown: (vkKey: VkKey) => {
       
       // Handle modifier key toggle behavior
-      if (this.keys.isModifierKey(virtualKey)) {
-        const isCurrentlyPressed = this.state.isKeyDown(virtualKey);
+      if (this.keys.isModifierKey(vkKey)) {
+        const isCurrentlyPressed = this.state.isKeyDown(vkKey);
         
         if (isCurrentlyPressed) {
           // Modifier key is already pressed - toggle it off
-          this.keyUpModifierKey(virtualKey);
+          this.keyUpModifierKey(vkKey);
           return;
         }
         // Modifier key is not pressed - continue to press it
       }
       
       // Set key state to pressed
-      this.setKeyState(virtualKey, true);
+      this.setKeyState(vkKey, true);
       
       // Apply visual effects (direct call, legacy redirect removed)
-      this.visual.applyKeyDownEffect(virtualKey);
+      this.visual.applyKeyDownEffect(vkKey);
       
       // Dispatch keydown event
-      this.event.dispatchKeyDown(virtualKey);
+      this.event.dispatchKeyDown(vkKey);
       
       // Dispatch keypress event for eligible keys (after keydown)
-      this.event.dispatchKeyPress(virtualKey);
+      this.event.dispatchKeyPress(vkKey);
       
       // Start key repeat for normal keys only
-      if (this.keys.isNormalKey(virtualKey)) {
-        this.state.startRepeat(virtualKey);
+      if (this.keys.isNormalKey(vkKey)) {
+        this.state.startRepeat(vkKey);
       }
     },
 
     // Repeating key down - only sends events and handles text input, doesn't change state
-    repeatingKeyDown: (virtualKey: VirtualKey) => {
+    repeatingKeyDown: (vkKey: VkKey) => {
       
       // For repeating keys, only dispatch event and handle text input
       // Don't change state or apply visual effects again
-      this.event.dispatchKeyDown(virtualKey);
+      this.event.dispatchKeyDown(vkKey);
       
       // Handle text input for normal keys during repeat
-      if (this.keys.isNormalKey(virtualKey)) {
-        this.handleTextInput(virtualKey);
+      if (this.keys.isNormalKey(vkKey)) {
+        this.handleTextInput(vkKey);
       }
     },
 
     // Key up - handles state cleanup and final event
-    keyUp: (virtualKey: VirtualKey) => {
+    keyUp: (vkKey: VkKey) => {
       
       // Only process if key is actually down
-      if (!this.state.isKeyDown(virtualKey)) {
+      if (!this.state.isKeyDown(vkKey)) {
         return;
       }
       
       // Stop key repeat if this key was being repeated (before changing state)
-      if (this.state.repeatKey === virtualKey) {
+      if (this.state.repeatKey === vkKey) {
         this.state.stopRepeat();
       }
       
       // Modifier keys should NOT be released on mouseup - they stay pressed
-      if (this.keys.isModifierKey(virtualKey)) {
+      if (this.keys.isModifierKey(vkKey)) {
         // Do nothing - modifier keys stay pressed until explicitly toggled or auto-released
         return;
       }
       
       // Handle normal keys and toggle keys
-      this.setKeyState(virtualKey, false);
+      this.setKeyState(vkKey, false);
       
       // Apply visual effects (direct call, legacy redirect removed)
-      this.visual.applyKeyUpEffect(virtualKey);
+      this.visual.applyKeyUpEffect(vkKey);
       
       // Dispatch keyup event
-      this.event.dispatchKeyUp(virtualKey);
+      this.event.dispatchKeyUp(vkKey);
       
       // Handle text input for normal keys
-      if (this.keys.isNormalKey(virtualKey)) {
-        this.handleTextInput(virtualKey);
+      if (this.keys.isNormalKey(vkKey)) {
+        this.handleTextInput(vkKey);
         
         // Auto-keyUp modifier keys after text input is handled
         // This ensures modifier states are consistent between keydown and keyup
@@ -1745,12 +1745,12 @@ export class VirtualKeyboard extends HTMLElement {
   };
 
   // Set key state (pressed/released) with proper categorization
-  private setKeyState(virtualKey: VirtualKey, isPressed: boolean) {
-    const code = virtualKey.getAttribute('code') || '';
+  private setKeyState(vkKey: VkKey, isPressed: boolean) {
+    const code = vkKey.getAttribute('code') || '';
     
     if (isPressed) {
       // Add to active keys
-      this.state.addKeyDownKey(virtualKey);
+      this.state.addKeyDownKey(vkKey);
       
       // Handle modifier keys
       if (code.startsWith('Shift')) {
@@ -1764,7 +1764,7 @@ export class VirtualKeyboard extends HTMLElement {
       }
       
       // Handle physical toggle keys
-      if (this.keys.isPhysicalToggleKey(virtualKey)) {
+      if (this.keys.isPhysicalToggleKey(vkKey)) {
         const toggleCode = code === 'CapsLock' ? 'CapsLock' : 'NumLock';
         const currentState = this.state.getToggleState(toggleCode);
         this.state.setToggleState(toggleCode, !currentState);
@@ -1778,20 +1778,20 @@ export class VirtualKeyboard extends HTMLElement {
       }
       
       // Handle modifier toggle state (for modifier keys only)
-      if (this.keys.isModifierKey(virtualKey)) {
+      if (this.keys.isModifierKey(vkKey)) {
         const currentState = this.state.getToggleState(code);
         this.state.setToggleState(code, !currentState);
       }
     } else {
       // Remove from keyDown keys
-      this.state.removeKeyDownKey(virtualKey);
+      this.state.removeKeyDownKey(vkKey);
       
       // Only handle physical toggle keys and normal keys keyUp
       // Modifier keys should maintain their state until explicitly toggled
-      if (this.keys.isPhysicalToggleKey(virtualKey)) {
+      if (this.keys.isPhysicalToggleKey(vkKey)) {
         // Physical toggle keys don't need special handling on release
         // Their state is managed by the toggle state system
-      } else if (this.keys.isNormalKey(virtualKey)) {
+      } else if (this.keys.isNormalKey(vkKey)) {
         // Normal keys don't need special handling on release
       }
       // Note: Modifier keys are NOT handled here to prevent automatic keyUp
@@ -1799,14 +1799,14 @@ export class VirtualKeyboard extends HTMLElement {
     }
   }
 
-  // Handle key press down - main API for VirtualKey elements
-  keyDown(virtualKey: VirtualKey) {
-    this.keyState.initialKeyDown(virtualKey);
+  // Handle key press down - main API for VkKey elements
+  keyDown(vkKey: VkKey) {
+    this.keyState.initialKeyDown(vkKey);
   }
 
-  // Handle key release - main API for VirtualKey elements
-  keyUp(virtualKey: VirtualKey) {
-    this.keyState.keyUp(virtualKey);
+  // Handle key release - main API for VkKey elements
+  keyUp(vkKey: VkKey) {
+    this.keyState.keyUp(vkKey);
   }
 
   // Automatically keyUp all pressed modifier keys (ctrl, shift, alt, meta only)
@@ -1844,14 +1844,14 @@ export class VirtualKeyboard extends HTMLElement {
   }
 
   // KeyUp a single modifier key
-  private keyUpModifierKey(virtualKey: VirtualKey) {
-    const code = virtualKey.getAttribute('code') || '';
+  private keyUpModifierKey(vkKey: VkKey) {
+    const code = vkKey.getAttribute('code') || '';
     
     // Reset toggle state for this modifier
     this.state.setToggleState(code, false);
     
     // Remove from key down state
-    this.state.removeKeyDownKey(virtualKey);
+    this.state.removeKeyDownKey(vkKey);
     
     // Remove from modifier set
     if (code.startsWith('Shift')) {
@@ -1865,16 +1865,16 @@ export class VirtualKeyboard extends HTMLElement {
     }
     
     // Apply visual effects
-    this.visual.applyKeyUpEffect(virtualKey);
+    this.visual.applyKeyUpEffect(vkKey);
     
     // Dispatch event
-    this.event.dispatchKeyUp(virtualKey);
+    this.event.dispatchKeyUp(vkKey);
   }
 
   // Handle text input based on key type
-  private handleTextInput(virtualKey: VirtualKey) {
-    const code = virtualKey.getAttribute('code') || '';
-    const key = virtualKey.getAttribute('key') || virtualKey.getAttribute('label') || '';
+  private handleTextInput(vkKey: VkKey) {
+    const code = vkKey.getAttribute('code') || '';
+    const key = vkKey.getAttribute('key') || vkKey.getAttribute('label') || '';
     
     // Skip if no active editing element
     if (!this.activeElement) {
@@ -1921,8 +1921,8 @@ export class VirtualKeyboard extends HTMLElement {
         let finalChar = key;
         if (modifiers.shift) {
           // Get shift-text for number keys when Shift is pressed
-          const shiftKey = virtualKey.getAttribute('shift-key') || '';
-          const shiftCode = virtualKey.getAttribute('shift-code') || '';
+          const shiftKey = vkKey.getAttribute('shift-key') || '';
+          const shiftCode = vkKey.getAttribute('shift-code') || '';
           finalChar = shiftKey || shiftCode || key;
         }
         this.editing.insertText(finalChar);
@@ -2122,8 +2122,8 @@ export class VirtualKeyboard extends HTMLElement {
         
         // For non-letter single characters in shift state, use the key's own shift-key attribute
         if (modifiers.shift && !key.match(/[a-zA-Z]/)) {
-          const shiftKey = virtualKey.getAttribute('shift-key') || '';
-          const shiftCode = virtualKey.getAttribute('shift-code') || '';
+          const shiftKey = vkKey.getAttribute('shift-key') || '';
+          const shiftCode = vkKey.getAttribute('shift-code') || '';
           finalChar = shiftKey || shiftCode || key;
         } else {
           // Apply modifier transformations for other cases
@@ -2179,10 +2179,10 @@ export class VirtualKeyboard extends HTMLElement {
   }
 
   // Get the value of a key based on current state
-  getKeyValue(virtualKey: VirtualKey): string {
-    const code = virtualKey.getAttribute('code') || '';
-    const value = virtualKey.getAttribute('value') || '';
-    const key = virtualKey.getAttribute('key') || '';
+  getKeyValue(vkKey: VkKey): string {
+    const code = vkKey.getAttribute('code') || '';
+    const value = vkKey.getAttribute('value') || '';
+    const key = vkKey.getAttribute('key') || '';
     
     // Handle special keys
     if (code === 'Enter') return 'Enter';
@@ -2224,7 +2224,7 @@ export class VirtualKeyboard extends HTMLElement {
         transformed = transformed.toUpperCase();
       }
     }
-    // For non-letter keys, rely on VirtualKey element's own shift-key attributes
+    // For non-letter keys, rely on VkKey element's own shift-key attributes
     // The HTML template already defines the correct shift characters
     
     return transformed;
@@ -2233,18 +2233,18 @@ export class VirtualKeyboard extends HTMLElement {
 
 
   // Event management methods
-  triggerKeyUpEvent(virtualKey: VirtualKey) {
-    this.event.dispatchKeyUp(virtualKey);
+  triggerKeyUpEvent(vkKey: VkKey) {
+    this.event.dispatchKeyUp(vkKey);
   }
 
   // Event dispatch methods
-  triggerKeyDownEvent(virtualKey: VirtualKey) {
-    this.event.dispatchKeyDown(virtualKey);
+  triggerKeyDownEvent(vkKey: VkKey) {
+    this.event.dispatchKeyDown(vkKey);
     
     // Also trigger keypress for character-producing keys
-    const code = virtualKey.getAttribute('code') || '';
+    const code = vkKey.getAttribute('code') || '';
     if (this.shouldTriggerKeypress(code)) {
-      this.triggerKeyPressEvent(virtualKey);
+      this.triggerKeyPressEvent(vkKey);
     }
   }
   
@@ -2272,11 +2272,11 @@ export class VirtualKeyboard extends HTMLElement {
   }
   
   // Trigger keypress event
-  triggerKeyPressEvent(virtualKey: VirtualKey) {
-    this.event.dispatchKeyPress(virtualKey);
+  triggerKeyPressEvent(vkKey: VkKey) {
+    this.event.dispatchKeyPress(vkKey);
   }
 
 }
 
 // Define custom element for virtual keyboard
-customElements.define('virtual-keyboard', VirtualKeyboard);
+customElements.define('vk-container', VkContainer);

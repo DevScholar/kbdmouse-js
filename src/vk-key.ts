@@ -1,4 +1,4 @@
-import { VirtualKeyboard } from "./virtual-keyboard.js";
+import { VkContainer } from "./vk-container.js";
 
 // Debug configuration for console logging
 interface DebugConfig {
@@ -11,7 +11,7 @@ const debug: DebugConfig = {
   showConsole: true
 };
 
-export class VirtualKey extends HTMLElement {
+export class VkKey extends HTMLElement {
   private mousedownHandler!: (e: Event) => void;
   private mouseupHandler!: (e: Event) => void;
   private mouseleaveHandler!: (e: Event) => void;
@@ -124,13 +124,13 @@ export class VirtualKey extends HTMLElement {
     this.removeEventListener('touchcancel', this.touchcancelHandler);
   }
 
-  get parentKeyboard(): VirtualKeyboard | null {
+  get parentKeyboard(): VkContainer | null {
     // Use modern syntax and optional chaining
-    const keyboard = this.closest('virtual-keyboard') as VirtualKeyboard | null;
+    const keyboard = this.closest('vk-container') as VkContainer | null;
     
     if (!keyboard) {
-      const error = new Error('<virtual-keyboard> ancestor element not found');
-      debug.showConsole && console.error(`[VirtualKey] Virtual key must be placed inside a virtual-keyboard element:`, error.message);
+      const error = new Error('<vk-container> ancestor element not found');
+      debug.showConsole && console.error(`[VkKey] Virtual key must be placed inside a vk-container element:`, error.message);
       throw error;
     }
     
@@ -163,4 +163,4 @@ export class VirtualKey extends HTMLElement {
 }
 
 // Define custom element
-customElements.define('virtual-key', VirtualKey);
+customElements.define('vk-key', VkKey);

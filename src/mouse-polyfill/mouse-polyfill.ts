@@ -232,8 +232,8 @@ class MousePolyfill {
     shift: boolean;
     meta: boolean;
   } {
-    // Try to get modifier states from the first prefab-virtual-keyboard element
-    const prefabKeyboard = document.querySelector('prefab-virtual-keyboard') as any;
+    // Try to get modifier states from the first vk-keyboard element
+    const prefabKeyboard = document.querySelector('vk-keyboard') as any;
     if (prefabKeyboard && prefabKeyboard.getModifierStates) {
       const states = prefabKeyboard.getModifierStates();
       return {
@@ -244,10 +244,10 @@ class MousePolyfill {
       };
     }
 
-    // Fallback: try to get from virtual-keyboard element
-    const virtualKeyboard = document.querySelector('virtual-keyboard') as any;
-    if (virtualKeyboard && virtualKeyboard.state && virtualKeyboard.state.getModifierStates) {
-      const states = virtualKeyboard.state.getModifierStates();
+    // Fallback: try to get from vk-container element
+    const VkContainer = document.querySelector('vk-container') as any;
+    if (VkContainer && VkContainer.state && VkContainer.state.getModifierStates) {
+      const states = VkContainer.state.getModifierStates();
       return {
         ctrl: states.ctrl || false,
         alt: states.alt || false,
@@ -501,7 +501,7 @@ class MousePolyfill {
    * Add polyfill for a specific element
    * @param element The element to add polyfill for
    */
-  addPolyfillFor(element: Element): void {
+  enableFor(element: Element): void {
     // Allow polyfill on all devices for debugging purposes
     // On desktop, it will only log events but not interfere with normal mouse behavior
 
@@ -541,7 +541,7 @@ class MousePolyfill {
    * Remove polyfill from a specific element
    * @param element The element to remove polyfill from
    */
-  removePolyfillFor(element: Element): void {
+  disableFor(element: Element): void {
     const polyfillElement = this.polyfillElements.get(element);
     if (!polyfillElement) {
       // No polyfill to remove
