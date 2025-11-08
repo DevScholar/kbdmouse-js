@@ -10,7 +10,7 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: './src/main.ts',
+      entry: './src/index.ts',
       name: 'kbdmouse-js',
       formats: ['es', 'cjs'], // Use modern formats only, remove UMD
       fileName: (format) => `kbdmouse-js.${format === 'es' ? 'mjs' : 'js'}`

@@ -160,13 +160,13 @@ The system supports intelligent touch gestures that translate to mouse events:
 
 ```
 src/
-├── keyboard-demo.html          # Hardware keyboard demo
+├── virtual-keyboard/keyboard-demo.html          # Hardware keyboard demo
 ├── mouse-demo.html             # Mouse event demonstration
 ├── vk-key.ts              # Virtual key component
 ├── vk-container.ts         # Keyboard behavior emulation
 ├── vk-keyboard.ts  # Ready-to-use emulator keyboard
 ├── mouse-polyfill.ts           # Mouse event polyfill for touch devices
-├── main.ts                     # Main entry point - exports all modules
+├── index.ts                     # Main entry point - exports all modules
 └── typescript.svg              # TypeScript logo
 
 public/
