@@ -1,0 +1,184 @@
+:root {
+    --vk-key-color: white;
+    --vk-key-background-color: #333333;
+    --vk-key-background-color-active: #007ad5;
+    --vk-key-shifted-label-color: gray;
+    --vk-key-color-hover: var( --vk-key-background-color);
+    --vk-key-background-color-hover: white;
+    --vk-key-width: 60px;
+    --vk-key-height: 60px;
+    --vk-keyboard-background-color: #1a1a1a;
+    --vk-keyboard-padding: 2px;
+}
+virtual-keyboard {
+    display: block;
+    width: fit-content;
+}
+.vk-caps-lock {
+    text-transform: uppercase;
+}
+
+.vk-shifted-label {
+    color: var(--vk-key-shifted-label-color);
+}
+
+/* NumLock state styling */
+.vk-key.vk-num-lock {
+    /* When NumLock is enabled */
+    .vk-label-num-lock {
+        color: var(--vk-key-color);
+    }
+    
+    .vk-label {
+        color: var(--vk-key-shifted-label-color); /* Gray when NumLock is enabled */
+    }
+}
+
+/* When NumLock is disabled (default state) */
+.vk-key:not(.vk-num-lock)[data-code^="Numpad"] {
+    .vk-label-num-lock {
+        color: var(--vk-key-shifted-label-color);
+    }
+}
+
+/* Shift state styling */
+.vk-key.vk-shift {
+    /* When Shift is enabled */
+    .vk-label-shift {
+        color: var(--vk-key-color);
+    }
+    
+    /* For keys with shift state (except letters) - gray main label when shifted */
+    &[data-code^="Digit"],
+    &[data-code="Backquote"],
+    &[data-code="Minus"],
+    &[data-code="Equal"],
+    &[data-code="Backslash"],
+    &[data-code="BracketLeft"],
+    &[data-code="BracketRight"],
+    &[data-code="Semicolon"],
+    &[data-code="Quote"],
+    &[data-code="Comma"],
+    &[data-code="Period"],
+    &[data-code="Slash"] {
+        .vk-label {
+            color: var(--vk-key-shifted-label-color); /* Gray for main label when shifted */
+        }
+    }
+    
+    /* For letter keys - uppercase in shift state */
+    &[data-code^="Key"] {
+        text-transform: uppercase;
+    }
+}
+
+/* When Shift is disabled (default state) */
+.vk-key:not(.vk-shift) {
+    .vk-label-shift {
+        color: var(--vk-key-shifted-label-color);
+    }
+}
+
+/* CapsLock state styling */
+.vk-key.vk-caps-lock {
+    /* When CapsLock is enabled */
+    &[data-code^="Key"] {
+        text-transform: uppercase;
+    }
+}
+
+/* Combined states for letter keys */
+.vk-key.vk-shift.vk-caps-lock[data-code^="Key"] {
+    /* Shift + CapsLock = lowercase for letters */
+    text-transform: lowercase;
+}
+
+/* Keep existing hover effects */
+.vk-shifted {
+    &:hover:not(.vk-key-down) {
+        background-color: var(--vk-key-background-color-hover);
+        color: var(--vk-key-color-hover);
+    }
+}
+
+.vk-num-locked {
+    &:hover:not(.vk-key-down) {
+        background-color: var(--vk-key-background-color-hover);
+        color: var(--vk-key-color-hover);
+    }
+}
+
+.vk-placeholder {
+    display: inline-block;
+    width: var(--vk-key-width);
+    height: var(--vk-key-height);
+    margin: 2px;
+}
+.vk-keyboard {
+    background-color: var(--vk-keyboard-background-color);
+    width: fit-content;
+    padding: var(--vk-keyboard-padding);
+}
+.vk-key {
+    box-sizing: border-box;
+    display: inline-block;
+    min-width: var(--vk-key-width);
+    height: var(--vk-key-height);
+    background-color: var(--vk-key-background-color);
+    color: var(--vk-key-color);
+    margin: 2px;
+    padding: .25em;
+    vertical-align: bottom;
+
+
+    &:hover:not(.vk-key-down) {
+        background-color: var(--vk-key-background-color-hover);
+        color: var(--vk-key-color-hover);
+    }
+
+
+    &[data-code="Backspace"],
+    &[data-code="Enter"],
+    &[data-code="Tab"],
+    &[data-code="CapsLock"],
+    &[data-code="ShiftLeft"],
+    &[data-code="ShiftRight"],
+    &[data-code="NumpadDecimal"] {
+        width: calc(var(--vk-key-width) * 2);
+    }
+
+    &[data-code="Space"] {
+        width: calc(var(--vk-key-width) * 6);
+    }
+
+    &[data-code="NumpadAdd"],
+    &[data-code="NumpadEnter"] {
+        transform: scaleY(2);
+        transform-origin: top;
+
+        & .vk-label,
+        & .vk-shifted-label {
+            transform: scaleY(0.5);
+        }
+
+    }
+}
+
+.vk-key-down {
+    background-color: var(--vk-key-background-color-active);
+    color: var(--vk-key-color);
+}
+
+.vk-keyboard {
+    display: flex;
+    flex-direction: row;
+}
+
+.vk-row {
+    display: flex;
+}
+
+.vk-area {
+    display: flex;
+    flex-direction: column;
+}
