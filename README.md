@@ -11,19 +11,25 @@ This project is a polyfill that provides mouse and keyboard events for mobile de
 
 ### Virtual Keyboard
 ```html
-
-<!-- Include the library and stylesheet in dist folder, then -->
+<link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
+<script type="module" src="src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
 <virtual-keyboard></virtual-keyboard>
-<!-- That's all.-->
 ```
 ### Virtual Mouse
 ```html
+<script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
+<script type="module">
+    import { VkMouse } from './src/mouse-polyfill/scripts/vk-mouse.ts';
 
-<!-- Include the library and stylesheet in dist folder, then -->
-<script>
-    let vkMouse = document.querySelector("polyfilled-element");
+    document.addEventListener('DOMContentLoaded', function () {
+      let element = document.getElementById('polyfilled-element');
+      if (element) {
+        let vkMouse = new VkMouse(element);
+      } else {
+        console.error('polyfilled-element element not found');
+      }
+    });
 </script>
-<!-- That's all.-->
 ```
 
 ## License
