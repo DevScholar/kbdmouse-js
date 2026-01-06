@@ -6,10 +6,6 @@
 
 This project is a polyfill that provides mouse and keyboard events for mobile devices (such as phones) to address the issue of these events not being supported on mobile. For example, an x86 emulator running in a web page may require keyboard and mouse events to function. Similarly, some old web pages' drag-and-drop features might not have taken mobile touch events into account. This project addresses the issue by converting touch events into standard DOM mouse events.
 
-## Compatibility
-
-- [x] v86 (old version)
-- [x] em-dosbox
 
 ## Usage
 

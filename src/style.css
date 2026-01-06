@@ -3,8 +3,10 @@
     height: 200px;
     overflow: scroll;
 }
-
-#drag-container {
+#mouse-canvas {
+    border: 1px solid #333333;
+}
+/* #drag-container {
     border: 1px solid #333333;
     height: 200px;
     overflow: scroll;
@@ -20,4 +22,4 @@
     top: 0;
     left: 0;
     cursor: move;
-}
+} */

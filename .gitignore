@@ -22,8 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-emulator-tests
-vite.vk.config.js
-build-vk.js
-dist-vk

@@ -7,6 +7,8 @@
   <title>KBDMouseJS Demo</title>
   <link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
   <link rel="stylesheet" href="src/style.css">
+  <script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
+  <script type="module" src="src/mouse-canvas.ts"></script>
 </head>
 
 <body>
@@ -14,8 +16,6 @@
   <textarea id="demo-textarea" placeholder="Type here or use the virtual keyboard…"></textarea>
   <virtual-keyboard></virtual-keyboard>
   <script type="module" src="src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
-  <script type="module" src="src/mouse-polyfill/vk-mouse.ts"></script>
-  <h2>Logger</h2>
   <button id="clear-log" onclick="document.getElementById('logger').innerHTML = '';">Clear Log</button>
   <div id="logger"></div>
   <script defer>
@@ -34,69 +34,36 @@
     });
   </script>
   <hr>
-  <h2>Mouse Drag Box</h2>
-  <div id="drag-container">
-    <div id="drag-box">Drag me</div>
-    Notice:
-    The virtual mouse's logging function is only available on mobile devices.<br>
-    Use `npm run dev:expose` to expose the webpage to the local network<br>
-    (for example, connect your computer to your phone's hotspot and open the webpage on your phone).<br>
+  <h2>Mouse Trajectory Canvas</h2>
+  <details>
+    <summary>Show/Hide Instructions</summary>
+    <p>
+      Black line for ordinary mouse movement, blue line for drag mode.<br>
+      green point for click, yellow point for double-click.<br>
+      purple point for right-click.<br>
+      Notice:
+      Use `npm run dev:expose` to expose the webpage to the local network<br>
+      (for example, connect your computer to your phone's hotspot and open the webpage on your phone).<br>
     Moving your finger without long pressing represents mouse movement.<br>
     After a long press, moving your finger represents drag mode (left mouse button pressed and mouse movement).<br>
     After a long press, keeping your finger still represents a right-click.<br>
     Single and double-click events are also supported.<br>
+  </p>
+  </details>
+  <button id="clear-canvas" onclick="clearCanvas();">Clear Canvas</button>
+  <div id="mouse-canvas-container">
+    <canvas id="mouse-canvas" width="500" height="500"></canvas>
   </div>
-  <script type="module" defer>
-    let dragContainer = document.getElementById('drag-container');
-    let dragBox = document.getElementById('drag-box');
-    import { VkMouse } from './src/mouse-polyfill/vk-mouse.ts';
+  <script type="module">
+    import { VkMouse } from './src/mouse-polyfill/scripts/vk-mouse.ts';
 
-    window.addEventListener('DOMContentLoaded', function () {
-
-
-      dragBox.addEventListener('mousedown', function (e) {
-        e.preventDefault();
-        let offsetX = e.clientX - dragBox.offsetLeft;
-        let offsetY = e.clientY - dragBox.offsetTop;
-
-        document.addEventListener('mousemove', dragBoxMove);
-        document.addEventListener('mouseup', dragBoxUp);
-
-        function dragBoxMove(e) {
-          // Calculate new position
-          let newLeft = e.clientX - offsetX;
-          let newTop = e.clientY - offsetY;
-
-          // Get container boundaries
-          let containerRect = dragContainer.getBoundingClientRect();
-          let boxRect = dragBox.getBoundingClientRect();
-
-          // Constrain within container
-          let maxLeft = containerRect.width - dragBox.offsetWidth;
-          let maxTop = containerRect.height - dragBox.offsetHeight;
-
-          // Apply constraints
-          newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-          newTop = Math.max(0, Math.min(newTop, maxTop));
-
-          dragBox.style.left = newLeft + 'px';
-          dragBox.style.top = newTop + 'px';
-        }
-
-        function dragBoxUp() {
-          document.removeEventListener('mousemove', dragBoxMove);
-          document.removeEventListener('mouseup', dragBoxUp);
-        }
-      });
-
-      // Initialize VkMouse after DOM is loaded
-      // Increase threshold times for better mobile experience and enable debugging
-      let dragContainerVkMouse = new VkMouse(dragContainer, {
-        dragThresholdTime: 1000,       // 1000ms for drag threshold (more appropriate for mobile)
-        rightClickThresholdTime: 1000, // 1000ms for right-click threshold
-        debugEnabled: true,            // Enable logging
-        vibrateEnabled: false          // Disable vibration as per previous changes
-      });
+    document.addEventListener('DOMContentLoaded', function () {
+      let canvasElement = document.getElementById('mouse-canvas');
+      if (canvasElement) {
+        let vkMouse = new VkMouse(canvasElement);
+      } else {
+        console.error('mouse-canvas element not found');
+      }
     });
   </script>
 </body>
