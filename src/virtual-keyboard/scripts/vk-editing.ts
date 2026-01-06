@@ -6,55 +6,86 @@ export class VkEditing {
     }
     vkKeyboard!: VkKeyboard;
 
-    keyDown(code: string) {
-        let text = "";
-        let key = "";
-        
-        // Get the key value from layout data for non-printable keys
-        const keyItem = this.vkKeyboard.jsonLayout.getKeyItemByCode(code);
-        if (keyItem && keyItem.key) {
-            key = keyItem.key;
+    isEditable() {
+        const activeElement = document.activeElement;
+        if (!activeElement) {
+            return false;
         }
-        
-        if (this.vkKeyboard.editing.isEditable() && this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
-            text = this.getKeyValue(code);
-            this.insertText(text);
-        } else if (code === "Backspace") {
-            this.deleteContentBackward();
-        } else if (code === "Delete") {
-            this.deleteContentForward();
-        } else if (key === "Enter") {
-            this.insertLineBreak();
-        } else if (key === "ArrowRight") {
-            this.moveCursor(1, "right");
-        } else if (key === "ArrowLeft") {
-            this.moveCursor(1, "left");
-        } else if (key === "ArrowUp") {
-            this.moveCursor(1, "up");
-        } else if (key === "ArrowDown") {
-            this.moveCursor(1, "down");
-        } else if (key === "Home") {
-            this.moveCursorToEdge("lineStart");
-        } else if (key === "End") {
-            this.moveCursorToEdge("lineEnd");
+        if (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") {
+            // 检查是否被禁用或只读
+            if (activeElement.getAttribute("disabled") === "true" || activeElement.getAttribute("readonly") === "true") {
+                return false;
+            }
+            // 对于INPUT元素，检查类型是否在可编辑类型列表中
+            if (activeElement.tagName === "INPUT") {
+                const textLikeTypes = ["text", "email", "number", "search", "tel", "url", "password"];
+                return textLikeTypes.includes((activeElement as HTMLInputElement).type || "text");
+            }
+            // TEXTAREA元素默认可编辑
+            return true;
+        } else if (activeElement.getAttribute("contenteditable") === "true") {
+            return true;
         }
+        return false;
     }
 
-
-
-    isEditable() {
-        const activeElement = document.activeElement!;
-        const textLikeTypes = ["text", "password", "search", "tel", "url", "email", "number"];
-        if (activeElement.tagName === "INPUT" && textLikeTypes.includes((activeElement as HTMLInputElement).type)) {
-            return true;
+    keyDown(code: string) {
+        if (!this.isEditable()) {
+            return;
         }
-        else if (activeElement.tagName === "TEXTAREA") {
-            return true;
+
+        const keyItem = this.vkKeyboard.jsonLayout.getKeyItemByCode(code);
+        if (!keyItem) {
+            return;
         }
-        else if (activeElement instanceof HTMLElement) {
-            return activeElement.contentEditable === "true";
-        } else {
-            return false;
+
+        if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
+            this.insertText(keyItem.key);
+            this.vkKeyboard.eventDispatcher.input(code);
+            return;
+        }
+
+        switch (code) {
+            case "Enter":
+                this.insertLineBreak();
+                this.vkKeyboard.eventDispatcher.input(code);
+                break;
+            case "Backspace":
+                this.deleteContentBackward();
+                this.vkKeyboard.eventDispatcher.input(code);
+                break;
+            case "Delete":
+                this.deleteContentForward();
+                this.vkKeyboard.eventDispatcher.input(code);
+                break;
+            case "Tab":
+                this.insertText("\t");
+                this.vkKeyboard.eventDispatcher.input(code);
+                break;
+            case "ArrowLeft":
+                this.moveCursor(1, "left");
+                break;
+            case "ArrowRight":
+                this.moveCursor(1, "right");
+                break;
+            case "ArrowUp":
+                this.moveCursor(1, "up");
+                break;
+            case "ArrowDown":
+                this.moveCursor(1, "down");
+                break;
+            case "Home":
+                this.moveCursorToEdge("lineStart");
+                break;
+            case "End":
+                this.moveCursorToEdge("lineEnd");
+                break;
+            case "PageUp":
+                this.moveCursor(10, "up");
+                break;
+            case "PageDown":
+                this.moveCursor(10, "down");
+                break;
         }
     }
 
@@ -72,6 +103,20 @@ export class VkEditing {
                 input.setSelectionRange(selectionStart - step, selectionEnd - step);
             } else if (direction === "down") {
                 input.setSelectionRange(selectionStart + step, selectionEnd + step);
+            }
+        } else if (activeElement.getAttribute("contenteditable") === "true") {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (direction === "left" || direction === "right") {
+                    range.collapse(true);
+                    (range as any).modify("move", direction === "left" ? "backward" : "forward", "character");
+                } else if (direction === "up" || direction === "down") {
+                    range.collapse(true);
+                    (range as any).modify("move", direction === "up" ? "backward" : "forward", "line");
+                }
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
         }
     }
@@ -91,6 +136,26 @@ export class VkEditing {
             } else if (destination === "lineEnd") {
                 input.setSelectionRange(selectionEnd - (selectionEnd - input.value.indexOf("\n", selectionEnd)), selectionEnd - (selectionEnd - input.value.indexOf("\n", selectionEnd)));
             }
+        } else if (activeElement.getAttribute("contenteditable") === "true") {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (destination === "textBoxStart") {
+                    range.selectNodeContents(activeElement);
+                    range.collapse(true);
+                } else if (destination === "textBoxEnd") {
+                    range.selectNodeContents(activeElement);
+                    range.collapse(false);
+                } else if (destination === "lineStart") {
+                    range.collapse(true);
+                    (range as any).modify("move", "backward", "lineboundary");
+                } else if (destination === "lineEnd") {
+                    range.collapse(true);
+                    (range as any).modify("move", "forward", "lineboundary");
+                }
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
         }
     }
 
@@ -102,6 +167,8 @@ export class VkEditing {
             const selectionEnd = input.selectionEnd!;
             input.value = input.value.slice(0, selectionStart) + text + input.value.slice(selectionEnd);
             input.setSelectionRange(selectionStart + text.length, selectionStart + text.length);
+        } else if (activeElement.getAttribute("contenteditable") === "true") {
+            document.execCommand("insertText", false, text);
         }
     }
 
@@ -116,12 +183,14 @@ export class VkEditing {
             const selectionStart = input.selectionStart!;
             const selectionEnd = input.selectionEnd!;
             if (selectionStart !== selectionEnd) {
-                input.value = input.value.slice(0, selectionStart - 1) + input.value.slice(selectionEnd);
-                input.setSelectionRange(selectionStart - 1, selectionStart - 1);
+                input.value = input.value.slice(0, selectionStart) + input.value.slice(selectionEnd);
+                input.setSelectionRange(selectionStart, selectionStart);
             } else if (selectionStart > 0) {
-                input.value = input.value.slice(0, selectionStart - 1) + input.value.slice(selectionEnd);
+                input.value = input.value.slice(0, selectionStart - 1) + input.value.slice(selectionStart);
                 input.setSelectionRange(selectionStart - 1, selectionStart - 1);
             }
+        } else if (activeElement.getAttribute("contenteditable") === "true") {
+            document.execCommand("delete", false, "");
         }
     }
 
@@ -138,50 +207,18 @@ export class VkEditing {
                 input.value = input.value.slice(0, selectionEnd) + input.value.slice(selectionEnd + 1);
                 input.setSelectionRange(selectionEnd, selectionEnd);
             }
-        }
-    }
-
-    /**
-     * Returns the actual character to be input for the given code, based on current modifier states
-     * @param code Keyboard key code
-     * @returns Text to insert or key value from layout file
-     */
-    getKeyValue(code: string): string {
-        const keyItem = this.vkKeyboard.jsonLayout.getKeyItemByCode(code);
-        if (!keyItem || !keyItem.key) {
-            return "";
-        }
-        
-        // Check modifier states
-        const isShift = this.vkKeyboard.state.getModifierState("ShiftLeft") || this.vkKeyboard.state.getModifierState("ShiftRight");
-        const isCaps = this.vkKeyboard.state.getModifierState("CapsLock");
-        const isNumLock = this.vkKeyboard.state.getModifierState("NumLock");
-        const isAlpha = this.vkKeyboard.jsonLayout.isAlphabetKey(code);
-        const isNumpad = code.startsWith("Numpad");
-
-        // Handle numpad keys with numlock
-        if (isNumpad) {
-            if (isNumLock) {
-                return keyItem.numLocked?.key || keyItem.key;
-            } else {
-                // For non-numeric numpad keys when numlock is off, use the standard value
-                return keyItem.key;
+        } else if (activeElement.getAttribute("contenteditable") === "true") {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                if (range.collapsed) {
+                    range.deleteContents();
+                } else {
+                    document.execCommand("delete", false, "");
+                }
             }
         }
-
-        // Shift + CapsLock: letters forced lowercase, others use shifted
-        if (isShift && isCaps) {
-            return isAlpha ? keyItem.key : (keyItem.shifted?.key || keyItem.key);
-        }
-        // Shift only: use shifted value
-        if (isShift) {
-            return keyItem.shifted?.key || keyItem.key;
-        }
-        // CapsLock only: letters uppercase, others unchanged
-        if (isCaps) {
-            return isAlpha ? keyItem.key.toUpperCase() : keyItem.key;
-        }
-        // No modifiers: original value
-        return keyItem.key;
     }
+
+
 }

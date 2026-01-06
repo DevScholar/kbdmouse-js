@@ -1,5 +1,5 @@
 import type { VkKeyboard } from "./vk-keyboard";
-import layoutTemplate from "../../layouts/layout-template.json";
+import layoutTemplate from "../../virtual-keyboard/layouts/layout-template.json";
 
 export class VkJsonLayout {
     constructor(vkKeyboard: VkKeyboard) {
@@ -69,8 +69,7 @@ export class VkJsonLayout {
     }
     
     isShiftableKey(code: string) {
-        const keyItem = this.getKeyItemByCode(code);
-        return keyItem?.shifted?.key !== undefined;
+        return this.layoutData?.shifted?.keys?.[code] !== undefined;
     }
     getKeyItemByCode(code: string) {
         const key = this.layoutData?.keys?.[code];
@@ -78,30 +77,26 @@ export class VkJsonLayout {
         const location = this.layoutData?.locations?.[code];
         const label = this.layoutData?.labels?.[code];
 
-        // For non-printable keys, use the code as the key value if no key or label exists
         const keyValue = key || label || code;
 
-        // Determine the actual key value based on current modifier states
         let actualKeyValue = keyValue;
         const isNumpad = code.startsWith("Numpad");
         const isNumLock = this.vkKeyboard.state.getModifierState("NumLock");
+        const isShift = this.vkKeyboard.state.getModifierState("Shift");
         
-        // For numpad keys, use numLocked value when numlock is on
         if (isNumpad && isNumLock && this.layoutData?.numLocked?.keys?.[code]) {
             actualKeyValue = this.layoutData.numLocked.keys[code];
+        }
+        
+        if (isShift && this.layoutData?.shifted?.keys?.[code]) {
+            actualKeyValue = this.layoutData.shifted.keys[code];
         }
 
         return {
             key: actualKeyValue,
             code: code,
             keyCode: keyCode || 0,
-            location: location || 0,
-            shifted:{
-                key: this.layoutData?.shifted?.keys?.[code] || keyValue
-            },
-            numLocked:{
-                key: this.layoutData?.numLocked?.keys?.[code] || keyValue
-            }
+            location: location || 0
         };
     }
     getModifierState(code: string) {

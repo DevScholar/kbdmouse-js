@@ -1,13 +1,12 @@
 // vk-keyboard.ts
+import { VkEditing } from "./vk-editing";
 import { VkEventDispatcher } from "./vk-event-dispatcher";
 import { VkJsonLayout } from "./vk-json-layout";
 import { VkLogger } from "./vk-logger";
 import { VkState } from "./vk-state";
 import { VkTemplate } from "./vk-template";
 import { VkUserOperation } from "./vk-user-operation";
-import { VkVisual } from "./vk-visual";
-import { VkEditingEventDispatcher } from "./vk-editing-event-dispatcher";
-import { VkEditing } from "./vk-editing";
+import { VkVisual } from "./vk-visual"; 
 import { VkAutoResize } from "./vk-auto-resize";
 
 export class VkKeyboard extends HTMLElement {
@@ -63,8 +62,6 @@ export class VkKeyboard extends HTMLElement {
             return this.classThis.state.debug.enabled;
         }
     };
-
-    editingEventDispatcher = new VkEditingEventDispatcher(this);
     editing = new VkEditing(this);
     eventDispatcher = new VkEventDispatcher(this);
     logger = new VkLogger(this);

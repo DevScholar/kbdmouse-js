@@ -21,7 +21,7 @@ export class VkUserOperation {
 
     preventFocusForVkKeyboard() {
         const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key');
-        
+
         vkKeys.forEach((vkKey) => {
             this.preventElementFocus(vkKey);
         });
@@ -29,7 +29,7 @@ export class VkUserOperation {
 
     private preventElementFocus(element: Element) {
         const preventDefaultEvents = ['mousedown', 'touchstart', 'focus'];
-        
+
         preventDefaultEvents.forEach(eventType => {
             element.addEventListener(eventType, (event: Event) => {
                 event.preventDefault();
@@ -39,7 +39,7 @@ export class VkUserOperation {
 
     handlePointerOperationsForVkKeyboard() {
         const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key');
-        
+
         vkKeys.forEach((vkKey) => {
             this.setupKeyEventListeners(vkKey);
         });
@@ -48,10 +48,10 @@ export class VkUserOperation {
     private setupKeyEventListeners(vkKey: Element) {
         const code = vkKey.getAttribute('data-code') || '';
         const keyType = this.determineKeyType(code);
-        
+
         const pointerDownHandler = this.createPointerDownHandler(code, keyType);
         const pointerReleaseHandler = this.createPointerReleaseHandler(code, keyType);
-        
+
         vkKey.addEventListener('pointerdown', pointerDownHandler);
         vkKey.addEventListener('pointerup', pointerReleaseHandler);
         vkKey.addEventListener('pointerleave', pointerReleaseHandler);
@@ -125,7 +125,7 @@ export class VkUserOperation {
         this.vkKeyboard.eventDispatcher.keyUp(code);
         this.vkKeyboard.state.activateToggleKey(code);
         this.vkKeyboard.visual.toggleKey(code, true);
-        
+
         // Update special toggle key visual states
         this.updateToggleKeyVisualState(code, true);
     }
@@ -136,7 +136,7 @@ export class VkUserOperation {
         this.vkKeyboard.eventDispatcher.keyUp(code);
         this.vkKeyboard.state.deactivateToggleKey(code);
         this.vkKeyboard.visual.toggleKey(code, false);
-        
+
         // Update special toggle key visual states
         this.updateToggleKeyVisualState(code, false);
     }
@@ -164,11 +164,13 @@ export class VkUserOperation {
     }
 
     private executeRegularKeyDown(code: string) {
-        // Execute keydown event
         this.keyDown(code);
-        // If printable character, execute keypress event
+        // If printable character and element is editable, execute keypress event
         if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
             this.keyPress(code);
+        }
+        if (this.vkKeyboard.editing.isEditable()) {
+            this.vkKeyboard.editing.keyDown(code);
         }
     }
 
@@ -186,8 +188,6 @@ export class VkUserOperation {
         this.vkKeyboard.eventDispatcher.keyDown(code, isRepeating);
         this.vkKeyboard.visual.keyDown(code);
         this.vkKeyboard.state.keyDown(code);
-        this.vkKeyboard.editing.keyDown(code);
-        this.vkKeyboard.editingEventDispatcher.keyDown(code);
     }
 
     keyPress(code: string) {
@@ -285,6 +285,9 @@ export class VkUserOperation {
         this.keyDown(code);
         if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
             this.keyPress(code);
+        }
+        if (this.vkKeyboard.editing.isEditable()) {
+            this.vkKeyboard.editing.keyDown(code);
         }
         // Note: No keyup event during repeat - only at the end when user releases the key
     }

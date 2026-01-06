@@ -3,3 +3,21 @@
     height: 200px;
     overflow: scroll;
 }
+
+#drag-container {
+    border: 1px solid #333333;
+    height: 200px;
+    overflow: scroll;
+    position: relative;
+}
+
+#drag-box {
+    border: 1px solid #333333;
+    height: 50px;
+    width: 50px;
+    background-color: #ff0000;
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: move;
+}

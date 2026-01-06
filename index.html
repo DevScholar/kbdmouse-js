@@ -1,34 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KBDMouseJS Demo</title>
-    <link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
-    <link rel="stylesheet" href="src/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KBDMouseJS Demo</title>
+  <link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
+  <link rel="stylesheet" href="src/style.css">
 </head>
+
 <body>
-    <h1>KBDMouseJS Demo</h1>
-    <textarea id="demo-textarea" placeholder="Type here or use the virtual keyboard…"></textarea>
-    <virtual-keyboard></virtual-keyboard>
-    <script type="module" src="src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
-    <h2>Logger</h2>
-    <button id="clear-log" onclick="document.getElementById('logger').innerHTML = '';">Clear Log</button>
-    <div id="logger"></div>
-    <script defer>
+  <h1>KBDMouseJS Demo</h1>
+  <textarea id="demo-textarea" placeholder="Type here or use the virtual keyboard…"></textarea>
+  <virtual-keyboard></virtual-keyboard>
+  <script type="module" src="src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
+  <script type="module" src="src/mouse-polyfill/vk-mouse.ts"></script>
+  <h2>Logger</h2>
+  <button id="clear-log" onclick="document.getElementById('logger').innerHTML = '';">Clear Log</button>
+  <div id="logger"></div>
+  <script defer>
 
-      window.addEventListener('DOMContentLoaded', function() {
-        let vkKeyboard = document.querySelector('virtual-keyboard');
-        if (vkKeyboard && vkKeyboard.logger) {
+    window.addEventListener('DOMContentLoaded', function () {
+      let vkKeyboard = document.querySelector('virtual-keyboard');
+      if (vkKeyboard && vkKeyboard.logger) {
 
-          vkKeyboard.debug.enabled = true;
-          vkKeyboard.logger.writeLog = function(log) {
-            document.getElementById('logger').innerHTML += log + '<br>';
-          }
-        } else {
-          console.error('virtual-keyboard element or logger not found');
+        vkKeyboard.debug.enabled = true;
+        vkKeyboard.logger.writeLog = function (log) {
+          document.getElementById('logger').innerHTML += log + '<br>';
+        }
+      } else {
+        console.error('virtual-keyboard element or logger not found');
+      }
+    });
+  </script>
+  <hr>
+  <h2>Mouse Drag Box</h2>
+  <div id="drag-container">
+    <div id="drag-box">Drag me</div>
+  </div>
+  <script type="module" defer>
+    let dragContainer = document.getElementById('drag-container');
+    let dragBox = document.getElementById('drag-box');
+    import { VkMouse } from './src/mouse-polyfill/vk-mouse.ts';
+
+    window.addEventListener('DOMContentLoaded', function () {
+
+
+      dragBox.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        let offsetX = e.clientX - dragBox.offsetLeft;
+        let offsetY = e.clientY - dragBox.offsetTop;
+
+        document.addEventListener('mousemove', dragBoxMove);
+        document.addEventListener('mouseup', dragBoxUp);
+
+        function dragBoxMove(e) {
+          // Calculate new position
+          let newLeft = e.clientX - offsetX;
+          let newTop = e.clientY - offsetY;
+
+          // Get container boundaries
+          let containerRect = dragContainer.getBoundingClientRect();
+          let boxRect = dragBox.getBoundingClientRect();
+
+          // Constrain within container
+          let maxLeft = containerRect.width - dragBox.offsetWidth;
+          let maxTop = containerRect.height - dragBox.offsetHeight;
+
+          // Apply constraints
+          newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+          newTop = Math.max(0, Math.min(newTop, maxTop));
+
+          dragBox.style.left = newLeft + 'px';
+          dragBox.style.top = newTop + 'px';
+        }
+
+        function dragBoxUp() {
+          document.removeEventListener('mousemove', dragBoxMove);
+          document.removeEventListener('mouseup', dragBoxUp);
         }
       });
-    </script>
+
+      // Initialize VkMouse after DOM is loaded
+      // Increase threshold times for better mobile experience and enable debugging
+      let dragContainerVkMouse = new VkMouse(dragContainer, {
+        dragThresholdTime: 1000,       // 1000ms for drag threshold (more appropriate for mobile)
+        rightClickThresholdTime: 1000, // 1000ms for right-click threshold
+        debugEnabled: true,            // Enable logging
+        vibrateEnabled: false          // Disable vibration as per previous changes
+      });
+    });
+  </script>
 </body>
+
 </html>

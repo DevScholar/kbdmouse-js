@@ -66,4 +66,5 @@ export class VkState {
             this.keys.repeatingKeys.delete(code);
         }
     }
+
 }
