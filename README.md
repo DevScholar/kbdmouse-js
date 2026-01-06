@@ -4,9 +4,7 @@
 
 ## Introduction
 
-This is a virtual keyboard library that supports keyboard events aim to be used
-in web-based emulators or legacy web pages that depend on keyboard events on
-mobile devices.
+This project is a polyfill that provides mouse and keyboard events for mobile devices (such as phones) to address the issue of these events not being supported on mobile. For example, an x86 emulator running in a web page may require keyboard and mouse events to function. Similarly, some old web pages' drag-and-drop features might not have taken mobile touch events into account. This project addresses the issue by converting touch events into standard DOM mouse events.
 
 ## Compatibility
 

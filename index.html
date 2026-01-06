@@ -37,6 +37,14 @@
   <h2>Mouse Drag Box</h2>
   <div id="drag-container">
     <div id="drag-box">Drag me</div>
+    Notice:
+    The virtual mouse's logging function is only available on mobile devices.<br>
+    Use `npm run dev:expose` to expose the webpage to the local network<br>
+    (for example, connect your computer to your phone's hotspot and open the webpage on your phone).<br>
+    Moving your finger without long pressing represents mouse movement.<br>
+    After a long press, moving your finger represents drag mode (left mouse button pressed and mouse movement).<br>
+    After a long press, keeping your finger still represents a right-click.<br>
+    Single and double-click events are also supported.<br>
   </div>
   <script type="module" defer>
     let dragContainer = document.getElementById('drag-container');
