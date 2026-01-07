@@ -12,7 +12,7 @@ export default defineConfig(({ command, mode }) => {
           entry: 'src/kbdmouse.ts',
           name: 'KbdMouseJs',
           fileName: (format) => `kbdmouse-js.${format}.js`,
-          formats: ['es', 'cjs'] // Generate both ES modules and CommonJS
+          formats: ['es'] // Generate only ES modules
         },
         rollupOptions: {
           external: [],
