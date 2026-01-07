@@ -32,7 +32,9 @@ export class VkUserOperation {
 
         preventDefaultEvents.forEach(eventType => {
             element.addEventListener(eventType, (event: Event) => {
-                event.preventDefault();
+                if (event.cancelable) {
+                    event.preventDefault();
+                }
             });
         });
     }
@@ -167,9 +169,25 @@ export class VkUserOperation {
         this.keyDown(code);
         // If printable character and element is editable, execute keypress event
         if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
-            this.keyPress(code);
-        }
-        if (this.vkKeyboard.editing.isEditable()) {
+            // Only execute keypress and editing if no modifier keys are pressed
+            const hasModifierPressed = this.vkKeyboard.state.isKeyDown('ControlLeft') || 
+                                      this.vkKeyboard.state.isKeyDown('ControlRight') || 
+                                      this.vkKeyboard.state.isKeyDown('AltLeft') || 
+                                      this.vkKeyboard.state.isKeyDown('AltRight') || 
+                                      this.vkKeyboard.state.isKeyDown('MetaLeft') || 
+                                      this.vkKeyboard.state.isKeyDown('MetaRight');
+            
+            if (!hasModifierPressed) {
+                this.keyPress(code);
+                if (this.vkKeyboard.editing.isEditable()) {
+                    this.vkKeyboard.editing.keyDown(code);
+                }
+            } else {
+                // Still dispatch key events even if modifier is pressed, but don't insert text or keypress
+                // Only dispatch keyDown and keyUp events for the combination
+                // No keypress event should be generated when modifiers are active
+            }
+        } else if (this.vkKeyboard.editing.isEditable()) {
             this.vkKeyboard.editing.keyDown(code);
         }
     }
@@ -284,9 +302,25 @@ export class VkUserOperation {
         // During repeat: only execute keydown and keypress (no keyup)
         this.keyDown(code);
         if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
-            this.keyPress(code);
-        }
-        if (this.vkKeyboard.editing.isEditable()) {
+            // Only execute keypress and editing if no modifier keys are pressed
+            const hasModifierPressed = this.vkKeyboard.state.isKeyDown('ControlLeft') || 
+                                      this.vkKeyboard.state.isKeyDown('ControlRight') || 
+                                      this.vkKeyboard.state.isKeyDown('AltLeft') || 
+                                      this.vkKeyboard.state.isKeyDown('AltRight') || 
+                                      this.vkKeyboard.state.isKeyDown('MetaLeft') || 
+                                      this.vkKeyboard.state.isKeyDown('MetaRight');
+            
+            if (!hasModifierPressed) {
+                this.keyPress(code);
+                if (this.vkKeyboard.editing.isEditable()) {
+                    this.vkKeyboard.editing.keyDown(code);
+                }
+            } else {
+                // Still dispatch key events even if modifier is pressed, but don't insert text or keypress
+                // Only dispatch keyDown and keyUp events for the combination
+                // No keypress event should be generated when modifiers are active
+            }
+        } else if (this.vkKeyboard.editing.isEditable()) {
             this.vkKeyboard.editing.keyDown(code);
         }
         // Note: No keyup event during repeat - only at the end when user releases the key

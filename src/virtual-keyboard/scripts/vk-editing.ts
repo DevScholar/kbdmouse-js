@@ -39,9 +39,20 @@ export class VkEditing {
             return;
         }
 
+        // Check if any modifier keys are pressed
+        const hasModifierPressed = this.vkKeyboard.state.isKeyDown('ControlLeft') || 
+                                  this.vkKeyboard.state.isKeyDown('ControlRight') || 
+                                  this.vkKeyboard.state.isKeyDown('AltLeft') || 
+                                  this.vkKeyboard.state.isKeyDown('AltRight') || 
+                                  this.vkKeyboard.state.isKeyDown('MetaLeft') || 
+                                  this.vkKeyboard.state.isKeyDown('MetaRight');
+        
         if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
-            this.insertText(keyItem.key);
-            this.vkKeyboard.eventDispatcher.input(code);
+            // Only insert text if no modifier keys are pressed
+            if (!hasModifierPressed) {
+                this.insertText(keyItem.key);
+                this.vkKeyboard.eventDispatcher.input(code);
+            }
             return;
         }
 
@@ -59,7 +70,10 @@ export class VkEditing {
                 this.vkKeyboard.eventDispatcher.input(code);
                 break;
             case "Tab":
-                this.insertText("\t");
+                // Allow Tab to insert text only if no modifiers are pressed
+                if (!hasModifierPressed) {
+                    this.insertText("\t");
+                }
                 this.vkKeyboard.eventDispatcher.input(code);
                 break;
             case "ArrowLeft":

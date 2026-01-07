@@ -43,7 +43,6 @@ export class VkLogger {
         };
 
         this.inputListener = (e: InputEvent) => {
-            console.log(e.target);
             this.writeLog("type:" + e.type + ",inputType:" + e.inputType + ",data:" + e.data + ",isTrusted:" + e.isTrusted);
         };
         window.addEventListener('keydown', this.keyDownListener);

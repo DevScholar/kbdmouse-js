@@ -82,14 +82,26 @@ export class VkJsonLayout {
         let actualKeyValue = keyValue;
         const isNumpad = code.startsWith("Numpad");
         const isNumLock = this.vkKeyboard.state.getModifierState("NumLock");
-        const isShift = this.vkKeyboard.state.getModifierState("Shift");
+        const isShift = this.vkKeyboard.state.getModifierState("ShiftLeft") || this.vkKeyboard.state.getModifierState("ShiftRight");
+        const isCapsLock = this.vkKeyboard.state.getModifierState("CapsLock");
         
         if (isNumpad && isNumLock && this.layoutData?.numLocked?.keys?.[code]) {
             actualKeyValue = this.layoutData.numLocked.keys[code];
         }
         
+        // Handle shifted keys (for symbols like !@#$% etc.)
         if (isShift && this.layoutData?.shifted?.keys?.[code]) {
             actualKeyValue = this.layoutData.shifted.keys[code];
+        } 
+        // Handle CapsLock for alphabet keys
+        else if (isCapsLock && this.isAlphabetKey(code)) {
+            // If CapsLock is active and it's an alphabet key, convert to uppercase
+            // But if Shift is also pressed, it should be lowercase (reverse the capslock effect)
+            if (isShift) {
+                actualKeyValue = keyValue.toLowerCase();
+            } else {
+                actualKeyValue = this.layoutData.shifted.keys[code] || keyValue.toUpperCase();
+            }
         }
 
         return {
