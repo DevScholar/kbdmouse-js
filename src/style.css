@@ -6,20 +6,32 @@
 #mouse-canvas {
     border: 1px solid #333333;
 }
-/* #drag-container {
-    border: 1px solid #333333;
-    height: 200px;
-    overflow: scroll;
+
+#drag-test-area {
     position: relative;
+    height: 300px;
+    border: 2px dashed #ccc;
+    margin-top: 20px;
 }
 
-#drag-box {
-    border: 1px solid #333333;
-    height: 50px;
-    width: 50px;
-    background-color: yellow;
+#drag-test-area p {
+    margin: 10px;
+    color: #666;
+}
+
+#classic-draggable {
+    width: 100px;
+    height: 100px;
+    background-color: #ff4444;
+    color: white;
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 50px;
+    left: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     cursor: move;
-} */
+    user-select: none;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}

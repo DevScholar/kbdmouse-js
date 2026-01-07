@@ -12,6 +12,11 @@ drag-and-drop features might not have taken mobile touch events into account.
 This project addresses the issue by converting touch events into standard DOM
 mouse events.
 
+Use `npm run dev:expose` to expose the webpage to the local network.
+
+(for example, connect your computer to your phone's hotspot and open the webpage on
+your phone).
+
 ## Usage
 
 ### Virtual Keyboard
@@ -27,18 +32,19 @@ mouse events.
 
 #### Notice:
 
-Use `npm run dev:expose` to expose the webpage to the local network
-(for example, connect your computer to your phone's hotspot and open the webpage on
-your phone).
 Moving your finger without long pressing represents mouse
 movement.
+
 After a long press, moving your finger represents drag mode (left
 mouse button pressed and mouse movement).
+
 After a long press, keeping your
 finger still represents a right-click.
+
 Single and double-click events are
 also supported.
 
+Note:This project will not support HTML 5 drag-and-drop events. If you want them, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) instead. The DragDropTouch project provides more professional and refined drag-and-drop support, and it is also compatible with HTML4 drag-and-drop. This project's drag-and-drop focuses more on retro computing, that is, compatibility with old web pages and professional emulators.
 ```html
 <script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
 <script type="module">

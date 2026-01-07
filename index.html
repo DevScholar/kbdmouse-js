@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="src/style.css">
   <script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
   <script type="module" src="src/mouse-canvas.ts"></script>
+  <script type="module" src="drag-div.ts"></script>
 </head>
 
 <body>
@@ -27,7 +28,7 @@
         vkKeyboard.debug.enabled = true;
         vkKeyboard.logger.writeLog = function (log) {
           document.getElementById('logger').innerHTML += log + '<br>';
-        }
+        };
       } else {
         console.error('virtual-keyboard element or logger not found');
       }
@@ -58,96 +59,24 @@
         console.error('mouse-canvas element not found');
       }
     });
+    import { VkMouse } from './src/mouse-polyfill/scripts/vk-mouse.ts';
+
+    document.addEventListener('DOMContentLoaded', function () {
+      let dragArea = document.getElementById('drag-test-area');
+      if (dragArea) {
+        new VkMouse(dragArea);
+      }
+    });
+
   </script>
   <!-- Add this after the canvas container -->
-  <div id="drag-test-area" style="position: relative; height: 300px; border: 2px dashed #ccc; margin-top: 20px;">
-    <p style="margin: 10px; color: #666;">HTML4 Drag Zone (Long press the red box to drag)</p>
+  <div id="drag-test-area">
+    <p>HTML4 Drag Zone (Long press the red box to drag)</p>
 
     <!-- The draggable element -->
-    <div id="classic-draggable" style="
-          width: 100px; 
-          height: 100px; 
-          background-color: #ff4444; 
-          color: white; 
-          position: absolute; 
-          top: 50px; 
-          left: 50px; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          text-align: center;
-          cursor: move;
-          user-select: none;
-          box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-      ">
+    <div id="classic-draggable">
       HTML4 Element
     </div>
-    <script type="module">
-      import { VkMouse } from './src/mouse-polyfill/scripts/vk-mouse.ts';
-
-      document.addEventListener('DOMContentLoaded', function () {
-        // 1. Initialize Polyfill on the wrapper or document body
-        // We use document.body here to ensure the polyfill allows dragging 
-        // outside the initial bounds of the element if dispatching to window
-        // But for this demo, let's wrap the test area.
-        let dragArea = document.getElementById('drag-test-area');
-        if (dragArea) {
-          new VkMouse(dragArea);
-        }
-
-        // 2. HTML4 Style Drag Implementation (Legacy Code Style)
-        const box = document.getElementById('classic-draggable');
-        const area = document.getElementById('drag-test-area');
-
-        let isDragging = false;
-        let dragOffsetX = 0;
-        let dragOffsetY = 0;
-
-        if (box && area) {
-          // Verify mousedown triggers on the specific element
-          box.addEventListener('mousedown', (e) => {
-            isDragging = true;
-
-            // Calculate offset relative to the box's top-left corner
-            const rect = box.getBoundingClientRect();
-            dragOffsetX = e.clientX - rect.left;
-            dragOffsetY = e.clientY - rect.top;
-
-            box.style.backgroundColor = '#2196F3'; // Blue when active
-            box.textContent = "Dragging...";
-          });
-
-          // Listen on document/area to handle moving fast
-          // In true HTML4 logic, this often sat on document
-          area.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-
-            const areaRect = area.getBoundingClientRect();
-
-            // Calculate new position relative to the container
-            let newLeft = e.clientX - areaRect.left - dragOffsetX;
-            let newTop = e.clientY - areaRect.top - dragOffsetY;
-
-            box.style.left = newLeft + 'px';
-            box.style.top = newTop + 'px';
-          });
-
-          document.addEventListener('mouseup', () => {
-            if (isDragging) {
-              isDragging = false;
-              box.style.backgroundColor = '#ff4444'; // Red when idle
-              box.textContent = "HTML4 Element";
-            }
-          });
-        }
-
-        // Existing canvas code...
-        let canvasElement = document.getElementById('mouse-canvas');
-        if (canvasElement) {
-          new VkMouse(canvasElement);
-        }
-      });
-    </script>
   </div>
 </body>
 
