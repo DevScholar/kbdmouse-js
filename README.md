@@ -61,6 +61,27 @@ Note:This project will not support HTML 5 drag-and-drop events. If you want them
 </script>
 ```
 
+## Building
+
+### Standard Build
+
+```bash
+npm run build
+```
+
+### Library Mode Build (compressed and optimized)
+
+```bash
+npm run build:lib
+```
+
+### Build Without Packaging (keeps module structure, no compression)
+
+```bash
+npm run build:noPackaging
+```
+
+
 ## License
 
 MIT License
