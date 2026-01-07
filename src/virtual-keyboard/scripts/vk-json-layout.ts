@@ -89,12 +89,8 @@ export class VkJsonLayout {
             actualKeyValue = this.layoutData.numLocked.keys[code];
         }
         
-        // Handle shifted keys (for symbols like !@#$% etc.)
-        if (isShift && this.layoutData?.shifted?.keys?.[code]) {
-            actualKeyValue = this.layoutData.shifted.keys[code];
-        } 
-        // Handle CapsLock for alphabet keys
-        else if (isCapsLock && this.isAlphabetKey(code)) {
+        // Handle CapsLock for alphabet keys first
+        if (isCapsLock && this.isAlphabetKey(code)) {
             // If CapsLock is active and it's an alphabet key, convert to uppercase
             // But if Shift is also pressed, it should be lowercase (reverse the capslock effect)
             if (isShift) {
@@ -102,6 +98,10 @@ export class VkJsonLayout {
             } else {
                 actualKeyValue = this.layoutData.shifted.keys[code] || keyValue.toUpperCase();
             }
+        }
+        // Handle shifted keys (for symbols like !@#$% etc.) and non-alphabet keys with shift
+        else if (isShift && this.layoutData?.shifted?.keys?.[code]) {
+            actualKeyValue = this.layoutData.shifted.keys[code];
         }
 
         return {
