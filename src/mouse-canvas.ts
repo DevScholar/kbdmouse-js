@@ -7,10 +7,10 @@ class MouseCanvas {
     
     private readonly COLOR_DICT = {
         "move": "black",
-        "drag": "blue",
-        "click": "green",
-        "dblClick": "yellow",
-        "rightClick": "purple",
+        "drag": "darkgray",
+        "click": "red",
+        "dblClick": "green",
+        "rightClick": "blue",
     } as const;
     
     constructor(canvasId: string) {
@@ -27,12 +27,13 @@ class MouseCanvas {
         return { canvasX, canvasY };
     }
     
-    private drawPoint(x: number, y: number, color: string) {
+    private drawCharacter(x: number, y: number, character: string, color: string) {
         const ctx = this.mouseCanvas.getContext("2d")!;
-        ctx.beginPath();
-        ctx.arc(x, y, 8, 0, 2 * Math.PI);
+        ctx.font = "30px sans-serif";
         ctx.fillStyle = color;
-        ctx.fill();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(character, x, y);
     }
     
     private init() {
@@ -84,18 +85,18 @@ class MouseCanvas {
 
         this.mouseCanvas.addEventListener("click", (event) => {
             const { canvasX, canvasY } = this.clientXYtoCanvasXY(event.clientX, event.clientY);
-            this.drawPoint(canvasX, canvasY, this.COLOR_DICT.click);
+            this.drawCharacter(canvasX, canvasY, "←", this.COLOR_DICT.click);
         });
 
         this.mouseCanvas.addEventListener("dblclick", (event) => {
             const { canvasX, canvasY } = this.clientXYtoCanvasXY(event.clientX, event.clientY);
-            this.drawPoint(canvasX, canvasY, this.COLOR_DICT.dblClick);
+            this.drawCharacter(canvasX, canvasY, "⇇", this.COLOR_DICT.dblClick);
         });
 
         this.mouseCanvas.addEventListener("contextmenu", (event) => {
             event.preventDefault();
             const { canvasX, canvasY } = this.clientXYtoCanvasXY(event.clientX, event.clientY);
-            this.drawPoint(canvasX, canvasY, this.COLOR_DICT.rightClick);
+            this.drawCharacter(canvasX, canvasY, "→", this.COLOR_DICT.rightClick);
         });
     }
     
@@ -107,10 +108,10 @@ class MouseCanvas {
 
 type DrawState = keyof {
     "move": "black";
-    "drag": "blue";
-    "click": "green";
-    "dblClick": "yellow";
-    "rightClick": "purple";
+    "drag": "darkgray";
+    "click": "red";
+    "dblClick": "green";
+    "rightClick": "blue";
 };
 
 const mouseCanvasInstance = new MouseCanvas("mouse-canvas");
