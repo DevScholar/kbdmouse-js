@@ -8,30 +8,25 @@ export class VkMouseEventDispatcher {
     }
 
     private getTarget(x: number, y: number): Element {
-        // Find the specific DOM element under these coordinates to emulate physical cursor behavior
         let target = document.elementFromPoint(x, y);
-        
-        // Fallback to the root element if nothing is found (e.g., outside window)
-        // or if the found element is not a descendant of our container (optional check, depends on use case)
         if (!target) {
             return this.vkMouse.element;
         }
         return target;
     }
 
-    private createEvent(type: string, x: number, y: number, buttons: number = 0, button: number = 0) {
+    private createEvent(type: string, x: number, y: number, buttons: number, button: number) {
         return new MouseEvent(type, {
             bubbles: true,
             cancelable: true,
             view: window,
             clientX: x,
             clientY: y,
-            screenX: x, // Simple mapping, strictly ideally should add screen offset
+            screenX: x, 
             screenY: y,
             buttons: buttons, 
-            button: button,
-            fill: null // Legacy fix for some obscure frameworks
-        } as MouseEventInit); // Cast needed for custom properties if strict
+            button: button
+        });
     }
 
     dispatchMouseMove(x: number, y: number, isLeftButtonDown: boolean) {
@@ -44,8 +39,6 @@ export class VkMouseEventDispatcher {
         const button = isRightClick ? 2 : 0;
         const buttons = isRightClick ? 2 : 1;
         const target = this.getTarget(x, y);
-        
-        // Dispatch mousedown on the specific element under the finger (e.g., the draggable header)
         target.dispatchEvent(this.createEvent("mousedown", x, y, buttons, button));
     }
 

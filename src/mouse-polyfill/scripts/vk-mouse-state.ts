@@ -3,13 +3,10 @@ import type { VkMouse } from "./vk-mouse";
 export class VkMouseState {
     vkMouse: VkMouse;
 
-    // Configuration
-    readonly LONG_PRESS_DELAY = 600; // ms
-    readonly DBL_CLICK_DELAY = 300; // ms
-    readonly MOVE_THRESHOLD = 5; // px (jitter tolerance)
+    readonly DOUBLE_TAP_DELAY = 500; 
+    readonly MOVE_THRESHOLD = 10; 
 
-    // Runtime State
-    lastClickTime: number = 0;
+    lastTapEndTime: number = 0;
     
     constructor(vkMouse: VkMouse) {
         this.vkMouse = vkMouse;

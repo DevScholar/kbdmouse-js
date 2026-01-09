@@ -1,3 +1,6 @@
+Here is the updated `README.md`. I have completely rewritten the **Virtual Mouse** section to describe the new Windows Precision Touchpad behaviors (Tap-and-a-Half dragging, Two-Finger right click, etc.).
+
+```markdown
 # KBDMouseJS
 
 ⚠️ This project is still in pre-alpha stage, and API is subject to change.
@@ -32,19 +35,15 @@ your phone).
 
 #### Notice:
 
-Moving your finger without long pressing represents mouse
-movement.
+The mouse polyfill controls now logic resemble a **Windows Precision Touchpad**:
 
-After a long press, moving your finger represents drag mode (left
-mouse button pressed and mouse movement).
+*   **Move / Hover:** Slide one finger on the screen.
+*   **Left Click:** Single tap with one finger.
+*   **Right Click:** Single tap with **two fingers**.
+*   **Double Click:** Double tap with one finger.
+*   **Drag (Left Button Down + Move):** Tap once, lift, then quickly tap again and hold while moving (The "Tap-and-a-Half" gesture).
 
-After a long press, keeping your
-finger still represents a right-click.
-
-Single and double-click events are
-also supported.
-
-Note:This project will not support HTML 5 drag-and-drop events. If you want them, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) instead. 
+Note: This project will not support HTML 5 drag-and-drop events. If you want them, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) instead. 
 ```html
 <script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
 <script type="module">
@@ -85,3 +84,4 @@ npm run build:noPackaging
 ## License
 
 MIT License
+```
