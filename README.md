@@ -1,6 +1,3 @@
-Here is the updated `README.md`. I have completely rewritten the **Virtual Mouse** section to describe the new Windows Precision Touchpad behaviors (Tap-and-a-Half dragging, Two-Finger right click, etc.).
-
-```markdown
 # KBDMouseJS
 
 ⚠️ This project is still in pre-alpha stage, and API is subject to change.
@@ -84,4 +81,3 @@ npm run build:noPackaging
 ## License
 
 MIT License
-```
