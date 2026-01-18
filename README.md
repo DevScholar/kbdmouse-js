@@ -1,6 +1,6 @@
 # KBDMouseJS
 
-⚠️ This project is still in pre-alpha stage, and API is subject to change.
+⚠️ This project is still in alpha stage, and API is subject to change.
 This project is focused on retro computing, that is, compatibility with old web pages and professional emulators. See [FAQ](docs/faq.md) for more details.
 
 ## Introduction
@@ -32,7 +32,7 @@ your phone).
 
 #### Notice:
 
-The mouse polyfill controls now logic resemble a **Windows Precision Touchpad**:
+The mouse polyfill controls logic resemble a **Windows Precision Touchpad**:
 
 *   **Move / Hover:** Slide one finger on the screen.
 *   **Left Click:** Single tap with one finger.
