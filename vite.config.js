@@ -83,6 +83,11 @@ export default defineConfig(({ command, mode }) => {
   
   // Development mode: includes demo page
   return {
-    // Default config includes index.html
+    build: {
+      outDir: 'dist'
+    },
+    server: {
+      open: '/examples/index.html'
+    }
   }
 })

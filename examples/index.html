@@ -5,18 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KBDMouseJS Demo</title>
-  <link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
-  <link rel="stylesheet" href="index-res/style.css">
-  <script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
-  <script type="module" src="index-res/mouse-canvas.ts"></script>
-  <script type="module" src="index-res/drag-div.ts"></script>
+  <link rel="stylesheet" href="../src/virtual-keyboard/styles/vk-keyboard.css">
+  <link rel="stylesheet" href="./src/style.css">
+  <script type="module" src="../src/mouse-polyfill/scripts/vk-mouse.ts"></script>
+  <script type="module" src="./src/mouse-canvas.ts"></script>
+  <script type="module" src="./src/drag-div.ts"></script>
 </head>
 
 <body>
   <h1>KBDMouseJS Demo</h1>
   <textarea id="demo-textarea" placeholder="Type here or use the virtual keyboard…"></textarea>
   <virtual-keyboard></virtual-keyboard>
-  <script type="module" src="src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
+  <script type="module" src="../src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
   <button id="clear-log" onclick="document.getElementById('logger').innerHTML = '';">Clear Log</button>
   <div id="logger"></div>
   <script defer>
@@ -51,7 +51,7 @@
     <canvas id="mouse-canvas" width="500" height="500"></canvas>
   </div>
   <script type="module">
-    import { VkMouse } from './src/mouse-polyfill/scripts/vk-mouse.ts';
+    import { VkMouse } from '../src/mouse-polyfill/scripts/vk-mouse.ts';
 
     document.addEventListener('DOMContentLoaded', function () {
       let canvasElement = document.getElementById('mouse-canvas');
