@@ -1,6 +1,5 @@
 {
-  "name": "kbdmouse-js",
-  "private": true,
+  "name": "@devscholar/kbdmouse-js",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
