@@ -3,7 +3,7 @@
 ⚠️ This project is still in alpha stage, and API is subject to change.
 This project is focused on retro computing, that is, compatibility with old web pages and professional emulators. See [FAQ](docs/faq.md) for more details.
 
-## Introduction
+# Introduction
 
 This project is a polyfill that provides mouse and keyboard events for mobile
 devices (such as phones) to address the issue of these events not being
@@ -17,9 +17,9 @@ Use `npm run dev:expose` to expose the webpage to the local network.
 (for example, connect your computer to your phone's hotspot and open the webpage on
 your phone).
 
-## Usage
+# Usage
 
-### Virtual Keyboard
+## Virtual Keyboard
 
 ```html
 <link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
@@ -28,9 +28,9 @@ your phone).
 <virtual-keyboard></virtual-keyboard>
 ```
 
-### Virtual Mouse
+# Virtual Mouse
 
-#### Notice:
+## Notice:
 
 The mouse polyfill controls logic resemble a **Windows Precision Touchpad**:
 
@@ -57,21 +57,22 @@ Note: This project will not support HTML 5 drag-and-drop events. If you want the
 </script>
 ```
 
-## Building
+# Building
 
-### Standard Build
+## Standard Build
 
 ```bash
 npm run build
 ```
 
-### Build Without Packaging (keeps module structure, no compression)
+## Build Without Packaging (keeps module structure, no compression)
 
 ```bash
 npm run build:noPackaging
 ```
+# Quick Start
+see [quick-start.md](docs/quick-start.md)
 
-
-## License
+# License
 
 MIT License
