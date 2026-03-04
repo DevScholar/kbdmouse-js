@@ -62,4 +62,22 @@ export class VkMouseEventDispatcher {
         const target = this.getTarget(x, y);
         target.dispatchEvent(this.createEvent("contextmenu", x, y, 2, 2));
     }
+
+    dispatchWheel(x: number, y: number, deltaX: number, deltaY: number) {
+        const target = this.getTarget(x, y);
+        const wheelEvent = new WheelEvent("wheel", {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            clientX: x,
+            clientY: y,
+            screenX: x,
+            screenY: y,
+            deltaX: deltaX,
+            deltaY: deltaY,
+            deltaZ: 0,
+            deltaMode: 0
+        });
+        target.dispatchEvent(wheelEvent);
+    }
 }

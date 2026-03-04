@@ -12,6 +12,7 @@ class MouseCanvas {
         "click": "red",
         "dblClick": "green",
         "rightClick": "blue",
+        "wheel": "black",
     } as const;
     
     constructor(canvasId: string) {
@@ -102,6 +103,37 @@ class MouseCanvas {
             const { canvasX, canvasY } = this.clientXYtoCanvasXY(event.clientX, event.clientY);
             this.drawCharacter(canvasX, canvasY, "→", this.COLOR_DICT.rightClick);
         });
+
+        this.mouseCanvas.addEventListener("wheel", (event) => {
+            event.preventDefault();
+            const { canvasX, canvasY } = this.clientXYtoCanvasXY(event.clientX, event.clientY);
+            
+            let char: string;
+            if (Math.abs(event.deltaY) >= Math.abs(event.deltaX)) {
+                char = event.deltaY > 0 ? "↓" : "↑";
+            } else {
+                char = event.deltaX > 0 ? "→" : "←";
+            }
+            
+            this.drawCharacterWithCircle(canvasX, canvasY, char, this.COLOR_DICT.wheel);
+        });
+    }
+
+    private drawCharacterWithCircle(x: number, y: number, character: string, color: string) {
+        const ctx = this.mouseCanvas.getContext("2d")!;
+        const fontSize = 30;
+        
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, fontSize, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillStyle = color;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(character, x, y);
     }
     
     clearCanvas() {
@@ -116,6 +148,7 @@ type DrawState = keyof {
     "click": "red";
     "dblClick": "green";
     "rightClick": "blue";
+    "wheel": "orange";
 };
 
 // Initialize
