@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import dts from 'vite-plugin-dts'
 
 export default defineConfig(({ command, mode }) => {
   const isLibraryBuild = mode === 'library'
@@ -77,7 +78,14 @@ export default defineConfig(({ command, mode }) => {
             globals: {}
           }
         }
-      }
+      },
+      plugins: [
+        dts({
+          include: ['src'],
+          exclude: ['**/*.css'],
+          rollupTypes: true
+        })
+      ]
     }
   }
   

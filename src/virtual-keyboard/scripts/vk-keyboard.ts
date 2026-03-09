@@ -46,7 +46,7 @@ export class VkKeyboard extends HTMLElement {
     }
 
     debug = {
-        classThis: this,
+        classThis: this as unknown as VkKeyboard,
 
         set enabled(value: boolean) {
             if (value) {
