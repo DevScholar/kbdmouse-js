@@ -1,159 +1,224 @@
 # Quick Start Guide
 
-KBDMouseJS is a polyfill that enables mouse and keyboard events on mobile devices. It's perfect for running x86 emulators (like Windows 95) or using old web pages that rely on traditional mouse/keyboard interactions.
+This guide will walk you through setting up **kbdmouse-js** in a new project, from creating the project folder to running it in your browser.
+
+kbdmouse-js provides a virtual keyboard and mouse polyfill for mobile devices, enabling keyboard and mouse events on touch-based devices. This is useful for retro computing projects, x86 emulators (like DOSBox or Windows 95), and legacy web applications that rely on mouse and keyboard events.
 
 ---
 
 ## Prerequisites
 
-- A modern web browser
-- A mobile device (or touch simulator) for testing
-- Node.js 18+ (for development)
+- **Node.js** (version 14 or higher)
+- **npm** (comes with Node.js)
 
 ---
 
-## Installation
+## Step 1: Create a New Project Folder
 
-Clone the repository:
+Open your terminal and create a new directory for your project:
 
 ```bash
-git clone https://github.com/your-repo/kbdmouse-js.git
-cd kbdmouse-js
-npm install
+mkdir kbdmouse-demo
+cd kbdmouse-demo
+```
+
+Initialize a new npm project:
+
+```bash
+npm init -y
 ```
 
 ---
 
-## Quick Demo
+## Step 2: Install kbdmouse-js
 
-Start the development server exposed to your local network:
+Install the package from npm:
 
 ```bash
-npm run dev:expose
+npm install @devscholar/kbdmouse-js
 ```
 
-This makes the webpage accessible to other devices on your network. Connect your phone to your computer's hotspot, then open the displayed URL on your phone.
+This will download the package and save it to your `node_modules` folder.
 
 ---
 
-## Usage
+## Step 3: Create Your HTML File
 
-### 1. Virtual Keyboard
-
-Add the keyboard stylesheet and script to your HTML, then include the `<virtual-keyboard>` custom element:
+Create an `index.html` file in your project folder with the following content:
 
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>KBDMouseJS Demo</title>
+  
+  <!-- Virtual Keyboard Styles -->
+  <link rel="stylesheet" href="./node_modules/@devscholar/kbdmouse-js/src/virtual-keyboard/styles/vk-keyboard.css">
+  
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    #target-area {
+      width: 100%;
+      height: 300px;
+      border: 2px solid #ccc;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9f9f9;
+    }
+  </style>
 </head>
 <body>
-    <!-- Your content here -->
-
-    <virtual-keyboard></virtual-keyboard>
-
-    <script type="module" src="src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
+  <h1>KBDMouseJS Quick Start</h1>
+  
+  <p>Type in the textarea below using the virtual keyboard:</p>
+  <textarea id="demo-textarea" placeholder="Type here..." rows="4" style="width: 100%;"></textarea>
+  
+  <p>The virtual keyboard will appear automatically when you focus on the textarea.</p>
+  
+  <!-- Virtual Keyboard Component -->
+  <virtual-keyboard></virtual-keyboard>
+  
+  <!-- Mouse Polyfill Script -->
+  <script type="module" src="./node_modules/@devscholar/kbdmouse-js/src/mouse-polyfill/scripts/vk-mouse.ts"></script>
+  
+  <!-- Virtual Keyboard Script -->
+  <script type="module" src="./node_modules/@devscholar/kbdmouse-js/src/virtual-keyboard/scripts/vk-keyboard.ts"></script>
+  
+  <!-- Initialize Mouse Polyfill -->
+  <script type="module">
+    import { VkMouse } from "./node_modules/@devscholar/kbdmouse-js/src/mouse-polyfill/scripts/vk-mouse.ts";
+    
+    document.addEventListener("DOMContentLoaded", function () {
+      let element = document.getElementById("target-area");
+      if (element) {
+        let vkMouse = new VkMouse(element);
+        console.log("Mouse polyfill initialized on target-area");
+      }
+    });
+  </script>
+  
+  <div id="target-area">
+    <p>Draw or drag here with touch (mobile)</p>
+  </div>
+  
 </body>
 </html>
 ```
 
-The virtual keyboard will automatically appear at the bottom of the screen on touch devices.
+---
+
+## Step 4: Run the Project
+
+We recommend using **Vite** as your development server. It's fast, handles TypeScript natively, and supports hot module replacement.
+
+First, install Vite as a development dependency:
+
+```bash
+npm install -D vite
+```
+
+Add a start script to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "start": "vite"
+  }
+}
+```
+
+Then start the development server:
+
+```bash
+npm run start
+```
+
+Vite will start a local server (usually at **http://localhost:5173**).
 
 ---
 
-### 2. Virtual Mouse Polyfill
+## Step 5: Open in Browser
 
-The mouse polyfill converts touch gestures into standard DOM mouse events.
+Once your server is running, open your browser and navigate to:
 
-**HTML:**
+- **http://localhost:8080** (Python/http-server)
+- **http://localhost:5173** (Vite, default port)
 
-```html
-<script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
-<script type="module">
-    import { VkMouse } from "./src/mouse-polyfill/scripts/vk-mouse.ts";
+### Testing on Mobile
 
-    document.addEventListener("DOMContentLoaded", function () {
-        let element = document.getElementById("polyfilled-element");
-        if (element) {
-            let vkMouse = new VkMouse(element);
-        }
-    });
-</script>
-```
+To test on a mobile device connected to the same network:
 
-**Apply to your element:**
+1. Find your computer's local IP address:
+   - **Windows**: Run `ipconfig` in Command Prompt
+   - **macOS**: Run `ifconfig` in Terminal
+   - **Linux**: Run `ip addr` in Terminal
 
-```html
-<div id="polyfilled-element">
-    <!-- Content that needs mouse events -->
-</div>
-```
+2. Make sure your firewall allows incoming connections on the port you're using.
+
+3. On your mobile device, open a browser and navigate to:
+   - `http://YOUR_IP_ADDRESS:PORT`
+   
+   For example: `http://192.168.1.100:8080`
 
 ---
 
-## Gesture Reference
+## Usage Instructions
 
-The mouse polyfill works like a **Windows Precision Touchpad**:
+### Virtual Keyboard
+
+The virtual keyboard appears automatically when you focus on a text input (like `<input>` or `<textarea>`). It provides a full ANSI keyboard layout that works with touch events.
+
+### Mouse Polyfill
+
+The mouse polyfill simulates mouse events using touch gestures, similar to a **Windows Precision Touchpad**:
 
 | Gesture | Action |
 |---------|--------|
-| Slide one finger | Move / Hover |
-| Single tap (one finger) | Left Click |
-| Single tap (two fingers) | Right Click |
+| Single finger slide | Move / Hover |
+| Single tap | Left Click |
+| Two-finger tap | Right Click |
 | Double tap (one finger) | Double Click |
-| Tap → lift → tap & hold → drag | Drag (Tap-and-a-Half gesture) |
-
-> **Note:** HTML5 drag-and-drop events are not supported. For that, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) alongside this library.
-
----
-
-## Building
-
-### Standard Build (minified)
-
-```bash
-npm run build
-```
-
-### Build Without Packaging (preserves module structure, no compression)
-
-```bash
-npm run build:noPackaging
-```
-
----
-
-## Examples
-
-Check the `examples/` directory for working demos:
-
-- `examples/src/drag-div.ts` - Drag and drop demo
-- `examples/src/mouse-canvas.ts` - Canvas drawing demo
-
-Run the examples with:
-
-```bash
-npm run dev
-```
+| Tap, lift, then tap and hold + slide | Drag |
+| Two-finger slide | Scroll (wheel event) |
 
 ---
 
 ## Troubleshooting
 
-### Virtual keyboard not appearing?
+### Virtual Keyboard Not Appearing
 
-- Ensure you're viewing the page on a touch device or using browser dev tools mobile simulation
-- Check that the CSS and JS files are loading correctly (check Network tab)
+Make sure:
+1. The CSS file is correctly linked
+2. The `<virtual-keyboard></virtual-keyboard>` element is present in your HTML
+3. The keyboard script is loaded as a module (`type="module"`)
 
-### Mouse events not working?
+### Mouse Events Not Working
 
-- Make sure the target element has proper dimensions (width/height set)
-- Verify the element ID matches what you pass to `VkMouse`
-- Check browser console for errors
+Make sure:
+1. The target element has an ID and is passed to `VkMouse` constructor
+2. Touch events are not being handled by other scripts
+3. Check browser console for error messages
 
-### Need more help?
+### Mobile Network Access Issues
 
-See the [FAQ](faq.md) for common questions.
+- Ensure your mobile device is connected to the same Wi-Fi network as your computer
+- Try disabling your firewall temporarily to test
+- Use the correct local IP address (not `localhost` or `127.0.0.1`)
+
+---
+
+## Next Steps
+
+- Explore the **examples** folder in the package for more complex use cases
+- Check the [FAQ](faq.md) for common questions
+- Review the main [README](../README.md) for detailed API documentation

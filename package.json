@@ -1,6 +1,7 @@
 {
   "name": "@devscholar/kbdmouse-js",
-  "version": "0.0.2",
+  "description": "A JS polyfill that provides mouse and keyboard events support for mobile devices.",
+  "version": "0.0.3",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -9,8 +10,12 @@
     "build": "tsc && vite build --mode library",
     "build:lib": "tsc && vite build --mode library",
     "build:noPackaging": "tsc && vite build --mode noPackaging",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build"
   },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
