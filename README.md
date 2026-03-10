@@ -52,6 +52,9 @@ Note: This project will not support HTML 5 drag-and-drop events. If you want the
         let element = document.getElementById("polyfilled-element");
         if (element) {
             let vkMouse = new VkMouse(element);
+            
+            // cancel polyfill
+            // vkMouse.detach();
         } else {
             console.error("polyfilled-element element not found");
         }

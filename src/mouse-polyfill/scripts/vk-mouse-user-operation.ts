@@ -12,16 +12,31 @@ export class VkMouseUserOperation {
     private isTwoFingerGesture: boolean = false;
     private hasTwoFingerScrolled: boolean = false;
 
+    private boundTouchStart: (e: TouchEvent) => void;
+    private boundTouchMove: (e: TouchEvent) => void;
+    private boundTouchEnd: (e: TouchEvent) => void;
+
     constructor(vkMouse: VkMouse) {
         this.vkMouse = vkMouse;
+        this.boundTouchStart = this.onTouchStart.bind(this);
+        this.boundTouchMove = this.onTouchMove.bind(this);
+        this.boundTouchEnd = this.onTouchEnd.bind(this);
     }
 
     init() {
         const el = this.vkMouse.element;
-        el.addEventListener("touchstart", this.onTouchStart.bind(this), { passive: false });
-        el.addEventListener("touchmove", this.onTouchMove.bind(this), { passive: false });
-        el.addEventListener("touchend", this.onTouchEnd.bind(this));
-        el.addEventListener("touchcancel", this.onTouchEnd.bind(this));
+        el.addEventListener("touchstart", this.boundTouchStart, { passive: false });
+        el.addEventListener("touchmove", this.boundTouchMove, { passive: false });
+        el.addEventListener("touchend", this.boundTouchEnd);
+        el.addEventListener("touchcancel", this.boundTouchEnd);
+    }
+
+    remove() {
+        const el = this.vkMouse.element;
+        el.removeEventListener("touchstart", this.boundTouchStart);
+        el.removeEventListener("touchmove", this.boundTouchMove);
+        el.removeEventListener("touchend", this.boundTouchEnd);
+        el.removeEventListener("touchcancel", this.boundTouchEnd);
     }
 
     private getTwoFingerCenter(event: TouchEvent): { x: number; y: number } {
