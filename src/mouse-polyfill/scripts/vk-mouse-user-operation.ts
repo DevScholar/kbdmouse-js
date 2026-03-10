@@ -39,6 +39,10 @@ export class VkMouseUserOperation {
         el.removeEventListener('touchcancel', this.boundTouchEnd);
     }
 
+    attach() {
+        this.init();
+    }
+
     private getTwoFingerCenter(event: TouchEvent): { x: number; y: number } {
         const touch1 = event.touches[0];
         const touch2 = event.touches[1];

@@ -55,6 +55,9 @@ Note: This project will not support HTML 5 drag-and-drop events. If you want the
             
             // cancel polyfill
             // vkMouse.detach();
+            
+            // restore polyfill
+            // vkMouse.attach();
         } else {
             console.error("polyfilled-element element not found");
         }

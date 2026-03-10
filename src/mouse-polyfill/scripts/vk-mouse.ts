@@ -20,4 +20,8 @@ export class VkMouse {
     detach() {
         this.userOperation.remove();
     }
+
+    attach() {
+        this.userOperation.attach();
+    }
 }
