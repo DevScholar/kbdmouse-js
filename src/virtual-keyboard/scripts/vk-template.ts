@@ -1,4 +1,4 @@
-import type { VkKeyboard } from "./vk-keyboard";
+import type { VkKeyboard } from './vk-keyboard';
 
 export class VkTemplate {
     constructor(vkKeyboard: VkKeyboard) {
@@ -31,8 +31,10 @@ export class VkTemplate {
                     // Check if this key has a shifted character and is not alphabetic
                     const shiftedLabel = layout.shifted?.keys?.[code];
                     const isAlphabetic = this.vkKeyboard.jsonLayout.isAlphabetKey(code);
-                    const shouldShowShiftedLabel = shiftedLabel && !isAlphabetic && shiftedLabel !== key;
-                    const shouldShowNumLockedLabel = layout.numLocked?.keys?.[code] && layout.numLocked?.keys?.[code] !== key;
+                    const shouldShowShiftedLabel =
+                        shiftedLabel && !isAlphabetic && shiftedLabel !== key;
+                    const shouldShowNumLockedLabel =
+                        layout.numLocked?.keys?.[code] && layout.numLocked?.keys?.[code] !== key;
 
                     html += `
                     <div aria-role="button"
@@ -54,5 +56,4 @@ export class VkTemplate {
         return html;
     }
     vkKeyboard: VkKeyboard;
-
 }

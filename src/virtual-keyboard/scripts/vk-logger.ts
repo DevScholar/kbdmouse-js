@@ -1,4 +1,4 @@
-import type { VkKeyboard } from "./vk-keyboard";
+import type { VkKeyboard } from './vk-keyboard';
 export class VkLogger {
     constructor(vkKeyboard: VkKeyboard) {
         this.vkKeyboard = vkKeyboard;
@@ -11,16 +11,16 @@ export class VkLogger {
 
     removeEventListeners() {
         if (this.keyDownListener) {
-            window.removeEventListener("keydown", this.keyDownListener);
+            window.removeEventListener('keydown', this.keyDownListener);
         }
         if (this.keyUpListener) {
-            window.removeEventListener("keyup", this.keyUpListener);
+            window.removeEventListener('keyup', this.keyUpListener);
         }
         if (this.keyPressListener) {
-            window.removeEventListener("keypress", this.keyPressListener);
+            window.removeEventListener('keypress', this.keyPressListener);
         }
         if (this.inputListener) {
-            window.removeEventListener("input", this.inputListener as EventListener);
+            window.removeEventListener('input', this.inputListener as EventListener);
         }
     }
 
@@ -31,19 +31,79 @@ export class VkLogger {
     generateLog() {
         // format: type=keyDown,code=code,key=A,keyCode=65,isTrusted=true
         this.keyDownListener = (e: KeyboardEvent) => {
-            this.writeLog("type:" + e.type + ",code:" + e.code + ",key:" + e.key + ",keyCode:" + e.keyCode + ",ctrlKey:" + e.ctrlKey + ",shiftKey:" + e.shiftKey + ",altKey:" + e.altKey + ",isTrusted:" + e.isTrusted);
+            this.writeLog(
+                'type:' +
+                    e.type +
+                    ',code:' +
+                    e.code +
+                    ',key:' +
+                    e.key +
+                    ',keyCode:' +
+                    e.keyCode +
+                    ',ctrlKey:' +
+                    e.ctrlKey +
+                    ',shiftKey:' +
+                    e.shiftKey +
+                    ',altKey:' +
+                    e.altKey +
+                    ',isTrusted:' +
+                    e.isTrusted
+            );
         };
 
         this.keyUpListener = (e: KeyboardEvent) => {
-            this.writeLog("type:" + e.type + ",code:" + e.code + ",key:" + e.key + ",keyCode:" + e.keyCode + ",ctrlKey:" + e.ctrlKey + ",shiftKey:" + e.shiftKey + ",altKey:" + e.altKey + ",isTrusted:" + e.isTrusted);
+            this.writeLog(
+                'type:' +
+                    e.type +
+                    ',code:' +
+                    e.code +
+                    ',key:' +
+                    e.key +
+                    ',keyCode:' +
+                    e.keyCode +
+                    ',ctrlKey:' +
+                    e.ctrlKey +
+                    ',shiftKey:' +
+                    e.shiftKey +
+                    ',altKey:' +
+                    e.altKey +
+                    ',isTrusted:' +
+                    e.isTrusted
+            );
         };
 
         this.keyPressListener = (e: KeyboardEvent) => {
-            this.writeLog("type:" + e.type + ",code:" + e.code + ",key:" + e.key + ",keyCode:" + e.keyCode + ",ctrlKey:" + e.ctrlKey + ",shiftKey:" + e.shiftKey + ",altKey:" + e.altKey + ",isTrusted:" + e.isTrusted);
+            this.writeLog(
+                'type:' +
+                    e.type +
+                    ',code:' +
+                    e.code +
+                    ',key:' +
+                    e.key +
+                    ',keyCode:' +
+                    e.keyCode +
+                    ',ctrlKey:' +
+                    e.ctrlKey +
+                    ',shiftKey:' +
+                    e.shiftKey +
+                    ',altKey:' +
+                    e.altKey +
+                    ',isTrusted:' +
+                    e.isTrusted
+            );
         };
 
         this.inputListener = (e: InputEvent) => {
-            this.writeLog("type:" + e.type + ",inputType:" + e.inputType + ",data:" + e.data + ",isTrusted:" + e.isTrusted);
+            this.writeLog(
+                'type:' +
+                    e.type +
+                    ',inputType:' +
+                    e.inputType +
+                    ',data:' +
+                    e.data +
+                    ',isTrusted:' +
+                    e.isTrusted
+            );
         };
         window.addEventListener('keydown', this.keyDownListener);
         window.addEventListener('keyup', this.keyUpListener);

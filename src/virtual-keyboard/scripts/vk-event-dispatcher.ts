@@ -1,4 +1,4 @@
-import { VkKeyboard } from "./vk-keyboard";
+import { VkKeyboard } from './vk-keyboard';
 export class VkEventDispatcher {
     constructor(vkKeyboard: VkKeyboard) {
         this.vkKeyboard = vkKeyboard;
@@ -10,15 +10,22 @@ export class VkEventDispatcher {
      */
     private getModifierStates() {
         return {
-            shiftKey: this.vkKeyboard.state.isKeyDown('ShiftLeft') || this.vkKeyboard.state.isKeyDown('ShiftRight'),
-            ctrlKey: this.vkKeyboard.state.isKeyDown('ControlLeft') || this.vkKeyboard.state.isKeyDown('ControlRight'),
-            altKey: this.vkKeyboard.state.isKeyDown('AltLeft') || this.vkKeyboard.state.isKeyDown('AltRight'),
-            metaKey: this.vkKeyboard.state.isKeyDown('MetaLeft') || this.vkKeyboard.state.isKeyDown('MetaRight'),
+            shiftKey:
+                this.vkKeyboard.state.isKeyDown('ShiftLeft') ||
+                this.vkKeyboard.state.isKeyDown('ShiftRight'),
+            ctrlKey:
+                this.vkKeyboard.state.isKeyDown('ControlLeft') ||
+                this.vkKeyboard.state.isKeyDown('ControlRight'),
+            altKey:
+                this.vkKeyboard.state.isKeyDown('AltLeft') ||
+                this.vkKeyboard.state.isKeyDown('AltRight'),
+            metaKey:
+                this.vkKeyboard.state.isKeyDown('MetaLeft') ||
+                this.vkKeyboard.state.isKeyDown('MetaRight'),
             capsLock: this.vkKeyboard.state.isToggleKeyActivated('CapsLock'),
-            numLock: this.vkKeyboard.state.isToggleKeyActivated('NumLock')
+            numLock: this.vkKeyboard.state.isToggleKeyActivated('NumLock'),
         };
     }
-
 
     keyDown(code: string, repeat: boolean = false) {
         const item = this.vkKeyboard.jsonLayout.getKeyItemByCode(code);
@@ -38,7 +45,7 @@ export class VkEventDispatcher {
             cancelable: true,
             view: window,
             repeat: repeat,
-            ...modifierStates
+            ...modifierStates,
         });
 
         // Add a custom property to identify virtual keyboard events
@@ -67,7 +74,7 @@ export class VkEventDispatcher {
             bubbles: true,
             cancelable: true,
             view: window,
-            ...modifierStates
+            ...modifierStates,
         });
 
         // Add a custom property to identify virtual keyboard events
@@ -93,7 +100,7 @@ export class VkEventDispatcher {
             bubbles: true,
             cancelable: true,
             view: window,
-            ...modifierStates
+            ...modifierStates,
         });
 
         // Add a custom property to identify virtual keyboard events
@@ -104,29 +111,29 @@ export class VkEventDispatcher {
 
     input(code: string) {
         if (this.vkKeyboard.editing.isEditable()) {
-            let keyItem = this.vkKeyboard.jsonLayout.getKeyItemByCode(code);
+            const keyItem = this.vkKeyboard.jsonLayout.getKeyItemByCode(code);
             let inputType: string;
             let data: string | null = null;
-            
-            if (code === "Backspace") {
-                inputType = "deleteContentBackward";
-            } else if (code === "Delete") {
-                inputType = "deleteContentForward";
-            } else if (code === "Enter" || code === "NumpadEnter") {
-                inputType = "insertLineBreak";
-                data = "\n";
-            } else if (code === "Tab") {
-                inputType = "insertText";
-                data = "\t";
+
+            if (code === 'Backspace') {
+                inputType = 'deleteContentBackward';
+            } else if (code === 'Delete') {
+                inputType = 'deleteContentForward';
+            } else if (code === 'Enter' || code === 'NumpadEnter') {
+                inputType = 'insertLineBreak';
+                data = '\n';
+            } else if (code === 'Tab') {
+                inputType = 'insertText';
+                data = '\t';
             } else if (this.isPrintableCharacter(keyItem.key)) {
-                inputType = "insertText";
+                inputType = 'insertText';
                 data = keyItem.key;
             } else {
                 // For non-printable characters, don't dispatch input event
                 return;
             }
-            
-            const inputEvent = new InputEvent("input", {
+
+            const inputEvent = new InputEvent('input', {
                 inputType: inputType,
                 data: data,
                 bubbles: true,
@@ -138,7 +145,7 @@ export class VkEventDispatcher {
             activeElement.dispatchEvent(inputEvent);
         }
     }
-    
+
     private isPrintableCharacter(key: string): boolean {
         // Check if the character is printable (has visible representation)
         return key.length === 1 && key.match(/[\x20-\x7E\xA0-\xFF]/) !== null;

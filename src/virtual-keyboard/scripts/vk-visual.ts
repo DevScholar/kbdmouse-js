@@ -1,4 +1,4 @@
-import type { VkKeyboard } from "./vk-keyboard";
+import type { VkKeyboard } from './vk-keyboard';
 
 export class VkVisual {
     constructor(vkKeyboard: VkKeyboard) {
@@ -20,7 +20,7 @@ export class VkVisual {
 
     capitalizeKeyboard(enabled: boolean) {
         const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
-        vkKeys.forEach(vkKey => {
+        vkKeys.forEach((vkKey) => {
             const code = vkKey.dataset.code!;
             if (this.vkKeyboard.jsonLayout.isAlphabetKey(code)) {
                 if (enabled) {
@@ -32,9 +32,9 @@ export class VkVisual {
         });
     }
 
-        shiftKeyboard(enabled: boolean) {
+    shiftKeyboard(enabled: boolean) {
         const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
-        vkKeys.forEach(vkKey => {
+        vkKeys.forEach((vkKey) => {
             const code = vkKey.dataset.code!;
             const isShiftable = this.vkKeyboard.jsonLayout.isShiftableKey(code);
             if (isShiftable) {
@@ -49,7 +49,7 @@ export class VkVisual {
 
     numLockKeyboard(activated: boolean) {
         const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
-        vkKeys.forEach(vkKey => {
+        vkKeys.forEach((vkKey) => {
             const code = vkKey.dataset.code!;
             if (code.startsWith('Numpad')) {
                 if (activated) {
@@ -68,7 +68,7 @@ export class VkVisual {
         } else {
             vkKey.classList.remove('vk-key-down');
         }
-        
+
         if (code === 'CapsLock') {
             this.capitalizeKeyboard(activated);
         } else if (code === 'ShiftLeft' || code === 'ShiftRight') {
@@ -77,6 +77,4 @@ export class VkVisual {
             this.numLockKeyboard(activated);
         }
     }
-
-
 }

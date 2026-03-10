@@ -1,13 +1,13 @@
 // vk-keyboard.ts
-import { VkEditing } from "./vk-editing";
-import { VkEventDispatcher } from "./vk-event-dispatcher";
-import { VkJsonLayout } from "./vk-json-layout";
-import { VkLogger } from "./vk-logger";
-import { VkState } from "./vk-state";
-import { VkTemplate } from "./vk-template";
-import { VkUserOperation } from "./vk-user-operation";
-import { VkVisual } from "./vk-visual"; 
-import { VkAutoResize } from "./vk-auto-resize";
+import { VkEditing } from './vk-editing';
+import { VkEventDispatcher } from './vk-event-dispatcher';
+import { VkJsonLayout } from './vk-json-layout';
+import { VkLogger } from './vk-logger';
+import { VkState } from './vk-state';
+import { VkTemplate } from './vk-template';
+import { VkUserOperation } from './vk-user-operation';
+import { VkVisual } from './vk-visual';
+import { VkAutoResize } from './vk-auto-resize';
 
 export class VkKeyboard extends HTMLElement {
     private _isInitialized = false;
@@ -21,10 +21,10 @@ export class VkKeyboard extends HTMLElement {
         this._isInitialized = true;
 
         this.innerHTML = await this.template.getKeyboardTemplateHtml();
-        
+
         // Initialize auto-resize
         this.autoResize.reinitialize();
-        
+
         this.userOperation.preventFocusForVkKeyboard();
         this.userOperation.handlePointerOperationsForVkKeyboard();
     }
@@ -60,7 +60,7 @@ export class VkKeyboard extends HTMLElement {
 
         get enabled() {
             return this.classThis.state.debug.enabled;
-        }
+        },
     };
     editing = new VkEditing(this);
     eventDispatcher = new VkEventDispatcher(this);

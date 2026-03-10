@@ -1,4 +1,4 @@
-import type { VkKeyboard } from "./vk-keyboard";
+import type { VkKeyboard } from './vk-keyboard';
 
 export class VkUserOperation {
     constructor(vkKeyboard: VkKeyboard) {
@@ -11,7 +11,7 @@ export class VkUserOperation {
     private readonly KEY_TYPES = {
         MODIFIER: 'modifier',
         TOGGLE: 'toggle',
-        REGULAR: 'regular'
+        REGULAR: 'regular',
     } as const;
 
     // Repeat-related properties
@@ -30,7 +30,7 @@ export class VkUserOperation {
     private preventElementFocus(element: Element) {
         const preventDefaultEvents = ['mousedown', 'touchstart', 'focus'];
 
-        preventDefaultEvents.forEach(eventType => {
+        preventDefaultEvents.forEach((eventType) => {
             element.addEventListener(eventType, (event: Event) => {
                 if (event.cancelable) {
                     event.preventDefault();
@@ -146,13 +146,13 @@ export class VkUserOperation {
     private updateToggleKeyVisualState(code: string, activated: boolean) {
         if (code === 'NumLock') {
             this.vkKeyboard.visual.numLockKeyboard(activated);
-        } else if (code === "ShiftLeft" || code === "ShiftRight") {
+        } else if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.vkKeyboard.visual.shiftKeyboard(activated);
         }
     }
 
     private updateModifierKeyVisualState(code: string, activated: boolean) {
-        if (code === "ShiftLeft" || code === "ShiftRight") {
+        if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.vkKeyboard.visual.shiftKeyboard(activated);
         }
     }
@@ -170,13 +170,14 @@ export class VkUserOperation {
         // If printable character and element is editable, execute keypress event
         if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
             // Only execute keypress and editing if no modifier keys are pressed
-            const hasModifierPressed = this.vkKeyboard.state.isKeyDown('ControlLeft') || 
-                                      this.vkKeyboard.state.isKeyDown('ControlRight') || 
-                                      this.vkKeyboard.state.isKeyDown('AltLeft') || 
-                                      this.vkKeyboard.state.isKeyDown('AltRight') || 
-                                      this.vkKeyboard.state.isKeyDown('MetaLeft') || 
-                                      this.vkKeyboard.state.isKeyDown('MetaRight');
-            
+            const hasModifierPressed =
+                this.vkKeyboard.state.isKeyDown('ControlLeft') ||
+                this.vkKeyboard.state.isKeyDown('ControlRight') ||
+                this.vkKeyboard.state.isKeyDown('AltLeft') ||
+                this.vkKeyboard.state.isKeyDown('AltRight') ||
+                this.vkKeyboard.state.isKeyDown('MetaLeft') ||
+                this.vkKeyboard.state.isKeyDown('MetaRight');
+
             if (!hasModifierPressed) {
                 this.keyPress(code);
                 if (this.vkKeyboard.editing.isEditable()) {
@@ -237,7 +238,10 @@ export class VkUserOperation {
         vkKeys.forEach((vkKey: Element) => {
             const code = vkKey.getAttribute('data-code') || '';
 
-            if (this.vkKeyboard.jsonLayout.isModifierKey(code) && this.vkKeyboard.state.isKeyDown(code)) {
+            if (
+                this.vkKeyboard.jsonLayout.isModifierKey(code) &&
+                this.vkKeyboard.state.isKeyDown(code)
+            ) {
                 this.vkKeyboard.eventDispatcher.keyUp(code);
                 this.vkKeyboard.visual.keyUp(code);
                 this.vkKeyboard.state.keyUp(code);
@@ -303,13 +307,14 @@ export class VkUserOperation {
         this.keyDown(code);
         if (this.vkKeyboard.jsonLayout.isPrintableKey(code)) {
             // Only execute keypress and editing if no modifier keys are pressed
-            const hasModifierPressed = this.vkKeyboard.state.isKeyDown('ControlLeft') || 
-                                      this.vkKeyboard.state.isKeyDown('ControlRight') || 
-                                      this.vkKeyboard.state.isKeyDown('AltLeft') || 
-                                      this.vkKeyboard.state.isKeyDown('AltRight') || 
-                                      this.vkKeyboard.state.isKeyDown('MetaLeft') || 
-                                      this.vkKeyboard.state.isKeyDown('MetaRight');
-            
+            const hasModifierPressed =
+                this.vkKeyboard.state.isKeyDown('ControlLeft') ||
+                this.vkKeyboard.state.isKeyDown('ControlRight') ||
+                this.vkKeyboard.state.isKeyDown('AltLeft') ||
+                this.vkKeyboard.state.isKeyDown('AltRight') ||
+                this.vkKeyboard.state.isKeyDown('MetaLeft') ||
+                this.vkKeyboard.state.isKeyDown('MetaRight');
+
             if (!hasModifierPressed) {
                 this.keyPress(code);
                 if (this.vkKeyboard.editing.isEditable()) {
@@ -325,5 +330,4 @@ export class VkUserOperation {
         }
         // Note: No keyup event during repeat - only at the end when user releases the key
     }
-
 }

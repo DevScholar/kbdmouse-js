@@ -1,4 +1,4 @@
-import type { VkKeyboard } from "./vk-keyboard";
+import type { VkKeyboard } from './vk-keyboard';
 
 export class VkState {
     debug: {
@@ -14,24 +14,23 @@ export class VkState {
         keyDownKeys: new Set<string>(),
         activatedToggleKeys: new Set<string>(),
         repeatingKeys: new Set<string>(),
-    }
+    };
 
     isKeyDown = (code: string) => {
         return this.keys.keyDownKeys.has(code);
-    }
+    };
 
     isToggleKeyActivated = (code: string) => {
         return this.keys.activatedToggleKeys.has(code);
-    }
-    
+    };
 
     activateToggleKey = (code: string) => {
         this.keys.activatedToggleKeys.add(code);
-    }
+    };
 
     deactivateToggleKey = (code: string) => {
         this.keys.activatedToggleKeys.delete(code);
-    }
+    };
 
     getModifierState = (code: string) => {
         // For toggle keys like CapsLock, check activatedToggleKeys
@@ -43,7 +42,7 @@ export class VkState {
             return this.keys.keyDownKeys.has(code);
         }
         return false;
-    }
+    };
 
     keyDown = (code: string) => {
         this.keys.keyDownKeys.add(code);
@@ -57,7 +56,7 @@ export class VkState {
 
     isKeyRepeating = (code: string) => {
         return this.keys.repeatingKeys.has(code);
-    }
+    };
 
     setKeyRepeating = (code: string, repeating: boolean) => {
         if (repeating) {
@@ -65,6 +64,5 @@ export class VkState {
         } else {
             this.keys.repeatingKeys.delete(code);
         }
-    }
-
+    };
 }

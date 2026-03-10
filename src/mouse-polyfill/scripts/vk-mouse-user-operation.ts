@@ -1,12 +1,12 @@
-import type { VkMouse } from "./vk-mouse";
+import type { VkMouse } from './vk-mouse';
 
 export class VkMouseUserOperation {
     vkMouse: VkMouse;
-    
+
     private startX: number = 0;
     private startY: number = 0;
     private hasMoved: boolean = false;
-    
+
     private isDragging: boolean = false;
     private isDragPreparation: boolean = false;
     private isTwoFingerGesture: boolean = false;
@@ -25,18 +25,18 @@ export class VkMouseUserOperation {
 
     init() {
         const el = this.vkMouse.element;
-        el.addEventListener("touchstart", this.boundTouchStart, { passive: false });
-        el.addEventListener("touchmove", this.boundTouchMove, { passive: false });
-        el.addEventListener("touchend", this.boundTouchEnd);
-        el.addEventListener("touchcancel", this.boundTouchEnd);
+        el.addEventListener('touchstart', this.boundTouchStart, { passive: false });
+        el.addEventListener('touchmove', this.boundTouchMove, { passive: false });
+        el.addEventListener('touchend', this.boundTouchEnd);
+        el.addEventListener('touchcancel', this.boundTouchEnd);
     }
 
     remove() {
         const el = this.vkMouse.element;
-        el.removeEventListener("touchstart", this.boundTouchStart);
-        el.removeEventListener("touchmove", this.boundTouchMove);
-        el.removeEventListener("touchend", this.boundTouchEnd);
-        el.removeEventListener("touchcancel", this.boundTouchEnd);
+        el.removeEventListener('touchstart', this.boundTouchStart);
+        el.removeEventListener('touchmove', this.boundTouchMove);
+        el.removeEventListener('touchend', this.boundTouchEnd);
+        el.removeEventListener('touchcancel', this.boundTouchEnd);
     }
 
     private getTwoFingerCenter(event: TouchEvent): { x: number; y: number } {
@@ -44,12 +44,12 @@ export class VkMouseUserOperation {
         const touch2 = event.touches[1];
         return {
             x: (touch1.clientX + touch2.clientX) / 2,
-            y: (touch1.clientY + touch2.clientY) / 2
+            y: (touch1.clientY + touch2.clientY) / 2,
         };
     }
 
     private onTouchStart(event: TouchEvent) {
-        if(event.cancelable) event.preventDefault();
+        if (event.cancelable) event.preventDefault();
 
         if (event.touches.length === 2) {
             this.isTwoFingerGesture = true;
@@ -76,10 +76,13 @@ export class VkMouseUserOperation {
         const now = Date.now();
         const timeSinceLastTap = now - this.vkMouse.state.lastTapEndTime;
 
-        if (this.vkMouse.state.lastTapEndTime > 0 && timeSinceLastTap < this.vkMouse.state.DOUBLE_TAP_DELAY) {
+        if (
+            this.vkMouse.state.lastTapEndTime > 0 &&
+            timeSinceLastTap < this.vkMouse.state.DOUBLE_TAP_DELAY
+        ) {
             this.isDragging = true;
             this.isDragPreparation = true;
-            
+
             this.vkMouse.eventDispatcher.dispatchMouseDown(x, y, false);
         } else {
             this.isDragging = false;
@@ -88,17 +91,17 @@ export class VkMouseUserOperation {
     }
 
     private onTouchMove(event: TouchEvent) {
-        if(event.cancelable) event.preventDefault();
-        
+        if (event.cancelable) event.preventDefault();
+
         if (this.isTwoFingerGesture) {
             if (event.touches.length === 2) {
                 const center = this.getTwoFingerCenter(event);
                 const lastX = this.vkMouse.state.lastTwoFingerX;
                 const lastY = this.vkMouse.state.lastTwoFingerY;
-                
+
                 const deltaX = lastX - center.x;
                 const deltaY = lastY - center.y;
-                
+
                 if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
                     this.hasTwoFingerScrolled = true;
                     this.vkMouse.eventDispatcher.dispatchWheel(
@@ -108,7 +111,7 @@ export class VkMouseUserOperation {
                         deltaY * this.vkMouse.state.SCROLL_MULTIPLIER
                     );
                 }
-                
+
                 this.vkMouse.state.lastTwoFingerX = center.x;
                 this.vkMouse.state.lastTwoFingerY = center.y;
             }
@@ -123,7 +126,10 @@ export class VkMouseUserOperation {
         const dy = y - this.startY;
 
         if (!this.hasMoved) {
-            if (Math.abs(dx) > this.vkMouse.state.MOVE_THRESHOLD || Math.abs(dy) > this.vkMouse.state.MOVE_THRESHOLD) {
+            if (
+                Math.abs(dx) > this.vkMouse.state.MOVE_THRESHOLD ||
+                Math.abs(dy) > this.vkMouse.state.MOVE_THRESHOLD
+            ) {
                 this.hasMoved = true;
             }
         }
@@ -132,7 +138,7 @@ export class VkMouseUserOperation {
             this.vkMouse.eventDispatcher.dispatchMouseMove(x, y, true);
         } else {
             this.vkMouse.eventDispatcher.dispatchMouseMove(x, y, false);
-            
+
             if (this.hasMoved) {
                 this.vkMouse.state.lastTapEndTime = 0;
             }
@@ -166,12 +172,11 @@ export class VkMouseUserOperation {
             if (!this.hasMoved && this.isDragPreparation) {
                 this.vkMouse.eventDispatcher.dispatchDblClick(x, y);
             }
-            
+
             this.vkMouse.state.lastTapEndTime = 0;
             this.isDragging = false;
             this.isDragPreparation = false;
-        } 
-        else {
+        } else {
             if (!this.hasMoved) {
                 this.vkMouse.eventDispatcher.dispatchMouseDown(x, y, false);
                 this.vkMouse.eventDispatcher.dispatchMouseUp(x, y, false);
@@ -182,7 +187,7 @@ export class VkMouseUserOperation {
                 this.vkMouse.state.lastTapEndTime = 0;
             }
         }
-        
+
         this.hasMoved = false;
     }
 }
