@@ -23,9 +23,10 @@ your phone).
 ## Virtual Keyboard
 
 ```html
-<link rel="stylesheet" href="src/virtual-keyboard/styles/vk-keyboard.css">
-<script type="module" src="src/virtual-keyboard/scripts/vk-keyboard.ts"></script
->
+<link rel="stylesheet" href="@devscholar/kbdmouse-js/dist/kbdmouse-js.css">
+<script type="module">
+  import "@devscholar/kbdmouse-js";
+</script>
 <virtual-keyboard></virtual-keyboard>
 ```
 
@@ -43,10 +44,10 @@ The mouse polyfill controls logic resemble a **Windows Precision Touchpad**:
 *   **Scroll:** Slide with **two fingers** to send wheel events (black arrow with circle).
 
 Note: This project will not support HTML 5 drag-and-drop events. If you want them, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) instead. 
+
 ```html
-<script type="module" src="src/mouse-polyfill/scripts/vk-mouse.ts"></script>
 <script type="module">
-    import { VkMouse } from "./src/mouse-polyfill/scripts/vk-mouse.ts";
+    import { VkMouse } from "@devscholar/kbdmouse-js";
 
     document.addEventListener("DOMContentLoaded", function () {
         let element = document.getElementById("polyfilled-element");
@@ -55,9 +56,6 @@ Note: This project will not support HTML 5 drag-and-drop events. If you want the
             
             // cancel polyfill
             // vkMouse.detach();
-            
-            // restore polyfill
-            // vkMouse.attach();
         } else {
             console.error("polyfilled-element element not found");
         }

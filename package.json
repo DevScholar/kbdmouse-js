@@ -4,6 +4,20 @@
   "version": "0.0.5",
   "type": "module",
   "license": "MIT",
+  "main": "dist/kbdmouse-js.umd.js",
+  "module": "dist/kbdmouse-js.es.js",
+  "types": "dist/kbdmouse-js.es.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/kbdmouse-js.es.js",
+      "require": "./dist/kbdmouse-js.umd.js",
+      "types": "./dist/kbdmouse-js.es.d.ts"
+    },
+    "./dist/kbdmouse-js.css": "./dist/kbdmouse-js.css"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "dev:expose": "vite --host",
@@ -17,9 +31,6 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""
   },
-  "files": [
-    "dist"
-  ],
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@typescript-eslint/eslint-plugin": "^8.57.0",
