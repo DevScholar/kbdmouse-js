@@ -9,9 +9,9 @@
   "types": "dist/kbdmouse-js.es.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/kbdmouse-js.es.d.ts",
       "import": "./dist/kbdmouse-js.es.js",
-      "require": "./dist/kbdmouse-js.umd.js",
-      "types": "./dist/kbdmouse-js.es.d.ts"
+      "require": "./dist/kbdmouse-js.umd.js"
     },
     "./dist/kbdmouse-js.css": "./dist/kbdmouse-js.css"
   },
