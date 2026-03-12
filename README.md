@@ -30,6 +30,20 @@ your phone).
 <virtual-keyboard></virtual-keyboard>
 ```
 
+### Shadow DOM
+
+By default, the virtual keyboard uses Shadow DOM to encapsulate its styles and structure. This prevents style conflicts with the rest of your page. If you need to disable Shadow DOM (for example, to debug or apply external styles), you can set the `shadow` attribute to `false`:
+
+```html
+<!-- Using Shadow DOM (default) -->
+<virtual-keyboard></virtual-keyboard>
+
+<!-- Disable Shadow DOM -->
+<virtual-keyboard shadow="false"></virtual-keyboard>
+```
+
+> **Note:** When Shadow DOM is disabled, external CSS styles may affect the keyboard appearance.
+
 # Virtual Mouse
 
 ## Notice:

@@ -43,6 +43,7 @@ export class VkEventDispatcher {
             location: item.location,
             bubbles: true,
             cancelable: true,
+            composed: true,
             view: window,
             repeat: repeat,
             ...modifierStates,
@@ -73,6 +74,7 @@ export class VkEventDispatcher {
             location: item.location,
             bubbles: true,
             cancelable: true,
+            composed: true,
             view: window,
             ...modifierStates,
         });
@@ -99,6 +101,7 @@ export class VkEventDispatcher {
             location: item.location,
             bubbles: true,
             cancelable: true,
+            composed: true,
             view: window,
             ...modifierStates,
         });
@@ -138,6 +141,7 @@ export class VkEventDispatcher {
                 data: data,
                 bubbles: true,
                 cancelable: true,
+                composed: true,
                 view: window,
             });
 

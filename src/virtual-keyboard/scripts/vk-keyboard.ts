@@ -9,24 +9,67 @@ import { VkUserOperation } from './vk-user-operation';
 import { VkVisual } from './vk-visual';
 import { VkAutoResize } from './vk-auto-resize';
 
+import keyboardStyles from '../styles/vk-keyboard.css?inline';
+
 export class VkKeyboard extends HTMLElement {
     private _isInitialized = false;
+    private _shadowRoot: ShadowRoot | null = null;
 
     constructor() {
         super();
+    }
+
+    private get useShadowDOM(): boolean {
+        const shadowAttr = this.getAttribute('shadow');
+        return shadowAttr !== 'false';
     }
 
     async connectedCallback() {
         if (this._isInitialized) return;
         this._isInitialized = true;
 
-        this.innerHTML = await this.template.getKeyboardTemplateHtml();
+        const templateHtml = await this.template.getKeyboardTemplateHtml();
+
+        if (this.useShadowDOM) {
+            this._shadowRoot = this.attachShadow({ mode: 'open' });
+            const styleElement = document.createElement('style');
+            styleElement.textContent = keyboardStyles;
+            this._shadowRoot.appendChild(styleElement);
+            this._shadowRoot.innerHTML += templateHtml;
+        } else {
+            this.innerHTML = templateHtml;
+        }
 
         // Initialize auto-resize
         this.autoResize.reinitialize();
 
         this.userOperation.preventFocusForVkKeyboard();
         this.userOperation.handlePointerOperationsForVkKeyboard();
+    }
+
+    public get shadowRootElement(): ShadowRoot | null {
+        return this._shadowRoot;
+    }
+
+    public get vkKeyboardElement(): HTMLElement | null {
+        if (this.useShadowDOM && this._shadowRoot) {
+            return this._shadowRoot.querySelector('.vk-keyboard') as HTMLElement;
+        }
+        return this.querySelector('.vk-keyboard') as HTMLElement;
+    }
+
+    public querySelector(selector: string): Element | null {
+        if (this.useShadowDOM && this._shadowRoot) {
+            return this._shadowRoot.querySelector(selector);
+        }
+        return super.querySelector(selector);
+    }
+
+    public querySelectorAll(selector: string): NodeListOf<Element> {
+        if (this.useShadowDOM && this._shadowRoot) {
+            return this._shadowRoot.querySelectorAll(selector);
+        }
+        return super.querySelectorAll(selector);
     }
 
     disconnectedCallback() {
