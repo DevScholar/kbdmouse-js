@@ -4,6 +4,26 @@
   "version": "0.0.6",
   "type": "module",
   "license": "MIT",
+  "author": "DevScholar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devscholar/kbdmouse-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devscholar/kbdmouse-js/issues"
+  },
+  "homepage": "https://github.com/devscholar/kbdmouse-js#readme",
+  "keywords": [
+    "keyboard",
+    "mouse",
+    "touch",
+    "mobile",
+    "polyfill",
+    "virtual-keyboard",
+    "x86",
+    "emulator",
+    "retro"
+  ],
   "main": "dist/kbdmouse-js.umd.js",
   "module": "dist/kbdmouse-js.es.js",
   "types": "dist/kbdmouse-js.es.d.ts",
