@@ -1,5 +1,22 @@
 import type { VkKeyboard } from './vk-keyboard';
 
+interface LayoutData {
+    author: string;
+    name: string;
+    lang: string;
+    alphabets: string[];
+    numberKeys: string[];
+    areas: unknown[];
+    keys: Record<string, string>;
+    keyCodes: Record<string, number>;
+    labels: Record<string, string>;
+    locations: Record<string, number>;
+    shifted: { keys: Record<string, string> };
+    numLocked: { keys: Record<string, string> };
+    modifierKeys: string[];
+    toggleKeys: string[];
+}
+
 // Define the layout data directly in TypeScript for better compatibility
 const layoutTemplate = {
     author: 'KBDMouseJS',
@@ -622,9 +639,9 @@ export class VkJsonLayout {
     vkKeyboard!: VkKeyboard;
 
     async loadLayoutJson(): Promise<void> {
-        this.layoutData = layoutTemplate;
+        this.layoutData = layoutTemplate as LayoutData;
     }
-    layoutData = {} as any;
+    layoutData: LayoutData | null = null;
 
     isAlphabetKey(code: string) {
         const alphabets = this.layoutData?.alphabets || [];
@@ -696,10 +713,12 @@ export class VkJsonLayout {
         return this.layoutData?.shifted?.keys?.[code] !== undefined;
     }
     getKeyItemByCode(code: string) {
-        const key = this.layoutData?.keys?.[code];
-        const keyCode = this.layoutData?.keyCodes?.[code];
-        const location = this.layoutData?.locations?.[code];
-        const label = this.layoutData?.labels?.[code];
+        if (!this.layoutData) return null;
+        const layoutData = this.layoutData;
+        const key = layoutData.keys?.[code];
+        const keyCode = layoutData.keyCodes?.[code];
+        const location = layoutData.locations?.[code];
+        const label = layoutData.labels?.[code];
 
         const keyValue = key || label || code;
 
@@ -711,8 +730,8 @@ export class VkJsonLayout {
             this.vkKeyboard.state.getModifierState('ShiftRight');
         const isCapsLock = this.vkKeyboard.state.getModifierState('CapsLock');
 
-        if (isNumpad && isNumLock && this.layoutData?.numLocked?.keys?.[code]) {
-            actualKeyValue = this.layoutData.numLocked.keys[code];
+        if (isNumpad && isNumLock && layoutData.numLocked?.keys?.[code]) {
+            actualKeyValue = layoutData.numLocked.keys[code];
         }
 
         // Handle CapsLock for alphabet keys first
@@ -722,12 +741,12 @@ export class VkJsonLayout {
             if (isShift) {
                 actualKeyValue = keyValue.toLowerCase();
             } else {
-                actualKeyValue = this.layoutData.shifted.keys[code] || keyValue.toUpperCase();
+                actualKeyValue = layoutData.shifted.keys[code] || keyValue.toUpperCase();
             }
         }
         // Handle shifted keys (for symbols like !@#$% etc.) and non-alphabet keys with shift
-        else if (isShift && this.layoutData?.shifted?.keys?.[code]) {
-            actualKeyValue = this.layoutData.shifted.keys[code];
+        else if (isShift && layoutData.shifted?.keys?.[code]) {
+            actualKeyValue = layoutData.shifted.keys[code];
         }
 
         return {

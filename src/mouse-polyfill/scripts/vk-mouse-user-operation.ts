@@ -103,8 +103,8 @@ export class VkMouseUserOperation {
                 const lastX = this.vkMouse.state.lastTwoFingerX;
                 const lastY = this.vkMouse.state.lastTwoFingerY;
 
-                const deltaX = lastX - center.x;
-                const deltaY = lastY - center.y;
+                const deltaX = center.x - lastX;
+                const deltaY = center.y - lastY;
 
                 if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
                     this.hasTwoFingerScrolled = true;

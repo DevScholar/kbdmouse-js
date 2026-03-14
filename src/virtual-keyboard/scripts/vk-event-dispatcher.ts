@@ -1,4 +1,9 @@
 import { VkKeyboard } from './vk-keyboard';
+
+interface VirtualKeyboardEvent extends KeyboardEvent {
+    isVirtualKeyboardEvent: boolean;
+}
+
 export class VkEventDispatcher {
     constructor(vkKeyboard: VkKeyboard) {
         this.vkKeyboard = vkKeyboard;
@@ -50,7 +55,7 @@ export class VkEventDispatcher {
         });
 
         // Add a custom property to identify virtual keyboard events
-        (keyDownEvent as any).isVirtualKeyboardEvent = true;
+        (keyDownEvent as VirtualKeyboardEvent).isVirtualKeyboardEvent = true;
 
         activeElement.dispatchEvent(keyDownEvent);
     }
@@ -80,7 +85,7 @@ export class VkEventDispatcher {
         });
 
         // Add a custom property to identify virtual keyboard events
-        (keyPressEvent as any).isVirtualKeyboardEvent = true;
+        (keyPressEvent as VirtualKeyboardEvent).isVirtualKeyboardEvent = true;
 
         activeElement.dispatchEvent(keyPressEvent);
     }
@@ -107,7 +112,7 @@ export class VkEventDispatcher {
         });
 
         // Add a custom property to identify virtual keyboard events
-        (keyUpEvent as any).isVirtualKeyboardEvent = true;
+        (keyUpEvent as VirtualKeyboardEvent).isVirtualKeyboardEvent = true;
 
         activeElement.dispatchEvent(keyUpEvent);
     }
@@ -128,7 +133,7 @@ export class VkEventDispatcher {
             } else if (code === 'Tab') {
                 inputType = 'insertText';
                 data = '\t';
-            } else if (this.isPrintableCharacter(keyItem.key)) {
+            } else if (keyItem && this.isPrintableCharacter(keyItem.key)) {
                 inputType = 'insertText';
                 data = keyItem.key;
             } else {

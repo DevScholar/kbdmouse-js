@@ -1,5 +1,9 @@
 import type { VkKeyboard } from './vk-keyboard';
 
+interface RangeWithModify extends Range {
+    modify(alter: 'move' | 'extend', direction: 'forward' | 'backward', granularity: 'character' | 'word' | 'line' | 'lineboundary'): void;
+}
+
 export class VkEditing {
     constructor(vkKeyboard: VkKeyboard) {
         this.vkKeyboard = vkKeyboard;
@@ -12,14 +16,14 @@ export class VkEditing {
             return false;
         }
         if (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') {
-            // 检查是否被禁用或只读
+            // Check if disabled or readonly
             if (
                 activeElement.getAttribute('disabled') === 'true' ||
                 activeElement.getAttribute('readonly') === 'true'
             ) {
                 return false;
             }
-            // 对于INPUT元素，检查类型是否在可编辑类型列表中
+            // For INPUT element, check if type is in editable types list
             if (activeElement.tagName === 'INPUT') {
                 const textLikeTypes = [
                     'text',
@@ -32,7 +36,7 @@ export class VkEditing {
                 ];
                 return textLikeTypes.includes((activeElement as HTMLInputElement).type || 'text');
             }
-            // TEXTAREA元素默认可编辑
+            // TEXTAREA elements are editable by default
             return true;
         } else if (activeElement.getAttribute('contenteditable') === 'true') {
             return true;
@@ -122,13 +126,34 @@ export class VkEditing {
             const selectionStart = input.selectionStart!;
             const selectionEnd = input.selectionEnd!;
             if (direction === 'left') {
-                input.setSelectionRange(selectionStart - step, selectionEnd - step);
+                const newPos = Math.max(0, selectionStart - step);
+                input.setSelectionRange(newPos, newPos);
             } else if (direction === 'right') {
-                input.setSelectionRange(selectionStart + step, selectionEnd + step);
-            } else if (direction === 'up') {
-                input.setSelectionRange(selectionStart - step, selectionEnd - step);
-            } else if (direction === 'down') {
-                input.setSelectionRange(selectionStart + step, selectionEnd + step);
+                const newPos = Math.min(input.value.length, selectionEnd + step);
+                input.setSelectionRange(newPos, newPos);
+            } else if (direction === 'up' || direction === 'down') {
+                const value = input.value;
+                // Find the start position of the current line and column offset
+                const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+                const col = selectionStart - lineStart;
+                if (direction === 'up') {
+                    // Find previous line
+                    const prevLineEnd = lineStart - 1;
+                    if (prevLineEnd < 0) return; // Already at first line
+                    const prevLineStart = value.lastIndexOf('\n', prevLineEnd - 1) + 1;
+                    const newPos = prevLineStart + Math.min(col, prevLineEnd - prevLineStart);
+                    input.setSelectionRange(newPos, newPos);
+                } else {
+                    // Find next line
+                    const nextLineStart = value.indexOf('\n', selectionStart);
+                    if (nextLineStart === -1) return; // Already at last line
+                    const nextLineStart2 = nextLineStart + 1;
+                    const nextLineEnd = value.indexOf('\n', nextLineStart2);
+                    const nextLineLength =
+                        nextLineEnd === -1 ? value.length - nextLineStart2 : nextLineEnd - nextLineStart2;
+                    const newPos = nextLineStart2 + Math.min(col, nextLineLength);
+                    input.setSelectionRange(newPos, newPos);
+                }
             }
         } else if (activeElement.getAttribute('contenteditable') === 'true') {
             const selection = window.getSelection();
@@ -136,14 +161,14 @@ export class VkEditing {
                 const range = selection.getRangeAt(0);
                 if (direction === 'left' || direction === 'right') {
                     range.collapse(true);
-                    (range as any).modify(
+                    (range as RangeWithModify).modify(
                         'move',
                         direction === 'left' ? 'backward' : 'forward',
                         'character'
                     );
                 } else if (direction === 'up' || direction === 'down') {
                     range.collapse(true);
-                    (range as any).modify(
+                    (range as RangeWithModify).modify(
                         'move',
                         direction === 'up' ? 'backward' : 'forward',
                         'line'
@@ -190,10 +215,10 @@ export class VkEditing {
                     range.collapse(false);
                 } else if (destination === 'lineStart') {
                     range.collapse(true);
-                    (range as any).modify('move', 'backward', 'lineboundary');
+                    (range as RangeWithModify).modify('move', 'backward', 'lineboundary');
                 } else if (destination === 'lineEnd') {
                     range.collapse(true);
-                    (range as any).modify('move', 'forward', 'lineboundary');
+                    (range as RangeWithModify).modify('move', 'forward', 'lineboundary');
                 }
                 selection.removeAllRanges();
                 selection.addRange(range);
