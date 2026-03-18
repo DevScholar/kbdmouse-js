@@ -1,7 +1,5 @@
 # KBDMouseJS
 
-This project is in Beta stage.
-
 This project is focused on retro computing, that is, compatibility with old web pages and professional emulators. See [FAQ](docs/faq.md) for more details.
 
 # Introduction
