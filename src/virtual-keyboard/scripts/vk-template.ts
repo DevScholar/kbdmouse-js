@@ -1,4 +1,5 @@
 import type { VkKeyboard } from './vk-keyboard';
+import type { LayoutData } from './vk-json-layout';
 
 export class VkTemplate {
     constructor(vkKeyboard: VkKeyboard) {
@@ -6,7 +7,7 @@ export class VkTemplate {
     }
     async getKeyboardTemplateHtml(): Promise<string> {
         await this.vkKeyboard.jsonLayout.loadLayoutJson();
-        const layout: any = this.vkKeyboard.jsonLayout.layoutData;
+        const layout: LayoutData = this.vkKeyboard.jsonLayout.layoutData!;
         const areas = layout.areas;
         const keys = layout.keys;
         let html = '';

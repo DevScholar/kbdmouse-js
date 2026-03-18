@@ -1,12 +1,17 @@
 import type { VkKeyboard } from './vk-keyboard';
 
-interface LayoutData {
+export interface LayoutArea {
+    name: string;
+    rows: string[][];
+}
+
+export interface LayoutData {
     author: string;
     name: string;
     lang: string;
     alphabets: string[];
     numberKeys: string[];
-    areas: unknown[];
+    areas: LayoutArea[];
     keys: Record<string, string>;
     keyCodes: Record<string, number>;
     labels: Record<string, string>;
