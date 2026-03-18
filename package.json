@@ -7,7 +7,7 @@
   "author": "DevScholar",
   "repository": {
     "type": "git",
-    "url": "https://github.com/devscholar/kbdmouse-js.git"
+    "url": "git+https://github.com/devscholar/kbdmouse-js.git"
   },
   "bugs": {
     "url": "https://github.com/devscholar/kbdmouse-js/issues"
