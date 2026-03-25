@@ -12,31 +12,26 @@ export class VkMouseUserOperation {
     private isTwoFingerGesture: boolean = false;
     private hasTwoFingerScrolled: boolean = false;
 
-    private boundTouchStart: (e: TouchEvent) => void;
-    private boundTouchMove: (e: TouchEvent) => void;
-    private boundTouchEnd: (e: TouchEvent) => void;
+    private abortController: AbortController | null = null;
 
     constructor(vkMouse: VkMouse) {
         this.vkMouse = vkMouse;
-        this.boundTouchStart = this.onTouchStart.bind(this);
-        this.boundTouchMove = this.onTouchMove.bind(this);
-        this.boundTouchEnd = this.onTouchEnd.bind(this);
     }
 
     init() {
+        this.remove();
+        this.abortController = new AbortController();
+        const { signal } = this.abortController;
         const el = this.vkMouse.element;
-        el.addEventListener('touchstart', this.boundTouchStart, { passive: false });
-        el.addEventListener('touchmove', this.boundTouchMove, { passive: false });
-        el.addEventListener('touchend', this.boundTouchEnd);
-        el.addEventListener('touchcancel', this.boundTouchEnd);
+        el.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false, signal });
+        el.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false, signal });
+        el.addEventListener('touchend', (e) => this.onTouchEnd(e), { signal });
+        el.addEventListener('touchcancel', (e) => this.onTouchEnd(e), { signal });
     }
 
     remove() {
-        const el = this.vkMouse.element;
-        el.removeEventListener('touchstart', this.boundTouchStart);
-        el.removeEventListener('touchmove', this.boundTouchMove);
-        el.removeEventListener('touchend', this.boundTouchEnd);
-        el.removeEventListener('touchcancel', this.boundTouchEnd);
+        this.abortController?.abort();
+        this.abortController = null;
     }
 
     attach() {

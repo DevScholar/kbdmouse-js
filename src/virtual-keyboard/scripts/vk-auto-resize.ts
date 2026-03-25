@@ -6,6 +6,7 @@ export class VkAutoResize {
     private resizeObserver: ResizeObserver | null = null;
     private originalWidth: number = 0;
     private originalHeight: number = 0;
+    private domContentLoadedHandler: (() => void) | null = null;
 
     constructor(vkKeyboard: VkKeyboard) {
         this.vkKeyboard = vkKeyboard;
@@ -13,11 +14,12 @@ export class VkAutoResize {
     }
 
     private init(): void {
-        // Wait for DOM to load before initializing
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
+            this.domContentLoadedHandler = () => {
+                this.domContentLoadedHandler = null;
                 this.setupAutoResize();
-            });
+            };
+            document.addEventListener('DOMContentLoaded', this.domContentLoadedHandler, { once: true });
         } else {
             this.setupAutoResize();
         }
@@ -84,6 +86,10 @@ export class VkAutoResize {
 
     // Public method: Clean up resources
     public dispose(): void {
+        if (this.domContentLoadedHandler) {
+            document.removeEventListener('DOMContentLoaded', this.domContentLoadedHandler);
+            this.domContentLoadedHandler = null;
+        }
         if (this.resizeObserver) {
             this.resizeObserver.disconnect();
             this.resizeObserver = null;

@@ -19,6 +19,9 @@ export class VkUserOperation {
     private repeatDelay: number = 500; // Repeat start delay (milliseconds)
     private repeatTimers: Map<string, { delayTimer?: number; intervalTimer?: number }> = new Map();
 
+    // Stored element listeners for cleanup
+    private elementListeners: Array<{ element: Element; type: string; handler: EventListener }> = [];
+
     preventFocusForVkKeyboard() {
         const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key');
 
@@ -31,11 +34,13 @@ export class VkUserOperation {
         const preventDefaultEvents = ['mousedown', 'touchstart', 'focus'];
 
         preventDefaultEvents.forEach((eventType) => {
-            element.addEventListener(eventType, (event: Event) => {
+            const handler = (event: Event) => {
                 if (event.cancelable) {
                     event.preventDefault();
                 }
-            });
+            };
+            element.addEventListener(eventType, handler);
+            this.elementListeners.push({ element, type: eventType, handler });
         });
     }
 
@@ -57,6 +62,12 @@ export class VkUserOperation {
         vkKey.addEventListener('pointerdown', pointerDownHandler);
         vkKey.addEventListener('pointerup', pointerReleaseHandler);
         vkKey.addEventListener('pointerleave', pointerReleaseHandler);
+
+        this.elementListeners.push(
+            { element: vkKey, type: 'pointerdown', handler: pointerDownHandler },
+            { element: vkKey, type: 'pointerup', handler: pointerReleaseHandler },
+            { element: vkKey, type: 'pointerleave', handler: pointerReleaseHandler },
+        );
     }
 
     private determineKeyType(code: string): string {
@@ -299,6 +310,21 @@ export class VkUserOperation {
         }
         // Clear repeating state
         this.vkKeyboard.state.setKeyRepeating(code, false);
+    }
+
+    // Stop all active repeats (for cleanup on disconnect)
+    stopAllRepeat() {
+        for (const code of Array.from(this.repeatTimers.keys())) {
+            this.stopRepeat(code);
+        }
+    }
+
+    // Remove all element event listeners registered by this instance
+    removeAllKeyListeners() {
+        for (const { element, type, handler } of this.elementListeners) {
+            element.removeEventListener(type, handler);
+        }
+        this.elementListeners = [];
     }
 
     // Execute repeat action

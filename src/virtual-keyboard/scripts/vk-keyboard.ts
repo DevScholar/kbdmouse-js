@@ -30,12 +30,17 @@ export class VkKeyboard extends HTMLElement {
 
         const templateHtml = await this.template.getKeyboardTemplateHtml();
 
+        // Guard: element may have been disconnected during the async gap above
+        if (!this.isConnected) {
+            this._isInitialized = false;
+            return;
+        }
+
         if (this.useShadowDOM) {
-            this._shadowRoot = this.attachShadow({ mode: 'open' });
-            const styleElement = document.createElement('style');
-            styleElement.textContent = keyboardStyles;
-            this._shadowRoot.appendChild(styleElement);
-            this._shadowRoot.innerHTML += templateHtml;
+            if (!this._shadowRoot) {
+                this._shadowRoot = this.attachShadow({ mode: 'open' });
+            }
+            this._shadowRoot.innerHTML = `<style>${keyboardStyles}</style>${templateHtml}`;
         } else {
             this.innerHTML = templateHtml;
         }
@@ -74,8 +79,10 @@ export class VkKeyboard extends HTMLElement {
 
     disconnectedCallback() {
         this._isInitialized = false;
-        // Clean up resources
         this.autoResize.dispose();
+        this.userOperation.stopAllRepeat();
+        this.userOperation.removeAllKeyListeners();
+        this.logger.removeEventListeners();
     }
 
     // Public method: Manually trigger resize
