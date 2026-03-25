@@ -53,7 +53,7 @@ The mouse polyfill controls logic resemble a **Windows Precision Touchpad**:
 *   **Right Click:** Single tap with **two fingers**.
 *   **Double Click:** Double tap with one finger.
 *   **Drag (Left Button Down + Move):** Tap once, lift, then quickly tap again and hold while moving (The "Tap-and-a-Half" gesture).
-*   **Scroll:** Slide with **two fingers** to send wheel events (black arrow with circle).
+*   **Wheel:** Slide with **two fingers** to send wheel events (black arrow with circle).
 
 Note: This project will not support HTML 5 drag-and-drop events. If you want them, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) instead. 
 
