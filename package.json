@@ -1,7 +1,7 @@
 {
   "name": "@devscholar/kbdmouse-js",
   "description": "A JS polyfill that provides mouse and keyboard events support for mobile devices.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "MIT",
   "author": "DevScholar",
