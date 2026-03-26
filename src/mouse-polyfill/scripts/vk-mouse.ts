@@ -3,9 +3,13 @@ import { VkMouseUserOperation } from './vk-mouse-user-operation';
 import { VkMouseState } from './vk-mouse-state';
 
 export class VkMouse {
+    /** @internal */
     element: HTMLElement;
+    /** @internal */
     userOperation: VkMouseUserOperation;
+    /** @internal */
     eventDispatcher: VkMouseEventDispatcher;
+    /** @internal */
     state: VkMouseState;
 
     constructor(element: HTMLElement) {

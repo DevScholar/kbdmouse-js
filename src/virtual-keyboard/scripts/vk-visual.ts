@@ -7,19 +7,19 @@ export class VkVisual {
     vkKeyboard!: VkKeyboard;
 
     keyDown(code: string) {
-        const vkKey = this.vkKeyboard.querySelector(`[data-code="${code}"]`) as HTMLElement;
+        const vkKey = this.vkKeyboard.getRoot().querySelector(`[data-code="${code}"]`) as HTMLElement;
         vkKey.classList.add('vk-key-down');
         vkKey.setAttribute('aria-pressed', 'true');
     }
 
     keyUp(code: string) {
-        const vkKey = this.vkKeyboard.querySelector(`[data-code="${code}"]`) as HTMLElement;
+        const vkKey = this.vkKeyboard.getRoot().querySelector(`[data-code="${code}"]`) as HTMLElement;
         vkKey.classList.remove('vk-key-down');
         vkKey.removeAttribute('aria-pressed');
     }
 
     capitalizeKeyboard(enabled: boolean) {
-        const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
+        const vkKeys = this.vkKeyboard.getRoot().querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
         vkKeys.forEach((vkKey) => {
             const code = vkKey.dataset.code!;
             if (this.vkKeyboard.jsonLayout.isAlphabetKey(code)) {
@@ -33,7 +33,7 @@ export class VkVisual {
     }
 
     shiftKeyboard(enabled: boolean) {
-        const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
+        const vkKeys = this.vkKeyboard.getRoot().querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
         vkKeys.forEach((vkKey) => {
             const code = vkKey.dataset.code!;
             const isShiftable = this.vkKeyboard.jsonLayout.isShiftableKey(code);
@@ -48,7 +48,7 @@ export class VkVisual {
     }
 
     numLockKeyboard(activated: boolean) {
-        const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
+        const vkKeys = this.vkKeyboard.getRoot().querySelectorAll('.vk-key') as NodeListOf<HTMLElement>;
         vkKeys.forEach((vkKey) => {
             const code = vkKey.dataset.code!;
             if (code.startsWith('Numpad')) {
@@ -62,7 +62,7 @@ export class VkVisual {
     }
 
     toggleKey(code: string, activated: boolean) {
-        const vkKey = this.vkKeyboard.querySelector(`[data-code="${code}"]`) as HTMLElement;
+        const vkKey = this.vkKeyboard.getRoot().querySelector(`[data-code="${code}"]`) as HTMLElement;
         if (activated) {
             vkKey.classList.add('vk-key-down');
         } else {

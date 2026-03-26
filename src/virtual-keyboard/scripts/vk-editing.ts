@@ -18,8 +18,8 @@ export class VkEditing {
         if (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') {
             // Check if disabled or readonly
             if (
-                activeElement.getAttribute('disabled') === 'true' ||
-                activeElement.getAttribute('readonly') === 'true'
+                activeElement.hasAttribute('disabled') ||
+                activeElement.hasAttribute('readonly')
             ) {
                 return false;
             }

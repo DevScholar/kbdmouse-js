@@ -83,7 +83,8 @@ export default defineConfig(({ command, mode }) => {
         dts({
           include: ['src'],
           exclude: ['**/*.css'],
-          rollupTypes: true
+          rollupTypes: true,
+          compilerOptions: { stripInternal: true },
         })
       ]
     }

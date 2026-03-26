@@ -23,7 +23,7 @@ export class VkUserOperation {
     private elementListeners: Array<{ element: Element; type: string; handler: EventListener }> = [];
 
     preventFocusForVkKeyboard() {
-        const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key');
+        const vkKeys = this.vkKeyboard.getRoot().querySelectorAll('.vk-key');
 
         vkKeys.forEach((vkKey) => {
             this.preventElementFocus(vkKey);
@@ -45,7 +45,7 @@ export class VkUserOperation {
     }
 
     handlePointerOperationsForVkKeyboard() {
-        const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key');
+        const vkKeys = this.vkKeyboard.getRoot().querySelectorAll('.vk-key');
 
         vkKeys.forEach((vkKey) => {
             this.setupKeyEventListeners(vkKey);
@@ -233,7 +233,7 @@ export class VkUserOperation {
     }
 
     keyUpAllKeys() {
-        const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key');
+        const vkKeys = this.vkKeyboard.getRoot().querySelectorAll('.vk-key');
         vkKeys.forEach((vkKey: Element) => {
             const code = vkKey.getAttribute('data-code') || '';
             if (this.vkKeyboard.state.isKeyDown(code)) {
@@ -245,7 +245,7 @@ export class VkUserOperation {
     }
 
     keyUpAllModifierKeys() {
-        const vkKeys = this.vkKeyboard.querySelectorAll('.vk-key');
+        const vkKeys = this.vkKeyboard.getRoot().querySelectorAll('.vk-key');
         vkKeys.forEach((vkKey: Element) => {
             const code = vkKey.getAttribute('data-code') || '';
 

@@ -10,7 +10,6 @@ export class VkAutoResize {
 
     constructor(vkKeyboard: VkKeyboard) {
         this.vkKeyboard = vkKeyboard;
-        this.init();
     }
 
     private init(): void {
@@ -26,7 +25,7 @@ export class VkAutoResize {
     }
 
     private setupAutoResize(): void {
-        const keyboardElement = this.vkKeyboard.querySelector('.vk-keyboard') as HTMLElement;
+        const keyboardElement = this.vkKeyboard.getRoot().querySelector('.vk-keyboard') as HTMLElement;
 
         if (!keyboardElement) {
             return;
@@ -61,7 +60,7 @@ export class VkAutoResize {
     }
 
     private applyScaling(): void {
-        const keyboardElement = this.vkKeyboard.querySelector('.vk-keyboard') as HTMLElement;
+        const keyboardElement = this.vkKeyboard.getRoot().querySelector('.vk-keyboard') as HTMLElement;
 
         if (!keyboardElement || this.originalWidth === 0 || this.originalHeight === 0) {
             return;
@@ -96,7 +95,7 @@ export class VkAutoResize {
         }
 
         // Reset child element transform
-        const keyboardElement = this.vkKeyboard.querySelector('.vk-keyboard') as HTMLElement;
+        const keyboardElement = this.vkKeyboard.getRoot().querySelector('.vk-keyboard') as HTMLElement;
         if (keyboardElement) {
             keyboardElement.style.transform = '';
             keyboardElement.style.transformOrigin = '';
@@ -113,7 +112,7 @@ export class VkAutoResize {
 
     // Public method: Get current scaling information
     public getScaleInfo(): { scaleX: number; scaleY: number } {
-        const keyboardElement = this.vkKeyboard.querySelector('.vk-keyboard') as HTMLElement;
+        const keyboardElement = this.vkKeyboard.getRoot().querySelector('.vk-keyboard') as HTMLElement;
 
         if (!keyboardElement || this.originalWidth === 0 || this.originalHeight === 0) {
             return { scaleX: 1, scaleY: 1 };

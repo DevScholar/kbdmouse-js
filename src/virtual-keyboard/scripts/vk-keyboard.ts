@@ -14,14 +14,17 @@ import keyboardStyles from '../styles/vk-keyboard.css?inline';
 export class VkKeyboard extends HTMLElement {
     private _isInitialized = false;
     private _shadowRoot: ShadowRoot | null = null;
+    private _useShadowDOM: boolean | null = null;
 
     constructor() {
         super();
     }
 
     private get useShadowDOM(): boolean {
-        const shadowAttr = this.getAttribute('shadow');
-        return shadowAttr !== 'false';
+        if (this._useShadowDOM === null) {
+            this._useShadowDOM = this.getAttribute('shadow') !== 'false';
+        }
+        return this._useShadowDOM;
     }
 
     async connectedCallback() {
@@ -45,36 +48,9 @@ export class VkKeyboard extends HTMLElement {
             this.innerHTML = templateHtml;
         }
 
-        // Initialize auto-resize
         this.autoResize.reinitialize();
-
         this.userOperation.preventFocusForVkKeyboard();
         this.userOperation.handlePointerOperationsForVkKeyboard();
-    }
-
-    public get shadowRootElement(): ShadowRoot | null {
-        return this._shadowRoot;
-    }
-
-    public get vkKeyboardElement(): HTMLElement | null {
-        if (this.useShadowDOM && this._shadowRoot) {
-            return this._shadowRoot.querySelector('.vk-keyboard') as HTMLElement;
-        }
-        return this.querySelector('.vk-keyboard') as HTMLElement;
-    }
-
-    public querySelector(selector: string): Element | null {
-        if (this.useShadowDOM && this._shadowRoot) {
-            return this._shadowRoot.querySelector(selector);
-        }
-        return super.querySelector(selector);
-    }
-
-    public querySelectorAll(selector: string): NodeListOf<Element> {
-        if (this.useShadowDOM && this._shadowRoot) {
-            return this._shadowRoot.querySelectorAll(selector);
-        }
-        return super.querySelectorAll(selector);
     }
 
     disconnectedCallback() {
@@ -85,16 +61,23 @@ export class VkKeyboard extends HTMLElement {
         this.logger.removeEventListeners();
     }
 
-    // Public method: Manually trigger resize
-    public triggerResize(): void {
-        this.autoResize.triggerResize();
+    /** @internal Returns the shadow root (shadow mode) or the element itself (no-shadow mode) for internal DOM queries. */
+    getRoot(): ParentNode {
+        return this._shadowRoot ?? this;
     }
 
-    // Public method: Get scaling information
-    public getScaleInfo(): { scaleX: number; scaleY: number } {
-        return this.autoResize.getScaleInfo();
+    /** @internal */
+    get shadowRootElement(): ShadowRoot | null {
+        return this._shadowRoot;
     }
 
+    /** @internal */
+    get vkKeyboardElement(): HTMLElement | null {
+        return (this.getRoot() as ParentNode & { querySelector: ParentNode['querySelector'] })
+            .querySelector('.vk-keyboard') as HTMLElement | null;
+    }
+
+    /** @internal */
     debug = {
         classThis: this as unknown as VkKeyboard,
 
@@ -112,14 +95,24 @@ export class VkKeyboard extends HTMLElement {
             return this.classThis.state.debug.enabled;
         },
     };
+
+    /** @internal */
     editing = new VkEditing(this);
+    /** @internal */
     eventDispatcher = new VkEventDispatcher(this);
+    /** @internal */
     logger = new VkLogger(this);
+    /** @internal */
     state = new VkState(this);
+    /** @internal */
     template = new VkTemplate(this);
+    /** @internal */
     visual = new VkVisual(this);
+    /** @internal */
     jsonLayout = new VkJsonLayout(this);
+    /** @internal */
     userOperation = new VkUserOperation(this);
+    /** @internal */
     autoResize = new VkAutoResize(this);
 }
 

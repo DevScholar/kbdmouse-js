@@ -52,8 +52,6 @@ export class VkState {
         this.keys.keyDownKeys.delete(code);
     };
 
-    repeating: boolean = false;
-
     isKeyRepeating = (code: string) => {
         return this.keys.repeatingKeys.has(code);
     };
