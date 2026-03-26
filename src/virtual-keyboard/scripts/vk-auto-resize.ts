@@ -80,7 +80,7 @@ export class VkAutoResize {
     // Public method: Reinitialize (for dynamic content changes)
     public reinitialize(): void {
         this.dispose();
-        this.setupAutoResize();
+        this.init();
     }
 
     // Public method: Clean up resources
