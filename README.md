@@ -20,6 +20,8 @@ your phone).
 
 ## Virtual Keyboard
 
+The virtual keyboard is a [Custom Element](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements). Drop it into your HTML and it manages its own lifecycle automatically — no JavaScript required.
+
 ```html
 <link rel="stylesheet" href="@devscholar/kbdmouse-js/dist/kbdmouse-js.css">
 <script type="module">
@@ -27,6 +29,12 @@ your phone).
 </script>
 <virtual-keyboard></virtual-keyboard>
 ```
+
+### Attributes
+
+| Attribute | Value | Default | Description |
+|-----------|-------|---------|-------------|
+| `shadow`  | `"false"` | (enabled) | Disable Shadow DOM encapsulation. Useful for debugging or applying external styles. |
 
 ### Shadow DOM
 
@@ -44,6 +52,8 @@ By default, the virtual keyboard uses Shadow DOM to encapsulate its styles and s
 
 # Virtual Mouse
 
+The mouse polyfill is a JavaScript class. Unlike the keyboard, the polyfill target element is chosen at runtime via JavaScript, so it cannot be configured with HTML alone.
+
 ## Notice:
 
 The mouse polyfill controls logic resemble a **Windows Precision Touchpad**:
@@ -55,7 +65,7 @@ The mouse polyfill controls logic resemble a **Windows Precision Touchpad**:
 *   **Drag (Left Button Down + Move):** Tap once, lift, then quickly tap again and hold while moving (The "Tap-and-a-Half" gesture).
 *   **Wheel:** Slide with **two fingers** to send wheel events (black arrow with circle).
 
-Note: This project will not support HTML 5 drag-and-drop events. If you want them, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) instead. 
+Note: This project will not support HTML 5 drag-and-drop events. If you want them, use [drag-drop-touch-js](https://github.com/drag-drop-touch-js/dragdroptouch) instead.
 
 ```html
 <script type="module">
@@ -65,17 +75,29 @@ Note: This project will not support HTML 5 drag-and-drop events. If you want the
         let element = document.getElementById("polyfilled-element");
         if (element) {
             let vkMouse = new VkMouse(element);
-            
-            // pause polyfill
-            // vkMouse.detach();
-            // resume polyfill
-            // vkMouse.attach();
+
+            // Pause and resume the polyfill
+            // vkMouse.pause();
+            // vkMouse.resume();
+
+            // Permanently destroy the instance and clean up all event listeners
+            // vkMouse.destroy();
         } else {
             console.error("polyfilled-element element not found");
         }
     });
 </script>
 ```
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `pause()` | Temporarily suspend the polyfill. Touch events are no longer converted. |
+| `resume()` | Resume a suspended polyfill. |
+| `destroy()` | Permanently remove all event listeners. The instance cannot be reused. |
+| `detach()` | Remove all touch event listeners from the element. Like `pause()`, but expresses intent to fully uninstall the polyfill. Call `attach()` to reinstall. |
+| `attach()` | Reinstall the polyfill after `detach()`. |
 
 # Building
 
