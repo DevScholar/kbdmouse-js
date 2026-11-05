@@ -1,7 +1,16 @@
 import type { VkMouse } from './vk-mouse';
 
+// The legacy wheel members report one notch as 120 where the standard delta is
+// 100, and they point the other way. A client that was written for a mechanical
+// wheel reads them, and Chromium copies deltaY into wheelDelta for a constructed
+// event with the same sign, so the pair is written here instead of trusted
+const LEGACY_WHEEL_SCALE = 120 / 100;
+
 export class VkMouseEventDispatcher {
     vkMouse: VkMouse;
+
+    private lastDispatchX: number | null = null;
+    private lastDispatchY: number | null = null;
 
     constructor(vkMouse: VkMouse) {
         this.vkMouse = vkMouse;
@@ -24,7 +33,15 @@ export class VkMouseEventDispatcher {
         };
     }
 
-    private createEvent(type: string, x: number, y: number, buttons: number, button: number) {
+    private createEvent(
+        type: string,
+        x: number,
+        y: number,
+        buttons: number,
+        button: number,
+        movementX: number = 0,
+        movementY: number = 0
+    ) {
         return new MouseEvent(type, {
             bubbles: true,
             cancelable: true,
@@ -35,14 +52,27 @@ export class VkMouseEventDispatcher {
             screenY: y,
             buttons: buttons,
             button: button,
+            movementX: movementX,
+            movementY: movementY,
         });
     }
 
     dispatchMouseMove(x: number, y: number, isLeftButtonDown: boolean) {
         const { x: clampedX, y: clampedY } = this.clampToViewport(x, y);
+        // movementX and movementY are the distance from the previous position,
+        // which is what a desktop pointer reports and what a client that turns
+        // the pointer into relative motion reads
+        const movementX = this.lastDispatchX === null ? 0 : clampedX - this.lastDispatchX;
+        const movementY = this.lastDispatchY === null ? 0 : clampedY - this.lastDispatchY;
+
+        this.lastDispatchX = clampedX;
+        this.lastDispatchY = clampedY;
+
         const buttons = isLeftButtonDown ? 1 : 0;
         const target = this.getTarget(clampedX, clampedY);
-        target.dispatchEvent(this.createEvent('mousemove', clampedX, clampedY, buttons, 0));
+        target.dispatchEvent(
+            this.createEvent('mousemove', clampedX, clampedY, buttons, 0, movementX, movementY)
+        );
     }
 
     dispatchMouseDown(x: number, y: number, isRightClick: boolean = false) {
@@ -94,6 +124,16 @@ export class VkMouseEventDispatcher {
             deltaZ: 0,
             deltaMode: 0,
         });
+
+        // The legacy members are what a client written for a mechanical wheel
+        // reads, and a two finger slide has to look the same to it as a real
+        // one does
+        Object.defineProperties(wheelEvent, {
+            wheelDelta: { value: -deltaY * LEGACY_WHEEL_SCALE },
+            wheelDeltaX: { value: -deltaX * LEGACY_WHEEL_SCALE },
+            wheelDeltaY: { value: -deltaY * LEGACY_WHEEL_SCALE },
+        });
+
         target.dispatchEvent(wheelEvent);
     }
 }

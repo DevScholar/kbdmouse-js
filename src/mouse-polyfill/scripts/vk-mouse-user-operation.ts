@@ -84,6 +84,12 @@ export class VkMouseUserOperation {
         this.hasMoved = false;
         this.isTwoFingerGesture = false;
 
+        // A desktop browser moves the pointer to the press point before the
+        // button goes down, and a canvas client such as an emulator follows that
+        // move with its own cursor. A tap that only pressed would click wherever
+        // the pointer already was
+        vkMouse.eventDispatcher.dispatchMouseMove(x, y, false);
+
         const now = Date.now();
         const timeSinceLastTap = now - vkMouse.state.lastTapEndTime;
 
@@ -168,7 +174,16 @@ export class VkMouseUserOperation {
         if (this.isTwoFingerGesture) {
             if (event.touches.length === 0) {
                 if (!this.hasTwoFingerScrolled) {
-                    vkMouse.eventDispatcher.dispatchContextMenu(x, y);
+                    // A right click is a press of the right button followed by
+                    // the context menu, and a desktop mouse sends both. The
+                    // pointer goes to the gesture center first, for the same
+                    // reason a single tap moves before it presses
+                    const centerX = vkMouse.state.lastTwoFingerX;
+                    const centerY = vkMouse.state.lastTwoFingerY;
+                    vkMouse.eventDispatcher.dispatchMouseMove(centerX, centerY, false);
+                    vkMouse.eventDispatcher.dispatchMouseDown(centerX, centerY, true);
+                    vkMouse.eventDispatcher.dispatchMouseUp(centerX, centerY, true);
+                    vkMouse.eventDispatcher.dispatchContextMenu(centerX, centerY);
                 }
                 this.isTwoFingerGesture = false;
                 this.hasTwoFingerScrolled = false;
