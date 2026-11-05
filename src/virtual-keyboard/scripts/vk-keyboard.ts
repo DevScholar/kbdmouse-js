@@ -27,6 +27,16 @@ export class VkKeyboard extends HTMLElement {
         return this._useShadowDOM;
     }
 
+    /**
+     * Whether the keyboard also writes into an editable element the page has
+     * focused. It is on by default, and a page that reads key events itself, a
+     * terminal or an emulator for instance, turns it off with editing="false"
+     * so the same keystroke does not arrive twice.
+     */
+    get editingEnabled(): boolean {
+        return this.getAttribute('editing') !== 'false';
+    }
+
     async connectedCallback() {
         if (this._isInitialized) return;
         this._isInitialized = true;

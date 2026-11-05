@@ -11,6 +11,10 @@ export class VkEditing {
     vkKeyboard!: VkKeyboard;
 
     isEditable() {
+        if (!this.vkKeyboard.editingEnabled) {
+            return false;
+        }
+
         const activeElement = document.activeElement;
         if (!activeElement) {
             return false;

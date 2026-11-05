@@ -35,6 +35,7 @@ The virtual keyboard is a [Custom Element](https://developer.mozilla.org/en-US/d
 | Attribute | Value | Default | Description |
 |-----------|-------|---------|-------------|
 | `shadow`  | `"false"` | (enabled) | Disable Shadow DOM encapsulation. Useful for debugging or applying external styles. |
+| `editing` | `"false"` | (enabled) | Send key events only. The keyboard stops writing into the input or contenteditable element the page has focused, which a page that reads key events itself needs so the same keystroke does not arrive twice. |
 
 ### Shadow DOM
 
