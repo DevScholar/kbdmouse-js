@@ -31,10 +31,15 @@ export class VkAutoResize {
             return;
         }
 
-        // Get original size of the child element
-        const rect = keyboardElement.getBoundingClientRect();
-        this.originalWidth = rect.width;
-        this.originalHeight = rect.height;
+        // The key table is laid out at whatever width the element around it has,
+        // so an element narrower than the keys would be measured already
+        // squeezed. The natural size is what the scaling is based on, so the
+        // constraint comes off for the measurement
+        const previousWidth = keyboardElement.style.width;
+        keyboardElement.style.width = 'max-content';
+        this.originalWidth = keyboardElement.offsetWidth;
+        this.originalHeight = keyboardElement.offsetHeight;
+        keyboardElement.style.width = previousWidth;
 
         // Set transform origin to top left corner
         keyboardElement.style.transformOrigin = '0 0';
@@ -59,6 +64,20 @@ export class VkAutoResize {
         this.applyScaling();
     }
 
+    private calculateScale(): number {
+        const parentWidth = this.vkKeyboard.offsetWidth;
+        const parentHeight = this.vkKeyboard.offsetHeight;
+
+        if (parentWidth === 0 || parentHeight === 0) {
+            return 1;
+        }
+
+        // One factor for both axes keeps the keys in proportion however the
+        // element is sized, which is what a normal element does with its
+        // content: it reflows or it scrolls, it never stretches it
+        return Math.min(parentWidth / this.originalWidth, parentHeight / this.originalHeight);
+    }
+
     private applyScaling(): void {
         const keyboardElement = this.vkKeyboard.getRoot().querySelector('.vk-keyboard') as HTMLElement;
 
@@ -66,15 +85,13 @@ export class VkAutoResize {
             return;
         }
 
-        const parentWidth = this.vkKeyboard.offsetWidth;
-        const parentHeight = this.vkKeyboard.offsetHeight;
-
-        // Calculate scaling ratio (without maintaining aspect ratio)
-        const scaleX = parentWidth / this.originalWidth;
-        const scaleY = parentHeight / this.originalHeight;
-
-        // Apply transform scaling
-        keyboardElement.style.transform = `scale(${scaleX}, ${scaleY})`;
+        // zoom rather than transform, because zoom takes part in layout: the key
+        // table is laid out at its natural size and then occupies the scaled
+        // size, so the element around it gets a height that matches and a page
+        // that sets only a width gets a keyboard in proportion. A transform
+        // would leave the layout at the natural height and stretch the keys.
+        // Every current browser implements zoom, which the standard picked up
+        keyboardElement.style.setProperty('zoom', String(this.calculateScale()));
     }
 
     // Public method: Reinitialize (for dynamic content changes)
@@ -97,6 +114,7 @@ export class VkAutoResize {
         // Reset child element transform
         const keyboardElement = this.vkKeyboard.getRoot().querySelector('.vk-keyboard') as HTMLElement;
         if (keyboardElement) {
+            keyboardElement.style.removeProperty('zoom');
             keyboardElement.style.transform = '';
             keyboardElement.style.transformOrigin = '';
         }
@@ -112,18 +130,12 @@ export class VkAutoResize {
 
     // Public method: Get current scaling information
     public getScaleInfo(): { scaleX: number; scaleY: number } {
-        const keyboardElement = this.vkKeyboard.getRoot().querySelector('.vk-keyboard') as HTMLElement;
-
-        if (!keyboardElement || this.originalWidth === 0 || this.originalHeight === 0) {
+        if (this.originalWidth === 0 || this.originalHeight === 0) {
             return { scaleX: 1, scaleY: 1 };
         }
 
-        const parentWidth = this.vkKeyboard.offsetWidth;
-        const parentHeight = this.vkKeyboard.offsetHeight;
+        const scale = this.calculateScale();
 
-        return {
-            scaleX: parentWidth / this.originalWidth,
-            scaleY: parentHeight / this.originalHeight,
-        };
+        return { scaleX: scale, scaleY: scale };
     }
 }

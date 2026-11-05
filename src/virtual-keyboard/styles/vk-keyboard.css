@@ -13,6 +13,11 @@
 virtual-keyboard {
     display: block;
     width: fit-content;
+    /* A double tap on a key must not zoom the page, a pinch still must */
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 .vk-caps-lock {
     text-transform: uppercase;
@@ -129,6 +134,10 @@ virtual-keyboard {
     margin: 2px;
     padding: .25em;
     vertical-align: bottom;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 
 
     &:hover:not(.vk-key-down) {

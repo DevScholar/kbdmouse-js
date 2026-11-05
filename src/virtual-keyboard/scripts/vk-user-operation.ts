@@ -31,7 +31,10 @@ export class VkUserOperation {
     }
 
     private preventElementFocus(element: Element) {
-        const preventDefaultEvents = ['mousedown', 'touchstart', 'focus'];
+        // The default action of a touch start is what the browser needs for a
+        // pinch zoom or a pan, and a div key cannot take focus anyway, so only
+        // the mouse path and an explicit focus are cancelled here
+        const preventDefaultEvents = ['mousedown', 'focus'];
 
         preventDefaultEvents.forEach((eventType) => {
             const handler = (event: Event) => {
