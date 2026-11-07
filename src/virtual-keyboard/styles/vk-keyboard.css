@@ -98,18 +98,29 @@ virtual-keyboard {
     text-transform: lowercase;
 }
 
-/* Keep existing hover effects */
-.vk-shifted {
-    &:hover:not(.vk-key-down) {
-        background-color: var(--vk-key-background-color-hover);
-        color: var(--vk-key-color-hover);
+/* Keep existing hover effects, for a pointer that can hover: a touch leaves
+   :hover on the key it tapped, and the key would keep these colours until the
+   next tap */
+@media (hover: hover) {
+    .vk-key {
+        &:hover:not(.vk-key-down) {
+            background-color: var(--vk-key-background-color-hover);
+            color: var(--vk-key-color-hover);
+        }
     }
-}
 
-.vk-num-locked {
-    &:hover:not(.vk-key-down) {
-        background-color: var(--vk-key-background-color-hover);
-        color: var(--vk-key-color-hover);
+    .vk-shifted {
+        &:hover:not(.vk-key-down) {
+            background-color: var(--vk-key-background-color-hover);
+            color: var(--vk-key-color-hover);
+        }
+    }
+
+    .vk-num-locked {
+        &:hover:not(.vk-key-down) {
+            background-color: var(--vk-key-background-color-hover);
+            color: var(--vk-key-color-hover);
+        }
     }
 }
 
@@ -138,13 +149,6 @@ virtual-keyboard {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
-
-
-    &:hover:not(.vk-key-down) {
-        background-color: var(--vk-key-background-color-hover);
-        color: var(--vk-key-color-hover);
-    }
-
 
     &[data-code="Backspace"],
     &[data-code="Enter"],
