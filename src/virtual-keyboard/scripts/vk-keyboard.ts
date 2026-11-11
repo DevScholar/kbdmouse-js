@@ -1,129 +1,132 @@
 // vk-keyboard.ts
-import { VkEditing } from './vk-editing';
-import { VkEventDispatcher } from './vk-event-dispatcher';
-import { VkJsonLayout } from './vk-json-layout';
-import { VkLogger } from './vk-logger';
-import { VkState } from './vk-state';
-import { VkTemplate } from './vk-template';
-import { VkUserOperation } from './vk-user-operation';
-import { VkVisual } from './vk-visual';
-import { VkAutoResize } from './vk-auto-resize';
+import { VkEditing } from "./vk-editing";
+import { VkEventDispatcher } from "./vk-event-dispatcher";
+import { VkJsonLayout } from "./vk-json-layout";
+import { VkLogger } from "./vk-logger";
+import { VkState } from "./vk-state";
+import { VkTemplate } from "./vk-template";
+import { VkUserOperation } from "./vk-user-operation";
+import { VkVisual } from "./vk-visual";
+import { VkAutoResize } from "./vk-auto-resize";
 
-import keyboardStyles from '../styles/vk-keyboard.css?inline';
+import keyboardStyles from "../styles/vk-keyboard.css?inline";
 
 export class VkKeyboard extends HTMLElement {
-    private _isInitialized = false;
-    private _shadowRoot: ShadowRoot | null = null;
-    private _useShadowDOM: boolean | null = null;
+  private _isInitialized = false;
+  private _shadowRoot: ShadowRoot | null = null;
+  private _useShadowDOM: boolean | null = null;
 
-    constructor() {
-        super();
+  constructor() {
+    super();
+  }
+
+  private get useShadowDOM(): boolean {
+    if (this._useShadowDOM === null) {
+      this._useShadowDOM = this.getAttribute("shadow") !== "false";
+    }
+    return this._useShadowDOM;
+  }
+
+  /**
+   * Whether the keyboard also writes into an editable element the page has
+   * focused. It is on by default, and a page that reads key events itself, a
+   * terminal or an emulator for instance, turns it off with editing="false"
+   * so the same keystroke does not arrive twice.
+   */
+  get editingEnabled(): boolean {
+    return this.getAttribute("editing") !== "false";
+  }
+
+  async connectedCallback() {
+    if (this._isInitialized) return;
+    this._isInitialized = true;
+
+    const templateHtml = await this.template.getKeyboardTemplateHtml();
+
+    // Guard: element may have been disconnected during the async gap above
+    if (!this.isConnected) {
+      this._isInitialized = false;
+      return;
     }
 
-    private get useShadowDOM(): boolean {
-        if (this._useShadowDOM === null) {
-            this._useShadowDOM = this.getAttribute('shadow') !== 'false';
-        }
-        return this._useShadowDOM;
+    if (this.useShadowDOM) {
+      if (!this._shadowRoot) {
+        this._shadowRoot = this.attachShadow({ mode: "open" });
+      }
+      this._shadowRoot.innerHTML = `<style>${keyboardStyles}</style>${templateHtml}`;
+    } else {
+      this.innerHTML = templateHtml;
     }
 
-    /**
-     * Whether the keyboard also writes into an editable element the page has
-     * focused. It is on by default, and a page that reads key events itself, a
-     * terminal or an emulator for instance, turns it off with editing="false"
-     * so the same keystroke does not arrive twice.
-     */
-    get editingEnabled(): boolean {
-        return this.getAttribute('editing') !== 'false';
-    }
+    this.autoResize.reinitialize();
+    this.userOperation.preventFocusForVkKeyboard();
+    this.userOperation.handlePointerOperationsForVkKeyboard();
+  }
 
-    async connectedCallback() {
-        if (this._isInitialized) return;
-        this._isInitialized = true;
+  disconnectedCallback() {
+    this._isInitialized = false;
+    this.autoResize.dispose();
+    this.userOperation.stopAllRepeat();
+    this.userOperation.removeAllKeyListeners();
+    this.logger.removeEventListeners();
+  }
 
-        const templateHtml = await this.template.getKeyboardTemplateHtml();
+  /** @internal Returns the shadow root (shadow mode) or the element itself (no-shadow mode) for internal DOM queries. */
+  getRoot(): ParentNode {
+    return this._shadowRoot ?? this;
+  }
 
-        // Guard: element may have been disconnected during the async gap above
-        if (!this.isConnected) {
-            this._isInitialized = false;
-            return;
-        }
+  /** @internal */
+  get shadowRootElement(): ShadowRoot | null {
+    return this._shadowRoot;
+  }
 
-        if (this.useShadowDOM) {
-            if (!this._shadowRoot) {
-                this._shadowRoot = this.attachShadow({ mode: 'open' });
-            }
-            this._shadowRoot.innerHTML = `<style>${keyboardStyles}</style>${templateHtml}`;
-        } else {
-            this.innerHTML = templateHtml;
-        }
+  /** @internal */
+  get vkKeyboardElement(): HTMLElement | null {
+    return (
+      this.getRoot() as ParentNode & {
+        querySelector: ParentNode["querySelector"];
+      }
+    ).querySelector(".vk-keyboard") as HTMLElement | null;
+  }
 
-        this.autoResize.reinitialize();
-        this.userOperation.preventFocusForVkKeyboard();
-        this.userOperation.handlePointerOperationsForVkKeyboard();
-    }
+  /** @internal */
+  debug = {
+    classThis: this as unknown as VkKeyboard,
 
-    disconnectedCallback() {
-        this._isInitialized = false;
-        this.autoResize.dispose();
-        this.userOperation.stopAllRepeat();
-        this.userOperation.removeAllKeyListeners();
-        this.logger.removeEventListeners();
-    }
+    set enabled(value: boolean) {
+      if (value) {
+        this.classThis.logger.generateLog();
+        this.classThis.state.debug.enabled = true;
+      } else {
+        this.classThis.logger.removeEventListeners();
+        this.classThis.state.debug.enabled = false;
+      }
+    },
 
-    /** @internal Returns the shadow root (shadow mode) or the element itself (no-shadow mode) for internal DOM queries. */
-    getRoot(): ParentNode {
-        return this._shadowRoot ?? this;
-    }
+    get enabled() {
+      return this.classThis.state.debug.enabled;
+    },
+  };
 
-    /** @internal */
-    get shadowRootElement(): ShadowRoot | null {
-        return this._shadowRoot;
-    }
-
-    /** @internal */
-    get vkKeyboardElement(): HTMLElement | null {
-        return (this.getRoot() as ParentNode & { querySelector: ParentNode['querySelector'] })
-            .querySelector('.vk-keyboard') as HTMLElement | null;
-    }
-
-    /** @internal */
-    debug = {
-        classThis: this as unknown as VkKeyboard,
-
-        set enabled(value: boolean) {
-            if (value) {
-                this.classThis.logger.generateLog();
-                this.classThis.state.debug.enabled = true;
-            } else {
-                this.classThis.logger.removeEventListeners();
-                this.classThis.state.debug.enabled = false;
-            }
-        },
-
-        get enabled() {
-            return this.classThis.state.debug.enabled;
-        },
-    };
-
-    /** @internal */
-    editing = new VkEditing(this);
-    /** @internal */
-    eventDispatcher = new VkEventDispatcher(this);
-    /** @internal */
-    logger = new VkLogger(this);
-    /** @internal */
-    state = new VkState(this);
-    /** @internal */
-    template = new VkTemplate(this);
-    /** @internal */
-    visual = new VkVisual(this);
-    /** @internal */
-    jsonLayout = new VkJsonLayout(this);
-    /** @internal */
-    userOperation = new VkUserOperation(this);
-    /** @internal */
-    autoResize = new VkAutoResize(this);
+  /** @internal */
+  editing = new VkEditing(this);
+  /** @internal */
+  eventDispatcher = new VkEventDispatcher(this);
+  /** @internal */
+  logger = new VkLogger(this);
+  /** @internal */
+  state = new VkState(this);
+  /** @internal */
+  template = new VkTemplate(this);
+  /** @internal */
+  visual = new VkVisual(this);
+  /** @internal */
+  jsonLayout = new VkJsonLayout(this);
+  /** @internal */
+  userOperation = new VkUserOperation(this);
+  /** @internal */
+  autoResize = new VkAutoResize(this);
 }
 
-customElements.define('virtual-keyboard', VkKeyboard);
+customElements.define("virtual-keyboard", VkKeyboard);
