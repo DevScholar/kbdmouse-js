@@ -62,11 +62,26 @@ export class VkUserOperation {
         const pointerDownHandler = this.createPointerDownHandler(code, keyType);
         const pointerReleaseHandler = this.createPointerReleaseHandler(code, keyType);
 
+        // A finger cannot hover, and the browser would leave :hover behind on
+        // the key it tapped, so the hover colours come from a class that only a
+        // pointer with a hover of its own adds
+        const pointerEnterHandler = (event: Event) => {
+            if ((event as PointerEvent).pointerType === 'touch') return;
+            (event.currentTarget as Element).classList.add('vk-key-hover');
+        };
+        const pointerLeaveHandler = (event: Event) => {
+            (event.currentTarget as Element).classList.remove('vk-key-hover');
+        };
+
+        vkKey.addEventListener('pointerenter', pointerEnterHandler);
+        vkKey.addEventListener('pointerleave', pointerLeaveHandler);
         vkKey.addEventListener('pointerdown', pointerDownHandler);
         vkKey.addEventListener('pointerup', pointerReleaseHandler);
         vkKey.addEventListener('pointerleave', pointerReleaseHandler);
 
         this.elementListeners.push(
+            { element: vkKey, type: 'pointerenter', handler: pointerEnterHandler },
+            { element: vkKey, type: 'pointerleave', handler: pointerLeaveHandler },
             { element: vkKey, type: 'pointerdown', handler: pointerDownHandler },
             { element: vkKey, type: 'pointerup', handler: pointerReleaseHandler },
             { element: vkKey, type: 'pointerleave', handler: pointerReleaseHandler },

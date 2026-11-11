@@ -98,30 +98,14 @@ virtual-keyboard {
     text-transform: lowercase;
 }
 
-/* Keep existing hover effects, for a pointer that can hover: a touch leaves
-   :hover on the key it tapped, and the key would keep these colours until the
-   next tap */
-@media (hover: hover) {
-    .vk-key {
-        &:hover:not(.vk-key-down) {
-            background-color: var(--vk-key-background-color-hover);
-            color: var(--vk-key-color-hover);
-        }
-    }
-
-    .vk-shifted {
-        &:hover:not(.vk-key-down) {
-            background-color: var(--vk-key-background-color-hover);
-            color: var(--vk-key-color-hover);
-        }
-    }
-
-    .vk-num-locked {
-        &:hover:not(.vk-key-down) {
-            background-color: var(--vk-key-background-color-hover);
-            color: var(--vk-key-color-hover);
-        }
-    }
+/* The hover colours are for a mouse. A finger cannot hover, and a touch leaves
+   :hover behind on the key it tapped, so the colours are a class a mouse adds
+   and a touch never adds. A media query cannot be trusted here: a phone
+   browser may still report a pointer that can hover. The pressed colours in
+   .vk-key-down are the feedback a finger gets. */
+.vk-key-hover:not(.vk-key-down) {
+    background-color: var(--vk-key-background-color-hover);
+    color: var(--vk-key-color-hover);
 }
 
 .vk-placeholder {
