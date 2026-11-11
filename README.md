@@ -102,6 +102,8 @@ Note: This project will not support HTML 5 drag-and-drop events. If you want the
 
 # Building
 
+Vite ships a native bundler binary, so `node_modules` belongs to the platform that created it. Install once per platform: after switching between Windows, WSL and Linux, delete `node_modules` and run `npm ci` again.
+
 ## Standard Build
 
 ```bash
